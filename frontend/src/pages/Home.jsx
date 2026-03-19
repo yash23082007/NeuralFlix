@@ -1,108 +1,177 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMovies } from '../services/api';
-import MovieCard from '../components/MovieCard';
+import { Link } from 'react-router-dom';
+import {
+  fetchTrending,
+  fetchTopRated,
+  fetchBollywood,
+  fetchAnime,
+  fetchByGenre,
+  fetchNowPlaying,
+} from '../services/api';
+import HeroSlider from '../components/HeroSlider';
+import HorizontalRow from '../components/HorizontalRow';
 import Loader from '../components/Loader';
 import { motion } from 'framer-motion';
-import { Play, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { TrendingUp, Star, Globe2, Swords, Heart, Ghost, Sparkles } from 'lucide-react';
 
-const HorizontalRow = ({ title, movies }) => {
-  if (!movies || movies.length === 0) return null;
-  
-  return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold text-white mb-4 px-6 md:px-12">{title}</h2>
-      <div className="flex overflow-x-auto gap-4 px-6 md:px-12 pb-6 hide-scrollbar">
-        {movies.map((movie) => (
-          <div key={movie.id || movie._id} className="w-40 md:w-48 lg:w-56 flex-shrink-0">
-            <MovieCard movie={movie} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+const GENRE_ROWS = [
+  { title: '⚔️ Action & Thriller', genre: 'Action', icon: Swords },
+  { title: '💘 Romance', genre: 'Romance', icon: Heart },
+  { title: '👻 Horror', genre: 'Horror', icon: Ghost },
+  { title: '✨ Sci-Fi & Fantasy', genre: 'Sci-Fi', icon: Sparkles },
+];
 
 const Home = () => {
   const [trending, setTrending] = useState([]);
-  const [actionMovies, setActionMovies] = useState([]);
-  const [sciFiMovies, setSciFiMovies] = useState([]);
+  const [topRated, setTopRated] = useState([]);
+  const [bollywood, setBollywood] = useState([]);
+  const [anime, setAnime] = useState([]);
+  const [nowPlaying, setNowPlaying] = useState([]);
+  const [genreRows, setGenreRows] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getMovies = async () => {
+    const loadAll = async () => {
       try {
-        const data = await fetchMovies(1);
-        setTrending(data);
-        
-        // Simulating different categories from the same generic fetch for now
-        // In a real app, these would be specific endpoint queries
-        setActionMovies([...data].sort(() => 0.5 - Math.random()).slice(0, 10));
-        setSciFiMovies([...data].reverse().slice(0, 10));
+        const [trendingData, topRatedData, bollywoodData, animeData, nowPlayingData] = await Promise.all([
+          fetchTrending(),
+          fetchTopRated(),
+          fetchBollywood(),
+          fetchAnime(),
+          fetchNowPlaying(),
+        ]);
+        setTrending(trendingData);
+        setTopRated(topRatedData);
+        setBollywood(bollywoodData);
+        setAnime(animeData);
+        setNowPlaying(nowPlayingData);
+
+        // Load genre rows sequentially to avoid rate limiting
+        const genres = {};
+        for (const row of GENRE_ROWS) {
+          try {
+            const data = await fetchByGenre(row.genre);
+            genres[row.genre] = data;
+          } catch (e) {
+            genres[row.genre] = [];
+          }
+        }
+        setGenreRows(genres);
       } catch (error) {
-        console.error('Error fetching movies:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    getMovies();
+    loadAll();
   }, []);
 
   if (loading) return <Loader />;
 
-  const heroMovie = trending.length > 0 ? trending[0] : null;
-
   return (
-    <div className="pb-12 -mt-20">
-      {/* Dynamic Hero Banner */}
-      {heroMovie && (
-        <div className="relative w-full h-[70vh] lg:h-[85vh] mb-12">
-          <div className="absolute inset-0">
-            <img 
-              src={heroMovie.poster_path ? `https://image.tmdb.org/t/p/original${heroMovie.poster_path}` : 'https://via.placeholder.com/1920x1080?text=No+Backdrop'} 
-              alt={heroMovie.title} 
-              className="w-full h-full object-cover object-top opacity-60" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
-          </div>
-
-          <div className="absolute inset-0 flex flex-col justify-end px-6 md:px-12 pb-24 max-w-7xl">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <h1 className="text-5xl md:text-7xl font-black text-white mb-4 drop-shadow-2xl">
-                {heroMovie.title}
-              </h1>
-              <p className="max-w-xl text-lg md:text-xl text-gray-200 mb-8 line-clamp-3 drop-shadow-md">
-                {heroMovie.overview || "Explore this trending title available now on your favorite platform."}
-              </p>
-              <div className="flex items-center gap-4">
-                <Link to={`/movie/${heroMovie.id || heroMovie._id}`}>
-                  <button className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-md font-bold text-lg hover:bg-white/80 transition shadow-lg">
-                    <Play className="w-6 h-6 fill-current" /> Play
-                  </button>
-                </Link>
-                <Link to={`/movie/${heroMovie.id || heroMovie._id}`}>
-                  <button className="flex items-center gap-2 bg-gray-500/50 text-white px-8 py-3 rounded-md font-bold text-lg hover:bg-gray-500/70 backdrop-blur-sm transition">
-                    <Info className="w-6 h-6" /> More Info
-                  </button>
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </div>
+    <div className="pb-16 -mt-16">
+      {/* Hero Slider */}
+      {trending.length > 0 && (
+        <HeroSlider movies={trending.slice(0, 7)} />
       )}
 
-      {/* Horizontal Scrolling Rows */}
-      <HorizontalRow title="Trending Now" movies={trending.slice(1, 15)} />
-      <HorizontalRow title="Top Sci-Fi" movies={sciFiMovies} />
-      <HorizontalRow title="Action Packed" movies={actionMovies} />
-      <HorizontalRow title="Because you watched Inception" movies={trending.slice(5, 15)} />
-      
+      <div className="space-y-2 mt-2">
+        {/* Now Playing */}
+        {nowPlaying.length > 0 && (
+          <HorizontalRow
+            title="🎬 Now In Cinemas"
+            movies={nowPlaying}
+            accentColor="#e50914"
+          />
+        )}
+
+        {/* Trending */}
+        {trending.length > 0 && (
+          <HorizontalRow
+            title="🔥 Trending This Week"
+            movies={trending.slice(1, 21)}
+            accentColor="#f5c518"
+            viewAllLink="/search?q=trending"
+          />
+        )}
+
+        {/* Top Rated */}
+        {topRated.length > 0 && (
+          <HorizontalRow
+            title="⭐ Top Rated All Time"
+            movies={topRated}
+            accentColor="#8b5cf6"
+          />
+        )}
+
+        {/* Genre Rows */}
+        {GENRE_ROWS.map(row => (
+          genreRows[row.genre]?.length > 0 && (
+            <HorizontalRow
+              key={row.genre}
+              title={row.title}
+              movies={genreRows[row.genre]}
+              viewAllLink={`/genre/${row.genre.toLowerCase()}`}
+            />
+          )
+        ))}
+
+        {/* Bollywood */}
+        {bollywood.length > 0 && (
+          <HorizontalRow
+            title="🎭 Bollywood Hits"
+            movies={bollywood}
+            accentColor="#ff6b35"
+            viewAllLink="/search?q=bollywood"
+          />
+        )}
+
+        {/* Anime */}
+        {anime.length > 0 && (
+          <HorizontalRow
+            title="🍜 Japanese Anime"
+            movies={anime}
+            accentColor="#06b6d4"
+            viewAllLink="/genre/animation"
+          />
+        )}
+      </div>
+
+      {/* Genre Grid Quick Links */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="px-6 md:px-12 mt-12"
+      >
+        <h2 className="text-2xl font-bold text-white mb-6">Browse by Genre</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {[
+            { name: 'Action', emoji: '⚔️', color: 'from-red-900/60 to-red-800/40' },
+            { name: 'Comedy', emoji: '😂', color: 'from-yellow-900/60 to-yellow-800/40' },
+            { name: 'Drama', emoji: '🎭', color: 'from-purple-900/60 to-purple-800/40' },
+            { name: 'Horror', emoji: '👻', color: 'from-gray-900/80 to-gray-800/60' },
+            { name: 'Sci-Fi', emoji: '🚀', color: 'from-blue-900/60 to-blue-800/40' },
+            { name: 'Romance', emoji: '💘', color: 'from-pink-900/60 to-pink-800/40' },
+            { name: 'Animation', emoji: '🎨', color: 'from-green-900/60 to-green-800/40' },
+            { name: 'Thriller', emoji: '🔍', color: 'from-orange-900/60 to-orange-800/40' },
+            { name: 'Adventure', emoji: '🗺️', color: 'from-teal-900/60 to-teal-800/40' },
+            { name: 'Crime', emoji: '🕵️', color: 'from-slate-900/80 to-slate-800/60' },
+            { name: 'Fantasy', emoji: '🧙', color: 'from-indigo-900/60 to-indigo-800/40' },
+            { name: 'Documentary', emoji: '🎥', color: 'from-zinc-900/60 to-zinc-800/40' },
+          ].map(g => (
+            <Link
+              key={g.name}
+              to={`/genre/${g.name.toLowerCase()}`}
+              className={`bg-gradient-to-br ${g.color} border border-white/10 rounded-xl p-4 text-center hover:border-white/30 hover:scale-105 smooth-transition group`}
+            >
+              <div className="text-3xl mb-2">{g.emoji}</div>
+              <div className="text-sm font-semibold text-white/90 group-hover:text-white">{g.name}</div>
+            </Link>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 };
