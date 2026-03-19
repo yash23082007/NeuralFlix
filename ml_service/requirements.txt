@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pandas
+scikit-learn
+mlflow
+sentence-transformers
+supabase
+pydantic
+transformers
+faiss-cpu
