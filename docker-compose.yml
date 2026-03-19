@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # PHASE 6: Deploy Everything / Dockerize
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api
+      
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ML_SERVICE_URL=http://ml_service:8001
+      - REDIS_URL=redis://redis:6379
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    depends_on:
+      - redis
+      - ml_service
+
+  # PHASE 2: Split Backend into Services (Separate ML Service)
+  ml_service:
+    build: ./ml_service
+    ports:
+      - "8001:8001"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+
+  # PHASE 4: Add Real-Time Feel (Redis Cache)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
