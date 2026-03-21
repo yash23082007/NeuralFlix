@@ -57,7 +57,7 @@ const GenrePage = () => {
       }
     };
     load();
-  }, [genre, lang]);
+  }, [genre, lang, displayName]);
 
   const loadMore = async () => {
     setLoadingMore(true);

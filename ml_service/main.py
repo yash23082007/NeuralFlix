@@ -7,6 +7,12 @@ from sklearn.ensemble import GradientBoostingRegressor
 import faiss
 from transformers import pipeline
 
+import os
+from dotenv import load_dotenv
+from pymongo import MongoClient
+
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', '.env'))
+
 app = FastAPI(title="NeuralFlix Advanced ML Service", version="2.0")
 
 # --- PHASE 7 INITIALIZATION ---
@@ -14,33 +20,56 @@ print("Loading Semantic Search Engine. This might take a moment...")
 # 1. Semantic Model
 model = SentenceTransformer('all-MiniLM-L6-v2') 
 
-# Dummy In-Memory DB for Vector Search & RAG Context
-movies_db = [
-    {"id": "1", "title": "Interstellar", "overview": "Sci-fi epic about space travel and dying earth.", "popularity": 9.5},
-    {"id": "2", "title": "Inception", "overview": "A thief enters dreams to steal secrets.", "popularity": 8.8},
-    {"id": "3", "title": "The Notebook", "overview": "A passionate emotional romance story without spaceships.", "popularity": 7.5}
-]
+# Connect to MongoDB to fetch real data
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+client = MongoClient(MONGO_URI)
+db = client.get_database("neuralflix")
+movies_collection = db.get_collection("movies")
+
+print("Fetching movies from MongoDB for FAISS indexing...")
+# Fetch at most 2000 movies to prevent excessive local CPU time during startup
+raw_movies = list(movies_collection.find({"overview": {"$ne": "", "$exists": True}}, 
+    {"_id": 1, "tmdb_id": 1, "title": 1, "overview": 1, "popularity_score": 1, "poster_url": 1, "rating": 1, "year": 1}).limit(3000))
+
+if not raw_movies:
+    print("WARNING: No movies found in DB. Falling back to dummy.")
+    movies_db = [
+        {"_id": "1", "title": "Interstellar", "overview": "Sci-fi epic about space travel and dying earth.", "popularity_score": 9.5},
+        {"_id": "2", "title": "Inception", "overview": "A thief enters dreams to steal secrets.", "popularity_score": 8.8},
+        {"_id": "3", "title": "The Notebook", "overview": "A passionate emotional romance story without spaceships.", "popularity_score": 7.5}
+    ]
+else:
+    # Stringify _id since it's an ObjectId in mongo
+    for m in raw_movies:
+        m["_id"] = str(m["_id"])
+    movies_db = raw_movies
+
+print(f"Loaded {len(movies_db)} movies into ML memory. Computing vectors...")
 
 # 2. FAISS Vector Database Setup
-texts = [m["overview"] for m in movies_db]
-embeddings = model.encode(texts)
+texts = [m.get("overview", "") for m in movies_db]
+# Fill empty overviews
+texts = [t if t else "No description available" for t in texts]
+
+embeddings = model.encode(texts, show_progress_bar=True)
 dimension = embeddings.shape[1]
 index = faiss.IndexFlatL2(dimension)
 index.add(np.array(embeddings).astype('float32'))
+print("FAISS Index build complete!")
 
 # 3. Ranking Model (Gradient Boosting) 
-# Predicts click-probability based on [Semantic_Similarity_Score, Popularity]
 ranker = GradientBoostingRegressor()
 dummy_X = np.array([[0.9, 9.5], [0.8, 8.8], [0.4, 7.5]])
 dummy_y = np.array([1.0, 0.8, 0.1])
 ranker.fit(dummy_X, dummy_y)
 
-# 4. FREE Open-Source RAG Local LLM Generator (Tiny but mighty for pure demo purposes)
+# 4. FREE Open-Source RAG Local LLM Generator
 print("Loading Open-Source RAG Generator...")
 rag_generator = pipeline("text2text-generation", model="google/flan-t5-small")
 
 class SearchQuery(BaseModel):
     query: str
+
 
 @app.get("/")
 def health_check():
@@ -80,7 +109,7 @@ def rank_recommendations(user_query: SearchQuery):
          return {"results": []}
          
     # 2. Build feature matrix for the Ranker [Score, Popularity]
-    X_pred = np.array([[m["semantic_score"], m["popularity"]] for m in movies])
+    X_pred = np.array([[m.get("semantic_score", 0), m.get("popularity_score", 5.0)] for m in movies])
     
     # 3. Predict user click probability
     predicted_scores = ranker.predict(X_pred)

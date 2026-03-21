@@ -20,6 +20,10 @@ services:
       - REDIS_URL=redis://redis:6379
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
+      - MONGO_URI=${MONGO_URI:-mongodb+srv://ktanayash_db_user:Yashvijay@cluster0.ksin90b.mongodb.net/}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - TMDB_READ_ACCESS_TOKEN=${TMDB_READ_ACCESS_TOKEN}
+      - OMDB_API_KEY=${OMDB_API_KEY}
     depends_on:
       - redis
       - ml_service

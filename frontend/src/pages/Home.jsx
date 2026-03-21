@@ -52,7 +52,7 @@ const Home = () => {
           try {
             const data = await fetchByGenre(row.genre);
             genres[row.genre] = data;
-          } catch (e) {
+          } catch {
             genres[row.genre] = [];
           }
         }
@@ -69,7 +69,7 @@ const Home = () => {
   if (loading) return <Loader />;
 
   return (
-    <div className="pb-16 -mt-16">
+    <div className="pb-24 -mt-20 tracking-wide bg-background">
       {/* Hero Slider */}
       {trending.length > 0 && (
         <HeroSlider movies={trending.slice(0, 7)} />
@@ -143,7 +143,7 @@ const Home = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="px-6 md:px-12 mt-12"
+        className="px-6 md:px-12 mt-16 max-w-[1600px] mx-auto"
       >
         <h2 className="text-2xl font-bold text-white mb-6">Browse by Genre</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">

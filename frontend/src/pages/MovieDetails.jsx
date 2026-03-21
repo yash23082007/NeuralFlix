@@ -112,25 +112,53 @@ const MovieDetails = () => {
               </h1>
 
               {/* Meta row */}
-              <div className="flex flex-wrap items-center gap-4 text-sm md:text-base text-gray-300 mb-4 font-medium">
+              <div className="flex flex-wrap items-center gap-6 text-sm md:text-base text-gray-300 mb-6 font-medium">
+                {/* TMDB Rating */}
                 {rating > 0 && (
-                  <span className="flex items-center gap-1.5 bg-yellow-500/20 border border-yellow-500/40 px-3 py-1 rounded-full">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-yellow-300 font-bold">{Number(rating).toFixed(1)}</span>
-                    <span className="text-gray-400 text-xs">({(movie.votes || 0).toLocaleString()})</span>
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-white/50 tracking-widest uppercase mb-0.5">Rating</span>
+                    <span className="flex items-center gap-1.5 text-white">
+                      <Star className="w-5 h-5 text-imdb-gold fill-current" />
+                      <span className="text-xl font-bold">{Number(rating).toFixed(1)}</span>
+                      <span className="text-gray-500 font-normal">/10</span>
+                    </span>
+                  </div>
                 )}
-                {year && (
-                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 opacity-60" />{year}</span>
+                {/* OMDB/IMDb Rating */}
+                {movie.omdb_rating && movie.omdb_rating !== 'N/A' && (
+                  <div className="flex flex-col border-l border-white/10 pl-6">
+                    <span className="text-xs text-white/50 tracking-widest uppercase mb-0.5">IMDb</span>
+                    <span className="flex items-center gap-1.5 text-white">
+                      <div className="bg-imdb-gold text-black text-xs font-black px-1.5 py-0.5 rounded-sm tracking-tighter">IMDb</div>
+                      <span className="text-xl font-bold">{movie.omdb_rating}</span>
+                      <span className="text-gray-500 font-normal">/10</span>
+                    </span>
+                  </div>
                 )}
-                {movie.runtime > 0 && (
-                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 opacity-60" />{movie.runtime} min</span>
+                {/* Rotten Tomatoes */}
+                {movie.rt_rating && movie.rt_rating !== 'N/A' && (
+                  <div className="flex flex-col border-l border-white/10 pl-6">
+                    <span className="text-xs text-white/50 tracking-widest uppercase mb-0.5">Tomatometer</span>
+                    <span className="flex items-center gap-1.5 text-white">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${parseInt(movie.rt_rating) >= 60 ? 'bg-rt-red' : 'bg-rt-green'}`}>🍅</div>
+                      <span className="text-xl font-bold">{movie.rt_rating}</span>
+                    </span>
+                  </div>
                 )}
-                {movie.language && (
-                  <span className="flex items-center gap-1.5 uppercase text-xs">
-                    <Globe className="w-4 h-4 opacity-60" />{movie.language}
-                  </span>
-                )}
+                
+                <div className="flex items-center gap-4 ml-2 mt-2 md:mt-0">
+                  {year && (
+                    <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 opacity-50" />{year}</span>
+                  )}
+                  {movie.runtime > 0 && (
+                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 opacity-50" />{movie.runtime} min</span>
+                  )}
+                  {movie.language && (
+                    <span className="flex items-center gap-1.5 uppercase text-xs">
+                      <Globe className="w-4 h-4 opacity-50" />{movie.language}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Genres */}
@@ -147,24 +175,24 @@ const MovieDetails = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-4 flex-wrap mt-2">
                 {movie.trailer_key && (
                   <motion.button
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setShowTrailer(true)}
-                    className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/90 shadow-2xl transition"
+                    className="flex items-center gap-2 bg-rt-red text-white px-8 py-3.5 rounded-xl font-bold text-base hover:bg-[#d42706] shadow-[0_0_20px_rgba(250,50,10,0.4)] transition"
                   >
-                    <Play className="w-5 h-5 fill-current" /> Watch Trailer
+                    <Play className="w-5 h-5 fill-current" /> Play Trailer
                   </motion.button>
                 )}
                 <Link to={`/search?q=${encodeURIComponent(movie.title)}`}>
                   <motion.button
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 bg-white/15 backdrop-blur text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/25 border border-white/20 transition"
+                    className="flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 rounded-xl font-bold text-base hover:bg-[#252525] border border-white/10 shadow-lg transition"
                   >
-                    <Film className="w-5 h-5" /> Find Similar
+                    <Film className="w-5 h-5" /> Similar Titles
                   </motion.button>
                 </Link>
               </div>
@@ -190,43 +218,64 @@ const MovieDetails = () => {
               </motion.div>
             )}
 
-            {/* Cast */}
-            {cast.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-accent pl-4">Cast</h2>
-                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
-                  {cast.map((actor, i) => (
-                    <div key={i} className="flex-shrink-0 text-center w-20">
-                      <div className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-surface-2 mb-2 border-2 border-white/10">
-                        {actor.profile_url ? (
-                          <img src={actor.profile_url} alt={actor.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
-                        )}
-                      </div>
-                      <div className="text-xs font-semibold text-white line-clamp-2 leading-tight">{actor.name}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{actor.character}</div>
+              {/* OMDB Details */}
+              {(movie.box_office || movie.awards) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="bg-surface p-4 rounded-xl border border-white/5 space-y-3"
+                >
+                  {movie.box_office && movie.box_office !== 'N/A' && (
+                    <div className="flex items-start gap-3">
+                       <span className="font-bold text-white/70 w-24">Box Office:</span>
+                       <span className="text-green-400 font-medium">{movie.box_office}</span>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
+                  )}
+                  {movie.awards && movie.awards !== 'N/A' && (
+                    <div className="flex items-start gap-3">
+                       <span className="font-bold text-white/70 w-24">Awards:</span>
+                       <span className="text-yellow-400 font-medium">{movie.awards}</span>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              {/* Cast */}
+              {cast && cast.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-4">Top Cast</h2>
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                    {cast.map((actor, i) => (
+                      <div key={i} className="flex-shrink-0 w-24 text-center">
+                        <div className="w-24 h-24 rounded-full overflow-hidden bg-white/10 mb-2 mx-auto">
+                          {actor.profile_url ? (
+                            <img src={actor.profile_url} alt={actor.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/50">?</div>
+                          )}
+                        </div>
+                        <div className="text-sm text-white font-medium truncate">{actor.name}</div>
+                        <div className="text-xs text-white/50 truncate">{actor.character}</div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
 
-          {/* Right: Info Panel */}
-          <div className="space-y-6">
-            {/* Info Box */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-surface border border-white/8 rounded-2xl p-6 space-y-4"
-            >
-              <h3 className="text-lg font-bold text-white">Movie Info</h3>
+            {/* Right: Movie Info */}
+            <div className="md:col-span-1 space-y-6">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-surface border border-white/8 rounded-2xl p-6 space-y-4"
+              >
+                <h3 className="text-lg font-bold text-white">Movie Info</h3>
               {movie.director && (
                 <div>
                   <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Director</div>

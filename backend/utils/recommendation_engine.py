@@ -32,11 +32,38 @@ def get_popularity_baseline(limit: int = 10) -> List[dict]:
     movies = list(movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
     return movies
 
+import httpx
+
+ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
+
 def get_content_based_recommendations(movie_id: str, limit: int = 10) -> List[dict]:
     """
-    Uses NLP (TfidfVectorizer + Cosine Similarity) on movie descriptions (overview/tagline) to find similar content.
+    Uses the dedicated Advanced ML Microservice for semantic search & ranking.
+    Falls back to local NLP (TfidfVectorizer) if the ML service is down.
     """
-    # Fetch all movies to build the vector space.
+    target_movie = movies_collection.find_one({"_id": movie_id})
+    if not target_movie or not target_movie.get("overview"):
+        return []
+
+    # 1. Try ML Microservice first
+    try:
+        query = target_movie.get("overview", "") + " " + target_movie.get("tagline", "")
+        response = httpx.post(
+            f"{ML_SERVICE_URL}/recommend/rank",
+            json={"query": query},
+            timeout=8.0
+        )
+        if response.status_code == 200:
+            data = response.json()
+            ranked_movies = data.get("ranked_results", [])
+            # Filter out the source movie
+            filtered = [m for m in ranked_movies if str(m.get("_id")) != str(movie_id)]
+            if filtered:
+                return filtered[:limit]
+    except Exception as e:
+        print(f"⚠️ ML Service unreachable or failed, falling back to local TF-IDF: {e}")
+
+    # 2. Local Fallback TF-IDF
     all_movies = list(movies_collection.find({}, {"_id": 1, "genres": 1, "title": 1, "poster_url": 1, "overview": 1, "tagline": 1, "rating": 1, "year": 1}))
     
     if not all_movies:

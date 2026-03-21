@@ -8,3 +8,7 @@ requests
 pydantic
 supabase
 supabase
+sqlalchemy
+psycopg2-binary
+redis
+httpx

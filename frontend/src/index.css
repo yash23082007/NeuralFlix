@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0a0a0f;
-  --color-surface: #13131a;
-  --color-surface-2: #1c1c26;
-  --color-border: rgba(255,255,255,0.08);
-  --color-primary: #e50914;
-  --color-primary-hover: #f40612;
-  --color-accent: #8b5cf6;
-  --color-accent-2: #06b6d4;
-  --color-gold: #f5c518;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a1a1b5;
-  --color-text-muted: #6b6b80;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-background: #060606;
+  --color-surface: #111111;
+  --color-surface-2: #1a1a1a;
+  --color-border: rgba(255,255,255,0.06);
+  --color-primary: #f5c518;
+  --color-primary-hover: #e0b416;
+  --color-imdb-gold: #f5c518;
+  --color-rt-red: #fa320a;
+  --color-rt-green: #61d245;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --font-sans: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {

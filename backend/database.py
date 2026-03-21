@@ -19,6 +19,7 @@ db = client.neuralflix
 movies_collection = db.movies
 users_collection = db.users
 recommendations_collection = db.recommendations
+watch_history_collection = db.watch_history
 
 # Supabase / PostgreSQL Connection for Tracking Events
 DATABASE_URL = os.getenv("DATABASE_URL")

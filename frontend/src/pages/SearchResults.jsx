@@ -14,7 +14,7 @@ const LANGUAGES = [
 ];
 
 const SearchResults = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [lang, setLang] = useState('');
   const [results, setResults] = useState([]);

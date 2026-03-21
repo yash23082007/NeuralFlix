@@ -1,0 +1,58 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\HeroSlider.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\HorizontalRow.jsx
+  6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\Loader.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\MovieCard.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\Navbar.jsx
+   3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+  39:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  37 |   // Close on route change
+  38 |   useEffect(() => {
+> 39 |     setGenreOpen(false);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |     setSearchOpen(false);
+  41 |   }, [location]);
+  42 |  react-hooks/set-state-in-effect
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\components\TrailerModal.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\pages\GenrePage.jsx
+   6:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                   no-unused-vars
+  60:6   warning  React Hook useEffect has a missing dependency: 'displayName'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\pages\Home.jsx
+  14:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  55:20  error  'e' is defined but never used                                                  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\pages\MovieDetails.jsx
+  231:15  error  Parsing error: Unexpected token {
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\pages\SearchResults.jsx
+   6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  17:24  error  'setSearchParams' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\yash6\OneDrive\Desktop\rs\movie-recommendation-system\frontend\src\pages\SeriesPage.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 15 problems (14 errors, 1 warning)
+

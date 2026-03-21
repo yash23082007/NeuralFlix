@@ -17,6 +17,7 @@ from utils.tmdb_api import (
     fetch_tv_shows,
     fetch_tv_details,
 )
+from utils.omdb_api import fetch_omdb_details_by_imdb_id, fetch_omdb_details_by_title
 import math
 
 router = APIRouter()
@@ -292,6 +293,18 @@ def get_movie_details(movie_id: str):
             votes = data.get("vote_count", 0)
             rating = round(data.get("vote_average", 0), 1)
             popularity = round(rating * math.log10(votes + 1), 2) if votes > 0 else 0
+            
+            omdb_data = fetch_omdb_details_by_imdb_id(data.get("imdb_id")) if data.get("imdb_id") else fetch_omdb_details_by_title(data.get("title"))
+            extra_imdb_rating = omdb_data.get("imdbRating") if omdb_data else None
+            extra_box_office = omdb_data.get("BoxOffice") if omdb_data else None
+            extra_awards = omdb_data.get("Awards") if omdb_data else None
+            
+            rt_rating = None
+            if omdb_data and "Ratings" in omdb_data:
+                for r in omdb_data["Ratings"]:
+                    if r.get("Source") == "Rotten Tomatoes":
+                        rt_rating = r.get("Value", "").replace("%", "")
+                        break
 
             return {
                 "_id": str(data.get("id")),
@@ -316,6 +329,10 @@ def get_movie_details(movie_id: str):
                 "tagline": data.get("tagline"),
                 "budget": data.get("budget"),
                 "imdb_id": data.get("imdb_id"),
+                "omdb_rating": extra_imdb_rating,
+                "rt_rating": rt_rating,
+                "box_office": extra_box_office,
+                "awards": extra_awards,
                 "media_type": "movie",
             }
 
