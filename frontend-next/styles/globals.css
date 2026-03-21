@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #121212;
+  --color-surface: #1a1a1a;
+  --color-surface-light: #222222;
+  --color-surface-hover: #2a2a2a;
+  --color-imdb-gold: #f5c518;
+  --color-imdb-gold-dark: #c9a000;
+  --color-rt-red: #fa320a;
+  --color-mc-green: #6c3;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #aaaaaa;
+  --color-text-muted: #666666;
+  --color-border: #2a2a2a;
+  --color-border-light: #333333;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+}
+
+/* IMDb-style Star Rating Badge */
+.imdb-rating {
+  @apply inline-flex items-center gap-1.5 bg-imdb-gold text-black font-bold text-sm px-2 py-0.5 rounded;
+}
+
+/* Genre Pills */
+.genre-pill {
+  @apply px-3 py-1 bg-surface-light text-text-secondary text-xs font-semibold rounded-full border border-border hover:bg-surface-hover hover:text-white transition-colors cursor-pointer;
+}
+
+/* Section Heading */
+.section-heading {
+  @apply text-xl md:text-2xl font-bold text-white flex items-center gap-3;
+}
+.section-heading::before {
+  content: "";
+  @apply w-1 h-7 bg-imdb-gold rounded-full inline-block;
+}
+
+/* Horizontal Scroll Container */
+.scroll-row {
+  @apply flex gap-4 overflow-x-auto pb-4;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-imdb-gold);
+}
+
+/* Platform Badge */
+.platform-badge {
+  @apply px-3 py-1.5 bg-surface-light text-text-secondary text-xs font-semibold rounded-lg border border-border;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  @apply bg-surface/80 backdrop-blur-md border border-border rounded-xl;
+}
+
+/* Skeleton Loader */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  @apply bg-surface-light rounded;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

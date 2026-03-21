@@ -2,12 +2,21 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from database import movies_collection, watch_history_collection, SessionLocal
-from typing import List
+from typing import List, Optional
 import numpy as np
 import redis
 import json
 import os
+import asyncio
 from sqlalchemy import text
+from models.sql_models import PostgresMovie
+
+try:
+    from utils.vector_engine import generate_query_embedding
+    HAS_VECTOR_ENGINE = True
+except ImportError:
+    HAS_VECTOR_ENGINE = False
+    print("⚠️ Vector engine not available (sentence-transformers not installed). Neural recommendations disabled.")
 
 # PHASE 4: Added "Real-Time Feel" Caching via Redis
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -101,6 +110,48 @@ def get_content_based_recommendations(movie_id: str, limit: int = 10) -> List[di
     recommendations = df.iloc[recommended_indices].drop(columns=['genre_tags', 'combined_features']).to_dict('records')
     return recommendations
 
+def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dict]:
+    """
+    Neural Advantage: Finds similar movies using PGVector embeddings.
+    """
+    if not SessionLocal:
+        return []
+        
+    try:
+        with SessionLocal() as db:
+            # 1. Fetch the vector for the source movie
+            # Assuming movie_id could be tmdb_id or mongo _id string
+            source_movie = db.query(PostgresMovie).filter(
+                (PostgresMovie.tmdb_id == (int(movie_id) if movie_id.isdigit() else -1)) |
+                (PostgresMovie.imdb_id == movie_id)
+            ).first()
+            
+            if not source_movie or source_movie.embedding is None:
+                return []
+                
+            # 2. Find most similar movies by L2 distance
+            similar_movies = db.query(PostgresMovie).filter(
+                PostgresMovie.id != source_movie.id
+            ).order_by(
+                PostgresMovie.embedding.l2_distance(source_movie.embedding)
+            ).limit(limit).all()
+            
+            results = []
+            for m in similar_movies:
+                results.append({
+                    "_id": str(m.id),
+                    "tmdb_id": m.tmdb_id,
+                    "title": m.title,
+                    "overview": m.overview,
+                    "poster_url": m.poster_url,
+                    "rating": m.tmdb_rating,
+                    "year": m.release_date[:4] if m.release_date else None
+                })
+            return results
+    except Exception as e:
+        print(f"Neural Rec Error: {e}")
+        return []
+
 
 def get_collaborative_recommendations(user_id: str, limit: int = 10) -> List[dict]:
     """
@@ -190,12 +241,12 @@ def get_collaborative_recommendations(user_id: str, limit: int = 10) -> List[dic
     movies = list(movies_collection.find({"_id": {"$in": recommended_ids}}, {"_id": 0}))
     return movies
 
-def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int = 10) -> List[dict]:
+def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int = 10, media_type: str = "movie") -> List[dict]:
     """
     Combines Popularity, Content-Based, and Collaborative Filtering depending on constraints.
     """
     # 1. Attempt Cache Retrieval for Real-Time feel
-    cache_key = f"recs:u-{user_id}:m-{movie_id}"
+    cache_key = f"recs:u-{user_id}:m-{movie_id}:t-{media_type}"
     if redis_client:
         try:
             cached_data = redis_client.get(cache_key)
@@ -212,20 +263,60 @@ def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int 
         recommendations.extend(cf_recs)
         
     if movie_id:
-        cb_recs = get_content_based_recommendations(movie_id, limit=limit//2)
-        # Avoid duplicates
-        existing_ids = {r.get('id', r.get('_id')) for r in recommendations}
+        cb_recs = get_content_based_recommendations(movie_id, limit=limit)
+        existing_ids = {str(r.get('id', r.get('_id'))) for r in recommendations}
         for rec in cb_recs:
-            if rec.get('_id') not in existing_ids:
+            if str(rec.get('_id')) not in existing_ids:
                 recommendations.append(rec)
+                existing_ids.add(str(rec.get('_id')))
                 
+        # CRITICAL FIX: If local Content-Based ML fails to find enough similar movies/series,
+        # perfectly fallback to TMDB's live recommendations to guarantee results.
+        if len(recommendations) < limit:
+            from utils.tmdb_api import fetch_movie_recommendations, fetch_genre_list, _safe_get, get_headers, get_params
+            from routes.movies import _normalize_tmdb
+            live_recs = []
+            
+            if str(movie_id).isdigit():
+                # Let's hit similar endpoint explicitly prioritizing english
+                url = f"https://api.themoviedb.org/3/{media_type}/{movie_id}/similar"
+                data = _safe_get(url, headers=get_headers(), params=get_params({"language": "en-US"}))
+                live_recs = data.get('results', []) if data else []
+
+            if live_recs:
+                g_map = fetch_genre_list()
+                for lr in live_recs:
+                    normalized = _normalize_tmdb(lr, g_map)
+                    normalized["media_type"] = media_type # Set type explicitly
+                    if str(normalized['_id']) not in existing_ids:
+                        recommendations.append(normalized)
+                        existing_ids.add(str(normalized['_id']))
+                        if len(recommendations) >= limit:
+                            break
+
+    # --- NEURAL MERGE ---
+    # Try Neural recommendations as the high-end secondary source
+    if movie_id and len(recommendations) < limit:
+        neural_recs = get_neural_recommendations(movie_id, limit=limit)
+        existing_ids = {str(r.get('id', r.get('_id', r.get('tmdb_id')))) for r in recommendations}
+        for nr in neural_recs:
+            if str(nr.get('tmdb_id')) not in existing_ids:
+                recommendations.append(nr)
+                existing_ids.add(str(nr.get('tmdb_id')))
+                if len(recommendations) >= limit:
+                    break
+
     if len(recommendations) < limit:
-        # Fallback to popularity to fill the remaining slots
-        pop_recs = get_popularity_baseline(limit=limit - len(recommendations))
-        existing_ids = {r.get('id', r.get('_id')) for r in recommendations}
+        # Final Fallback to popularity
+        pop_recs = get_popularity_baseline(limit=limit)
+        existing_ids = {str(r.get('id', r.get('_id', r.get('tmdb_id')))) for r in recommendations}
         for rec in pop_recs:
-            if rec.get('_id') not in existing_ids:
+            rid = str(rec.get('tmdb_id', rec.get('_id')))
+            if rid not in existing_ids:
                 recommendations.append(rec)
+                existing_ids.add(rid)
+                if len(recommendations) >= limit:
+                    break
                 
     final_recs = recommendations[:limit]
 

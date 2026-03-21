@@ -7,8 +7,11 @@ python-dotenv
 requests
 pydantic
 supabase
-supabase
 sqlalchemy
 psycopg2-binary
 redis
 httpx
+sentence-transformers
+torch
+pgvector
+qdrant-client

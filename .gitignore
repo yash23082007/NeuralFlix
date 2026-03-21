@@ -1,13 +1,29 @@
-# Node
+# Dependencies
 node_modules/
-dist/
-.env
-
-# Python
-venv/
+backend/venv/
 __pycache__/
 *.pyc
-.pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# Build output
+.next/
+dist/
+build/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Python
+*.egg-info/
+*.egg

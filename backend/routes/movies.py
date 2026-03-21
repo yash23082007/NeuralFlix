@@ -18,6 +18,7 @@ from utils.tmdb_api import (
     fetch_tv_details,
 )
 from utils.omdb_api import fetch_omdb_details_by_imdb_id, fetch_omdb_details_by_title
+from utils.imdb_api import fetch_imdb_title_details, get_deep_movie_data
 import math
 
 router = APIRouter()
@@ -132,17 +133,21 @@ def get_now_playing(page: int = Query(1, ge=1)):
     movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
     return {"results": movies}
 
-@router.get("/bollywood")
-def get_bollywood(page: int = Query(1, ge=1)):
-    """Return Hindi (Bollywood) movies."""
+@router.get("/indian")
+def get_indian_movies(page: int = Query(1, ge=1)):
+    """Return Indian movies (Hindi, Tamil, Telugu, Malayalam, etc)."""
     movies = list(
-        movies_collection.find({"language": "hi"}, {"_id": 0})
+        movies_collection.find(
+            {"$or": [{"language": "hi"}, {"language": "ta"}, {"language": "te"}, {"language": "ml"}, {"language": "kn"}]}, 
+            {"_id": 0}
+        )
         .sort("popularity_score", -1)
         .limit(20)
     )
     if len(movies) < 5:
+        from utils.tmdb_api import fetch_indian_movies as tmdb_fetch_indian
         genre_map = fetch_genre_list()
-        tmdb_data = fetch_popular_movies(page=page, language="hi-IN")
+        tmdb_data = tmdb_fetch_indian(page=page)
         movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
     return {"results": movies}
 
@@ -220,22 +225,36 @@ def get_by_genre(genre_name: str, page: int = Query(1, ge=1), language: Optional
     return {"genre": genre_name, "page": page, "results": movies}
 
 @router.get("/{movie_id}")
-def get_movie_details(movie_id: str):
-    """Get full movie details. Tries MongoDB first, then TMDB API."""
+async def get_movie_details(movie_id: str, media_type: str = Query("movie", description="Type can be movie or tv")):
+    """Get full movie or TV details. Tries MongoDB first, then TMDB API."""
     # Try MongoDB by tmdb_id or string _id
-    details = movies_collection.find_one(
-        {"$or": [{"_id": movie_id}, {"tmdb_id": int(movie_id) if movie_id.isdigit() else -1}]},
-        {"_id": 0}
-    )
+    query = {"$or": [{"_id": movie_id}, {"tmdb_id": int(movie_id) if movie_id.isdigit() else -1}]}
+    details = movies_collection.find_one(query, {"_id": 0})
+    
     if details:
+        # If DB record doesn't specify media_type, try to infer or set default
+        if "media_type" not in details:
+            details["media_type"] = media_type
+        
+        # Override to ensure we return the DB data natively
         if not details.get("poster_url"):
             details["poster_url"] = fetch_movie_poster(details.get("title", ""))
+        
+        imdb_id = details.get("imdb_id")
+        if imdb_id:
+            deep_data = await get_deep_movie_data(imdb_id)
+            details["deep_metadata"] = deep_data
+            
         return details
 
-    # Full live fetch from TMDB
+    # Full live fetch from TMDB natively for 500k+ library integration
     if movie_id.isdigit():
         tmdb_id = int(movie_id)
-        data = tmdb_details(tmdb_id)
+        if media_type == "tv":
+            data = fetch_tv_details(tmdb_id)
+        else:
+            data = tmdb_details(tmdb_id)
+            
         if data:
             genres = [g["name"] for g in data.get("genres", [])]
 
@@ -276,25 +295,32 @@ def get_movie_details(movie_id: str):
             # Similar movies
             similar = []
             for m in data.get("similar", {}).get("results", [])[:10]:
+                m_title = m.get("title") or m.get("name")
+                m_date = m.get("release_date") or m.get("first_air_date")
                 similar.append({
                     "_id": str(m.get("id")),
                     "tmdb_id": m.get("id"),
-                    "title": m.get("title"),
+                    "title": m_title,
                     "poster_url": get_poster_url(m.get("poster_path")),
                     "rating": round(m.get("vote_average", 0), 1),
-                    "release_date": m.get("release_date"),
-                    "year": int(m["release_date"][:4]) if m.get("release_date") else None,
+                    "release_date": m_date,
+                    "year": int(m_date[:4]) if m_date else None,
                     "overview": m.get("overview", ""),
                     "genres": [],
                     "platforms": [],
                     "votes": m.get("vote_count", 0),
+                    "media_type": media_type
                 })
 
             votes = data.get("vote_count", 0)
             rating = round(data.get("vote_average", 0), 1)
             popularity = round(rating * math.log10(votes + 1), 2) if votes > 0 else 0
             
-            omdb_data = fetch_omdb_details_by_imdb_id(data.get("imdb_id")) if data.get("imdb_id") else fetch_omdb_details_by_title(data.get("title"))
+            main_title = data.get("title") or data.get("name")
+            main_date = data.get("release_date") or data.get("first_air_date")
+            main_runtime = data.get("runtime") or (data.get("episode_run_time")[0] if data.get("episode_run_time") else None)
+            
+            omdb_data = fetch_omdb_details_by_imdb_id(data.get("imdb_id")) if data.get("imdb_id") else fetch_omdb_details_by_title(main_title)
             extra_imdb_rating = omdb_data.get("imdbRating") if omdb_data else None
             extra_box_office = omdb_data.get("BoxOffice") if omdb_data else None
             extra_awards = omdb_data.get("Awards") if omdb_data else None
@@ -306,14 +332,19 @@ def get_movie_details(movie_id: str):
                         rt_rating = r.get("Value", "").replace("%", "")
                         break
 
+            imdb_dev_data = fetch_imdb_title_details(data.get("imdb_id")) if data.get("imdb_id") else None
+            imdb_api_rating = imdb_dev_data.get("rating", {}).get("aggregateRating") if imdb_dev_data else None
+            imdb_api_votes = imdb_dev_data.get("rating", {}).get("voteCount") if imdb_dev_data else None
+            metacritic_score = imdb_dev_data.get("metacritic", {}).get("score") if imdb_dev_data else None
+
             return {
                 "_id": str(data.get("id")),
                 "tmdb_id": data.get("id"),
-                "title": data.get("title"),
+                "title": main_title,
                 "overview": data.get("overview"),
-                "year": int(data.get("release_date", "0000")[:4]) if data.get("release_date") else None,
-                "release_date": data.get("release_date"),
-                "runtime": data.get("runtime"),
+                "year": int(main_date[:4]) if main_date else None,
+                "release_date": main_date,
+                "runtime": main_runtime,
                 "language": data.get("original_language"),
                 "genres": genres,
                 "rating": rating,
@@ -333,7 +364,11 @@ def get_movie_details(movie_id: str):
                 "rt_rating": rt_rating,
                 "box_office": extra_box_office,
                 "awards": extra_awards,
-                "media_type": "movie",
+                "imdb_api_rating": imdb_api_rating,
+                "imdb_api_votes": imdb_api_votes,
+                "metacritic": metacritic_score,
+                "deep_metadata": await get_deep_movie_data(data.get("imdb_id")) if data.get("imdb_id") else None,
+                "media_type": media_type,
             }
 
     return {"error": "Movie not found"}

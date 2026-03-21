@@ -74,6 +74,17 @@ def fetch_by_genre(genre_id: int, language: str = "en-US", page: int = 1):
     }))
     return data.get('results', [])
 
+def fetch_indian_movies(page: int = 1):
+    if not TMDB_API_KEY: return []
+    url = f"{BASE_URL}/discover/movie"
+    data = _safe_get(url, headers=get_headers(), params=get_params({
+        "with_origin_country": "IN",
+        "sort_by": "popularity.desc",
+        "page": page,
+        "vote_count.gte": 50
+    }))
+    return data.get('results', [])
+
 def fetch_tv_shows(page: int = 1, language: str = "en-US"):
     if not TMDB_API_KEY: return []
     url = f"{BASE_URL}/tv/popular"
@@ -85,8 +96,10 @@ def fetch_tv_details(tmdb_id: int):
     url = f"{BASE_URL}/tv/{tmdb_id}"
     data = _safe_get(url, headers=get_headers(), params=get_params({
         "language": "en-US", 
-        "append_to_response": "credits,videos,similar,watch/providers"
+        "append_to_response": "credits,videos,similar,watch/providers,external_ids"
     }))
+    if data and "external_ids" in data:
+        data["imdb_id"] = data["external_ids"].get("imdb_id")
     return data if data else None
 
 def search_movies(query: str, page: int = 1, language: str = "en-US"):
@@ -101,7 +114,7 @@ def search_multi(query: str, page: int = 1):
     if not TMDB_API_KEY: return []
     url = f"{BASE_URL}/search/multi"
     data = _safe_get(url, headers=get_headers(), params=get_params({
-        "query": query, "page": page, "include_adult": "false"
+        "query": query, "page": page, "include_adult": "false", "language": "en-US"
     }))
     return data.get('results', [])
 
@@ -141,6 +154,23 @@ def fetch_genre_list(media_type: str = "movie"):
     data = _safe_get(url, headers=get_headers(), params=get_params({"language": "en"}))
     genres = data.get('genres', [])
     return {g['id']: g['name'] for g in genres}
+
+def fetch_by_external_id(external_id: str, source: str = "imdb_id"):
+    """
+    Finds a TMDB record using an external ID (like IMDb ID).
+    Crucial for the 'Data Heist' enrichment phase.
+    """
+    if not TMDB_API_KEY: return None
+    url = f"{BASE_URL}/find/{external_id}"
+    data = _safe_get(url, headers=get_headers(), params=get_params({
+        "external_source": source
+    }))
+    if data:
+        # Results are grouped by media type
+        movie_results = data.get("movie_results", [])
+        if movie_results:
+            return movie_results[0]
+    return None
 
 def fetch_movie_poster(movie_title: str):
     results = search_movies(movie_title)

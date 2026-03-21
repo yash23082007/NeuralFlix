@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from routes import movies, recommendations, genres, search, tracking
+from routes import movies, recommendations, genres, search, tracking, imdb, trakt
 import logging
 import time
 
-# PHASE 5: Monitoring & Logging
+# Monitoring & Logging
 logging.basicConfig(
     filename='neuralflix_api.log',
     level=logging.INFO,
@@ -14,8 +14,8 @@ logger = logging.getLogger("API_MONITOR")
 
 app = FastAPI(
     title="NeuralFlix API",
-    description="AI-powered Movie & Web Series Recommendation System",
-    version="2.0.0"
+    description="ML-powered Movie & Web Series Recommendation System",
+    version="3.0.0"
 )
 
 # Custom Middleware to track latency
@@ -42,20 +42,24 @@ app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
 app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
 app.include_router(genres.router, prefix="/api/genres", tags=["Genres"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
-app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking (User Behavior)"])
+app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
+app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb API"])
+app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt Integration"])
 
 @app.get("/")
 def root():
     return {
         "app": "NeuralFlix",
-        "version": "2.0",
-        "message": "AI-powered Movie & Web Series Recommendation API",
+        "version": "3.0",
+        "message": "ML-powered Movie & Web Series Recommendation API",
         "endpoints": {
             "movies": "/api/movies",
             "trending": "/api/movies/trending",
             "top_rated": "/api/movies/toprated",
-            "bollywood": "/api/movies/bollywood",
+            "now_playing": "/api/movies/nowplaying",
+            "indian": "/api/movies/indian",
             "anime": "/api/movies/anime",
+            "series": "/api/movies/series",
             "genres": "/api/genres",
             "search": "/api/search?q=inception",
             "recommendations": "/api/recommendations/{movie_id}",

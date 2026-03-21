@@ -1,43 +1,34 @@
 version: '3.8'
 
 services:
-  # PHASE 6: Deploy Everything / Dockerize
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    depends_on:
-      - api
-      
+  # --- V5.0 FastAPI Backend ---
   api:
     build: ./backend
     ports:
       - "8000:8000"
     environment:
-      - ML_SERVICE_URL=http://ml_service:8001
-      - REDIS_URL=redis://redis:6379
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://ktanayash_db_user:Yashvijay@cluster0.ksin90b.mongodb.net/}
+      - DATABASE_URL=${DATABASE_URL}
+      - MONGO_URI=${MONGO_URI}
       - TMDB_API_KEY=${TMDB_API_KEY}
       - TMDB_READ_ACCESS_TOKEN=${TMDB_READ_ACCESS_TOKEN}
       - OMDB_API_KEY=${OMDB_API_KEY}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
     depends_on:
       - redis
-      - ml_service
 
-  # PHASE 2: Split Backend into Services (Separate ML Service)
-  ml_service:
-    build: ./ml_service
+  # --- V5.0 Next.js 15 Frontend ---
+  frontend:
+    build: ./frontend-next
     ports:
-      - "8001:8001"
+      - "3000:3000"
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
+      - NEXT_PUBLIC_API_URL=http://api:8000
+    depends_on:
+      - api
 
-  # PHASE 4: Add Real-Time Feel (Redis Cache)
+  # --- Redis Cache ---
   redis:
     image: redis:alpine
     ports:
