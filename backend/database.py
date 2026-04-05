@@ -22,26 +22,39 @@ recommendations_collection = db.recommendations
 watch_history_collection = db.watch_history
 
 # Supabase / PostgreSQL Connection for Tracking Events
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
-# SQLAlchemy setup for relational tracking data
-from sqlalchemy import create_engine
+# SQLModel / Async SQLAlchemy setup for relational tracking data
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-if DATABASE_URL:
+if ASYNC_DATABASE_URL and ASYNC_DATABASE_URL != "":
     try:
-        # Create Supabase Postgres engine (using psycopg2)
-        engine = create_engine(DATABASE_URL)
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        print("✅ Supabase PostgreSQL connection initialized via SQLAlchemy")
+        # Create Postgres engine (using asyncpg)
+        engine = create_async_engine(
+            ASYNC_DATABASE_URL,
+            pool_size=20,
+            max_overflow=10,
+            pool_pre_ping=True
+        )
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+        print("✅ PostgreSQL connection initialized via asyncpg")
     except Exception as e:
-        print(f"❌ Supabase PostgreSQL connection failed: {e}")
+        print(f"❌ PostgreSQL connection failed: {e}")
         engine = None
         SessionLocal = None
 else:
     engine = None
     SessionLocal = None
     print("⚠️ DATABASE_URL missing; PostgreSQL tracking disabled.")
+
+async def get_async_session():
+    if SessionLocal:
+        async with SessionLocal() as session:
+            yield session
+    else:
+        yield None
 
 def get_db():
     return db

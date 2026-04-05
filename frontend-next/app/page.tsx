@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import HeroCarousel from "../components/HeroCarousel";
 import MovieRow from "../components/MovieRow";
 
-const API = "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function HomePage() {
   const [heroMovies, setHeroMovies] = useState([]);

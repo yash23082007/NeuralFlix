@@ -4,6 +4,7 @@ services:
   # --- V5.0 FastAPI Backend ---
   api:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -15,21 +16,95 @@ services:
       - LLM_API_KEY=${LLM_API_KEY}
       - QDRANT_URL=${QDRANT_URL}
       - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - neuralflix_net
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
 
   # --- V5.0 Next.js 15 Frontend ---
   frontend:
     build: ./frontend-next
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    networks:
+      - neuralflix_net
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # --- Celery Worker ---
+  celery-worker:
+    build: ./backend
+    command: celery -A tasks worker --concurrency 4 --loglevel=info
+    networks:
+      - neuralflix_net
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - MONGO_URI=${MONGO_URI}
+      - REDIS_URL=redis://redis:6379
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - TMDB_READ_ACCESS_TOKEN=${TMDB_READ_ACCESS_TOKEN}
+      - OMDB_API_KEY=${OMDB_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1.5G
 
   # --- Redis Cache ---
   redis:
     image: redis:alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - neuralflix_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  neuralflix_net:
+    driver: bridge
+
+volumes:
+  redis_data:

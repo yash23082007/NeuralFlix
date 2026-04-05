@@ -15,3 +15,9 @@ sentence-transformers
 torch
 pgvector
 qdrant-client
+celery
+slowapi
+sqlmodel
+asyncpg
+PyJWT
+passlib[bcrypt]
