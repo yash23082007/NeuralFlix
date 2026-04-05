@@ -85,6 +85,29 @@ def fetch_indian_movies(page: int = 1):
     }))
     return data.get('results', [])
 
+def fetch_korean_movies(page: int = 1):
+    if not TMDB_API_KEY: return []
+    url = f"{BASE_URL}/discover/movie"
+    data = _safe_get(url, headers=get_headers(), params=get_params({
+        "with_original_language": "ko",
+        "sort_by": "popularity.desc",
+        "page": page,
+        "vote_count.gte": 50
+    }))
+    return data.get('results', [])
+
+def fetch_international_movies(page: int = 1):
+    if not TMDB_API_KEY: return []
+    url = f"{BASE_URL}/discover/movie"
+    # Mix of Spanish, French, German, Italian
+    data = _safe_get(url, headers=get_headers(), params=get_params({
+        "with_original_language": "es|fr|de|it",
+        "sort_by": "popularity.desc",
+        "page": page,
+        "vote_count.gte": 100
+    }))
+    return data.get('results', [])
+
 def fetch_tv_shows(page: int = 1, language: str = "en-US"):
     if not TMDB_API_KEY: return []
     url = f"{BASE_URL}/tv/popular"

@@ -12,6 +12,8 @@ export default function HomePage() {
   const [topRated, setTopRated] = useState([]);
   const [nowPlaying, setNowPlaying] = useState([]);
   const [indian, setIndian] = useState([]);
+  const [korean, setKorean] = useState([]);
+  const [international, setInternational] = useState([]);
   const [anime, setAnime] = useState([]);
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,8 @@ export default function HomePage() {
           { key: "trending", set: setTrending },
           { key: "toprated", set: setTopRated },
           { key: "indian", set: setIndian },
+          { key: "korean", set: setKorean },
+          { key: "international", set: setInternational },
           { key: "anime", set: setAnime },
           { key: "series", set: setSeries },
         ];
@@ -75,6 +79,8 @@ export default function HomePage() {
         <MovieRow title="Top Rated" movies={topRated} />
         <MovieRow title="Now Playing" movies={nowPlaying} />
         <MovieRow title="Indian Cinema" movies={indian} />
+        <MovieRow title="Korean Sensations" movies={korean} />
+        <MovieRow title="International Cinema" movies={international} />
         <MovieRow title="Anime & Animation" movies={anime} />
         <MovieRow title="TV Series" movies={series} />
       </div>

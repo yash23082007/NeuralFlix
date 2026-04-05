@@ -24,6 +24,9 @@ async def get_recommendations(
     Uses TF-IDF content similarity + SVD collaborative filtering + TMDB fallback. 
     """
     recs = hybrid_recommendation(movie_id=movie_id, user_id=user_id, limit=12, media_type=media_type)
+    
+    # Enrich with Streaming Sources (if requested)
+    if include_sources:
         for rec in recs[:5]:
             imdb_id = rec.get("imdb_id")
             if imdb_id:

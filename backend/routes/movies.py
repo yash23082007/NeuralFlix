@@ -16,6 +16,8 @@ from utils.tmdb_api import (
     fetch_by_genre,
     fetch_tv_shows,
     fetch_tv_details,
+    fetch_korean_movies as tmdb_fetch_korean,
+    fetch_international_movies as tmdb_fetch_international,
 )
 from utils.omdb_api import fetch_omdb_details_by_imdb_id, fetch_omdb_details_by_title
 from utils.imdb_api import fetch_imdb_title_details, get_deep_movie_data
@@ -148,6 +150,40 @@ def get_indian_movies(page: int = Query(1, ge=1)):
         from utils.tmdb_api import fetch_indian_movies as tmdb_fetch_indian
         genre_map = fetch_genre_list()
         tmdb_data = tmdb_fetch_indian(page=page)
+        movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
+    return {"results": movies}
+
+@router.get("/korean")
+def get_korean_movies(page: int = Query(1, ge=1)):
+    """Return Korean movies (K-dramas/Cinema)."""
+    movies = list(
+        movies_collection.find(
+            {"language": "ko"}, 
+            {"_id": 0}
+        )
+        .sort("popularity_score", -1)
+        .limit(20)
+    )
+    if len(movies) < 5:
+        genre_map = fetch_genre_list()
+        tmdb_data = tmdb_fetch_korean(page=page)
+        movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
+    return {"results": movies}
+
+@router.get("/international")
+def get_international_movies(page: int = Query(1, ge=1)):
+    """Return International movies (Spanish, French, German, Italian)."""
+    movies = list(
+        movies_collection.find(
+            {"language": {"$in": ["es", "fr", "de", "it"]}}, 
+            {"_id": 0}
+        )
+        .sort("popularity_score", -1)
+        .limit(20)
+    )
+    if len(movies) < 5:
+        genre_map = fetch_genre_list()
+        tmdb_data = tmdb_fetch_international(page=page)
         movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
     return {"results": movies}
 
