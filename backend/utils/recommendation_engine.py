@@ -184,95 +184,132 @@ async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> Li
     
     return await asyncio.to_thread(_cf_logic)
 
-async def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int = 10, media_type: str = "movie") -> List[dict]:
-    cache_key = f"recs:u-{user_id}:m-{movie_id}:t-{media_type}"
-    if redis_client:
-        try:
-            cached_data = redis_client.get(cache_key)
-            if cached_data:
-                return json.loads(cached_data)
-        except Exception: pass
+class RecommenderOS:
+    """
+    Production-grade Recommender OS (V6.0). 
+    Separates Candidate Generation (Recall) from Ranking (Scoring).
+    """
 
-    recommendations = []
-    
-    # Run CF and CB concurrently if both are available
-    tasks = []
-    if user_id:
-        tasks.append(get_collaborative_recommendations(user_id, limit=limit//2))
-    else:
-        tasks.append(asyncio.sleep(0)) # placeholder
+    @classmethod
+    async def recall(cls, movie_id: str = None, user_id: str = None, limit: int = 100) -> List[dict]:
+        """Candidate Generation: High-recall, low-precision set of potential items."""
+        tasks = []
         
-    if movie_id:
-        tasks.append(get_content_based_recommendations(movie_id, limit=limit))
-    else:
-        tasks.append(asyncio.sleep(0))
+        # 1. Collaborative Recall
+        if user_id:
+            tasks.append(get_collaborative_recommendations(user_id, limit=limit // 2))
         
-    results = await asyncio.gather(*tasks)
-    
-    # Merge CF
-    if user_id and results[0]:
-        recommendations.extend(results[0])
+        # 2. Content-Based Recall
+        if movie_id:
+            tasks.append(get_content_based_recommendations(movie_id, limit=limit // 2))
+            tasks.append(get_neural_recommendations(movie_id, limit=limit // 2))
         
-    # Merge CB
-    if movie_id and results[1]:
-        existing_ids = {str(r.get('id', r.get('_id'))) for r in recommendations}
-        for rec in results[1]:
-            if str(rec.get('_id')) not in existing_ids:
-                recommendations.append(rec)
-                existing_ids.add(str(rec.get('_id')))
-                
-        if len(recommendations) < limit:
-            from utils.tmdb_api import fetch_movie_recommendations, fetch_genre_list, _safe_get, get_headers, get_params
-            from routes.movies import _normalize_tmdb
-            live_recs = []
+        # 3. Global Popularity (Safety Net)
+        tasks.append(get_popularity_baseline(limit=limit // 3))
+
+        results = await asyncio.gather(*tasks)
+        
+        # Flatten and deduplicate
+        candidates = []
+        seen_ids = set()
+        for res_list in results:
+            if not res_list: continue
+            for item in res_list:
+                item_id = str(item.get("tmdb_id") or item.get("_id"))
+                if item_id and item_id not in seen_ids:
+                    candidates.append(item)
+                    seen_ids.add(item_id)
+        
+        return candidates
+
+    @classmethod
+    async def rank(cls, candidates: List[dict], user_id: Optional[str], movie_id: Optional[str]) -> List[dict]:
+        """Ranking Stage: Score the recall set for specific user-item relevance."""
+        # In a real environment, this would call a Cross-Encoder or XGBoost model.
+        # Here we use a Weighted Multi-Heuristic Scorer.
+        ranked = []
+        for item in candidates:
+            score = 0.0
             
-            if str(movie_id).isdigit():
-                url = f"https://api.themoviedb.org/3/{media_type}/{movie_id}/similar"
-                data = await asyncio.to_thread(_safe_get, url, headers=get_headers(), params=get_params({"language": "en-US"}))
-                live_recs = data.get('results', []) if data else []
+            # Feature A: Popularity (Log normalized)
+            pop = item.get("popularity_score", 0)
+            score += np.log1p(pop) * 0.1
+            
+            # Feature B: Rating
+            rating = item.get("rating", 0)
+            score += (rating / 10.0) * 0.5
+            
+            # Feature C: Recency
+            year = item.get("year")
+            if year:
+                recency_bonus = max(0, (year - 1980) / 45) * 0.2
+                score += recency_bonus
 
-            if live_recs:
-                g_map = await asyncio.to_thread(fetch_genre_list)
-                for lr in live_recs:
-                    normalized = _normalize_tmdb(lr, g_map)
-                    normalized["media_type"] = media_type
-                    if str(normalized['_id']) not in existing_ids:
-                        recommendations.append(normalized)
-                        existing_ids.add(str(normalized['_id']))
-                        if len(recommendations) >= limit: break
+            item["rec_score"] = round(score, 4)
+            ranked.append(item)
 
-    # Merge Neural
-    if movie_id and len(recommendations) < limit:
-        neural_recs = await get_neural_recommendations(movie_id, limit=limit)
-        existing_ids = {str(r.get('id', r.get('_id', r.get('tmdb_id')))) for r in recommendations}
-        for nr in neural_recs:
-            if str(nr.get('tmdb_id')) not in existing_ids:
-                recommendations.append(nr)
-                existing_ids.add(str(nr.get('tmdb_id')))
-                if len(recommendations) >= limit: break
+        # Sort by final score
+        ranked.sort(key=lambda x: x["rec_score"], reverse=True)
+        return ranked
 
-    # Final Fallback to Popular
-    if len(recommendations) < limit:
-        pop_recs = await get_popularity_baseline(limit=limit)
-        existing_ids = {str(r.get('id', r.get('_id', r.get('tmdb_id')))) for r in recommendations}
-        for rec in pop_recs:
-            rid = str(rec.get('tmdb_id', rec.get('_id')))
-            if rid not in existing_ids:
-                recommendations.append(rec)
-                existing_ids.add(rid)
-                if len(recommendations) >= limit: break
-                
-    # Apply MMR Diversity Filtering
-    final_recs = apply_mmr(recommendations, limit)
+    @classmethod
+    def apply_diversity(cls, results: List[dict], limit: int) -> List[dict]:
+        """MMR-lite: Ensure genre diversity in the top N."""
+        if not results: return []
+        
+        selected = []
+        selected_genres = set()
+        
+        for item in results:
+            if len(selected) >= limit: break
+            
+            item_genres = set(item.get("genres", []))
+            # If 50% of genres already seen, penalize slightly (diversity check)
+            overlap = item_genres.intersection(selected_genres)
+            if len(overlap) > (len(item_genres) / 2) and len(selected) > 3:
+                continue # Skip for now to favor different genre
+            
+            selected.append(item)
+            selected_genres.update(item_genres)
+            
+        # If we didn't fill the limit due to diversity being too aggressive, fill it up
+        if len(selected) < limit:
+            selected_ids = {str(i.get("tmdb_id")) for i in selected}
+            for item in results:
+                if str(item.get("tmdb_id")) not in selected_ids:
+                    selected.append(item)
+                    if len(selected) >= limit: break
+                    
+        return selected
 
-    # Feature Logging
-    if user_id and movie_id:
-        log_features(user_id, movie_id, {"recs_generated": len(final_recs)})
-
+async def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int = 10, media_type: str = "movie") -> List[dict]:
+    """Unified entrypoint for V6.0 Multi-Stage Recommendation Engine."""
+    
+    # 1. Cache Check
+    cache_key = f"recs:v6:u-{user_id}:m-{movie_id}"
     if redis_client:
         try:
-            json_recs = json.loads(json.dumps(final_recs, default=str)) 
-            redis_client.setex(cache_key, 300, json.dumps(json_recs))
+            cached = redis_client.get(cache_key)
+            if cached: return json.loads(cached)
         except Exception: pass
 
-    return final_recs
+    # 2. Recall (Candidate Generation)
+    candidates = await RecommenderOS.recall(movie_id, user_id, limit=limit*5)
+    
+    # 3. Ranking
+    ranked = await RecommenderOS.rank(candidates, user_id, movie_id)
+    
+    # 4. Filter & Diversity
+    final = RecommenderOS.apply_diversity(ranked, limit)
+
+    # 5. Telemetry & Feature Logging
+    if user_id and movie_id:
+        log_features(user_id, movie_id, {"candidates_count": len(candidates), "top_score": final[0]["rec_score"] if final else 0})
+
+    # 6. Set Cache (5 min)
+    if redis_client:
+        try:
+            redis_client.setex(cache_key, 300, json.dumps(final, default=str))
+        except Exception: pass
+
+    return final

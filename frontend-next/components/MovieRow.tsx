@@ -7,10 +7,11 @@ import MovieCard from "./MovieCard";
 interface Movie {
   tmdb_id: number;
   title: string;
-  poster_url: string;
-  rating: number;
-  year: number;
+  poster_url?: string | null;
+  rating?: number;
+  year?: number | null;
   media_type?: string;
+  overview?: string;
 }
 
 interface MovieRowProps {

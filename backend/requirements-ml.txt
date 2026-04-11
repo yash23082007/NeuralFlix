@@ -1,0 +1,10 @@
+# ML & Vector Data
+torch==2.10.0
+sentence-transformers==5.2.3
+transformers==5.0.0
+scikit-learn==1.8.0
+pandas==2.3.3
+numpy==2.4.3
+qdrant-client==1.17.1
+pgvector==0.4.2
+faiss-cpu==1.13.2

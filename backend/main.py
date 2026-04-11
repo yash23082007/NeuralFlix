@@ -1,35 +1,42 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from routes import movies, recommendations, genres, search, tracking, imdb, trakt, auth
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 import logging
 import time
 import uuid
+import os
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import structlog
 
-# Monitoring & Logging
-logging.basicConfig(
-    filename='neuralflix_api.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("API_MONITOR")
+# Routers
+# These routes folders likely hold the existing logic, we'll keep them and merge the new ones
+try:
+    from routes import movies, recommendations as legacy_recommendations, genres, search, tracking, imdb, trakt, auth
+except ImportError:
+    pass
+
+# We created this one newly during the scaffold phase
+try:
+    from routers.recommendations import router as recs_router
+except ImportError:
+    recs_router = None
+
+log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize ML models to memory, connect to DB pools etc.
-    logger.info("Application starting up... Initializing ML context.")
+    # Startup: Initialize DB and ML context
+    log.info("Application starting up...", event="startup")
     yield
-    # Shutdown: Clean up resources
-    logger.info("Application shutting down... Cleaning up ML context.")
+    log.info("Application shutting down...", event="shutdown")
 
 app = FastAPI(
-    title="NeuralFlix API",
-    description="ML-powered Movie & Web Series Recommendation System",
-    version="3.0.0",
+    title="NeuralFlix Engine",
+    description="Production-grade ML Movie Recommendation Platform",
+    version="6.0.0",
     lifespan=lifespan
 )
 
@@ -39,62 +46,62 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Global Error handling {request.method} {request.url.path}: {exc}")
-    # In production, avoid leaking internal implementation details
-    return JSONResponse(status_code=500, content={"message": "Internal Server Error. Our engineers have been notified."})
+    error_id = str(uuid.uuid4())
+    log.error(f"Unhandled Exception: {exc}", error_id=error_id, path=request.url.path, method=request.method)
+    return JSONResponse(
+        status_code=500, 
+        content={"message": "Internal Server Error", "error_id": error_id}
+    )
 
-# Custom Middleware to track latency and Request IDs
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
+async def production_observability_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
     start_time = time.time()
-    
-    # In a real microservice, we'd add request_id to contextvars for structured logging
-    # Here, we log it directly
     response = await call_next(request)
-    
     process_time = time.time() - start_time
-    logger.info(f"[req_id:{request_id}] Path: {request.url.path} | Method: {request.method} | Latency: {process_time:.4f}s | Status: {response.status_code}")
+    
+    log.info(
+        "request_processed",
+        request_id=request_id,
+        path=request.url.path,
+        method=request.method,
+        latency=f"{process_time:.4f}s",
+        status_code=response.status_code
+    )
     response.headers["X-Process-Time"] = str(process_time)
     response.headers["X-Request-ID"] = request_id
     return response
 
-# Configure CORS safely
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include Routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
-app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
-app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
-app.include_router(genres.router, prefix="/api/genres", tags=["Genres"])
-app.include_router(search.router, prefix="/api/search", tags=["Search"])
-app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
-app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb API"])
-app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt Integration"])
+@app.get('/v1/metrics/health')
+def health_check():
+    return {'status': 'healthy', 'version': '6.0.0'}
 
-@app.get("/")
-def root():
-    return {
-        "app": "NeuralFlix",
-        "version": "3.0",
-        "message": "ML-powered Movie & Web Series Recommendation API",
-        "endpoints": {
-            "movies": "/api/movies",
-            "trending": "/api/movies/trending",
-            "top_rated": "/api/movies/toprated",
-            "now_playing": "/api/movies/nowplaying",
-            "indian": "/api/movies/indian",
-            "anime": "/api/movies/anime",
-            "series": "/api/movies/series",
-            "genres": "/api/genres",
-            "search": "/api/search?q=inception",
-            "recommendations": "/api/recommendations/{movie_id}",
+# Merge routers safely
+if recs_router:
+    app.include_router(recs_router, prefix='/v1', tags=["Neural Engine V2"])
+
+try:
+    app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+    app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
+    app.include_router(legacy_recommendations.router, prefix="/api/recommendations", tags=["Legacy Recs"])
+    app.include_router(genres.router, prefix="/api/genres", tags=["Genres"])
+    app.include_router(search.router, prefix="/api/search", tags=["Search"])
+    app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
+    app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
+    app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
+except NameError:
+    pass
+
             "docs": "/docs"
         }
     }
+

@@ -1,3 +1,6 @@
+@import './tokens.css';
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@700,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -94,3 +97,4 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+

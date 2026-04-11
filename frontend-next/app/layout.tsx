@@ -3,9 +3,33 @@ import "../styles/globals.css";
 import Navbar from "../components/Navbar";
 
 export const metadata: Metadata = {
-  title: "NeuralFlix — Movie & Series Recommendations",
+  title: "NeuralFlix — ML-Powered Movie & Series Recommendations",
   description:
-    "Discover movies and TV shows with ML-powered recommendations. Browse trending, top-rated, and personalized picks.",
+    "Explore a massive library of movies and TV shows with state-of-the-art Neural Collaborative Filtering recommendations. Personalized picks, trending cinema, and deep metadata integration.",
+  keywords: ["movies", "recommendations", "AI", "ML", "Netflix clone", "NeuralFlix", "cinema", "TV shows"],
+  authors: [{ name: "NeuralFlix Team" }],
+  openGraph: {
+    title: "NeuralFlix — The Future of Movie Discovery",
+    description: "Discover your next favorite movie using our advanced ML recommendation engine.",
+    url: "https://neuralflix.io",
+    siteName: "NeuralFlix",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "NeuralFlix Recommender",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NeuralFlix — ML-Powered Recommendations",
+    description: "Personalized movie picks driven by Neural Collaborative Filtering.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
