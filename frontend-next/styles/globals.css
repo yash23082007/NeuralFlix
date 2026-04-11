@@ -1,53 +1,88 @@
-@import './tokens.css';
-@import url('https://api.fontshare.com/v2/css?f[]=clash-display@700,600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --color-background: #121212;
-  --color-surface: #1a1a1a;
-  --color-surface-light: #222222;
-  --color-surface-hover: #2a2a2a;
-  --color-imdb-gold: #f5c518;
-  --color-imdb-gold-dark: #c9a000;
-  --color-rt-red: #fa320a;
-  --color-mc-green: #6c3;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #aaaaaa;
-  --color-text-muted: #666666;
-  --color-border: #2a2a2a;
-  --color-border-light: #333333;
+:root {
+  --font-display: 'Playfair Display', serif;
+  --font-heading: 'DM Sans', sans-serif;
+  --font-body:    'Inter', sans-serif;
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* Premiere Mode (Light) */
+  --bg-primary: #f4f4f8;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0f0f5;
+  --border: #e0e0ee;
+  --accent: #c0870a;
+  --text-primary: #0d0d14;
+  --text-secondary: #4a4a60;
+  --text-muted: #8888a0;
+  --glass-bg: rgba(0, 0, 0, 0.05);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  --accent-india: #ff6b35;
+  --accent-korea: #4a90d9;
+  --accent-japan: #c0392b;
+  --accent-france: #6c5ce7;
+}
+
+.dark {
+  /* Cinema Mode (Dark) */
+  --bg-primary: #0a0a0f;
+  --bg-surface: #12121a;
+  --bg-elevated: #1a1a2a;
+  --border: #1e1e2e;
+  --accent: #e8a020;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1b5;
+  --text-muted: #6b6b80;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+@theme {
+  --color-background: var(--bg-primary);
+  --color-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-india: var(--accent-india);
+  --color-accent-korea: var(--accent-korea);
+  --color-accent-japan: var(--accent-japan);
+  --color-accent-france: var(--accent-france);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-glass: var(--glass-bg);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
 }
 
 @layer base {
+  * {
+    border-color: var(--border);
+  }
   body {
-    @apply bg-background text-text-primary font-sans antialiased;
-  }
-
-  a {
-    @apply text-inherit no-underline;
+    @apply bg-background text-text-primary font-sans antialiased transition-colors duration-300;
   }
 }
 
-/* IMDb-style Star Rating Badge */
-.imdb-rating {
-  @apply inline-flex items-center gap-1.5 bg-imdb-gold text-black font-bold text-sm px-2 py-0.5 rounded;
-}
-
-/* Genre Pills */
-.genre-pill {
-  @apply px-3 py-1 bg-surface-light text-text-secondary text-xs font-semibold rounded-full border border-border hover:bg-surface-hover hover:text-white transition-colors cursor-pointer;
+/* Glassmorphism Card */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  border-radius: 1rem;
 }
 
 /* Section Heading */
 .section-heading {
-  @apply text-xl md:text-2xl font-bold text-white flex items-center gap-3;
+  @apply text-xl md:text-2xl font-bold font-heading text-text-primary flex items-center gap-3;
 }
 .section-heading::before {
   content: "";
-  @apply w-1 h-7 bg-imdb-gold rounded-full inline-block;
+  @apply w-1 h-7 bg-accent rounded-full inline-block;
 }
 
 /* Horizontal Scroll Container */
@@ -60,41 +95,14 @@
   display: none;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-imdb-gold);
-}
-
-/* Platform Badge */
-.platform-badge {
-  @apply px-3 py-1.5 bg-surface-light text-text-secondary text-xs font-semibold rounded-lg border border-border;
-}
-
-/* Glassmorphism Card */
-.glass-card {
-  @apply bg-surface/80 backdrop-blur-md border border-border rounded-xl;
-}
-
 /* Skeleton Loader */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  @apply bg-surface-light rounded;
-  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  @apply bg-surface rounded;
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
-

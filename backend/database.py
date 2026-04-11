@@ -107,5 +107,10 @@ def init_db():
     movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
     movies_col.create_index([("year", -1)])
     
-    logger.info("✅ Database indexes initialized.")
-
+    # Compound indexes for 1M+ dataset performance
+    movies_col.create_index([("language", 1), ("rating", -1)])
+    movies_col.create_index([("year", -1), ("popularity_score", -1)])
+    movies_col.create_index([("status", 1)])
+    movies_col.create_index([("imdb_id", 1)], sparse=True)
+    
+    logger.info("✅ Database indexes initialized (optimized for 1M+ movies).")

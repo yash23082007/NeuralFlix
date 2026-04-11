@@ -30,3 +30,8 @@ Thumbs.db
 
 # Data
 backend/data/
+
+# ETL exports & checkpoints
+backend/scripts/exports/
+backend/scripts/*checkpoint*.json
+backend/scripts/*.json.gz

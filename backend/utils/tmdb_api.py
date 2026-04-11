@@ -74,38 +74,22 @@ def fetch_by_genre(genre_id: int, language: str = "en-US", page: int = 1):
     }))
     return data.get('results', [])
 
-def fetch_indian_movies(page: int = 1):
+def fetch_movies_by_region(region: str, page: int = 1):
     if not TMDB_API_KEY: return []
     url = f"{BASE_URL}/discover/movie"
-    data = _safe_get(url, headers=get_headers(), params=get_params({
-        "with_origin_country": "IN",
-        "sort_by": "popularity.desc",
-        "page": page,
-        "vote_count.gte": 50
-    }))
-    return data.get('results', [])
-
-def fetch_korean_movies(page: int = 1):
-    if not TMDB_API_KEY: return []
-    url = f"{BASE_URL}/discover/movie"
-    data = _safe_get(url, headers=get_headers(), params=get_params({
-        "with_original_language": "ko",
-        "sort_by": "popularity.desc",
-        "page": page,
-        "vote_count.gte": 50
-    }))
-    return data.get('results', [])
-
-def fetch_international_movies(page: int = 1):
-    if not TMDB_API_KEY: return []
-    url = f"{BASE_URL}/discover/movie"
-    # Mix of Spanish, French, German, Italian
-    data = _safe_get(url, headers=get_headers(), params=get_params({
-        "with_original_language": "es|fr|de|it",
-        "sort_by": "popularity.desc",
-        "page": page,
-        "vote_count.gte": 100
-    }))
+    region_map = {
+        "indian": {"with_origin_country": "IN"},
+        "korean": {"with_original_language": "ko"},
+        "french": {"with_original_language": "fr"},
+        "japanese": {"with_original_language": "ja"},
+        "spanish": {"with_original_language": "es"},
+        "nollywood": {"with_origin_country": "NG"},
+        "iranian": {"with_origin_country": "IR"},
+        "hollywood": {"with_origin_country": "US", "with_original_language": "en"}
+    }
+    query_params = region_map.get(region.lower(), {"with_original_language": "en"})
+    query_params.update({"sort_by": "popularity.desc", "page": page, "vote_count.gte": 50})
+    data = _safe_get(url, headers=get_headers(), params=get_params(query_params))
     return data.get('results', [])
 
 def fetch_tv_shows(page: int = 1, language: str = "en-US"):

@@ -16,8 +16,6 @@ from utils.tmdb_api import (
     fetch_by_genre,
     fetch_tv_shows,
     fetch_tv_details,
-    fetch_korean_movies as tmdb_fetch_korean,
-    fetch_international_movies as tmdb_fetch_international,
 )
 from utils.omdb_api import fetch_omdb_details_by_imdb_id, fetch_omdb_details_by_title
 from utils.imdb_api import fetch_imdb_title_details, get_deep_movie_data
@@ -135,57 +133,46 @@ def get_now_playing(page: int = Query(1, ge=1)):
     movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
     return {"results": movies}
 
-@router.get("/indian")
-def get_indian_movies(page: int = Query(1, ge=1)):
-    """Return Indian movies (Hindi, Tamil, Telugu, Malayalam, etc)."""
+@router.get("/region/{region_name}")
+def get_by_region(region_name: str, page: int = Query(1, ge=1)):
+    """Return movies by cinema region (e.g. korean, french, indian)."""
+    skip = (page - 1) * 20
     movies = list(
-        movies_collection.find(
-            {"$or": [{"language": "hi"}, {"language": "ta"}, {"language": "te"}, {"language": "ml"}, {"language": "kn"}]}, 
-            {"_id": 0}
-        )
+        movies_collection.find({"cinema_region": region_name.lower()}, {"_id": 0})
         .sort("popularity_score", -1)
+        .skip(skip)
         .limit(20)
     )
+    # If DB is empty, fallback to TMDB based on mapping
     if len(movies) < 5:
-        from utils.tmdb_api import fetch_indian_movies as tmdb_fetch_indian
+        from utils.tmdb_api import fetch_movies_by_region
         genre_map = fetch_genre_list()
-        tmdb_data = tmdb_fetch_indian(page=page)
+        tmdb_data = fetch_movies_by_region(region_name, page=page)
         movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
-    return {"results": movies}
+        
+    return {"region": region_name, "page": page, "total": len(movies), "results": movies}
 
-@router.get("/korean")
-def get_korean_movies(page: int = Query(1, ge=1)):
-    """Return Korean movies (K-dramas/Cinema)."""
+@router.get("/mood/{mood_name}")
+def get_by_mood(mood_name: str, page: int = Query(1, ge=1)):
+    """Return movies by mood."""
+    mood_map = {
+        "feel_good": {"genres": {"$in": ["Comedy", "Romance", "Family"]}},
+        "mind_blown": {"genres": {"$in": ["Thriller", "Mystery", "Science Fiction"]}},
+        "adrenaline": {"genres": {"$in": ["Action", "Adventure", "Crime"]}},
+        "deep_thoughts": {"genres": {"$in": ["Drama", "Documentary"]}},
+        "desi_vibes": {"cinema_region": "indian"},
+        "korean_wave": {"cinema_region": "korean"},
+        "french_mood": {"cinema_region": "french"}
+    }
+    query_filter = mood_map.get(mood_name.lower(), {})
+    skip = (page - 1) * 20
     movies = list(
-        movies_collection.find(
-            {"language": "ko"}, 
-            {"_id": 0}
-        )
+        movies_collection.find(query_filter, {"_id": 0})
         .sort("popularity_score", -1)
+        .skip(skip)
         .limit(20)
     )
-    if len(movies) < 5:
-        genre_map = fetch_genre_list()
-        tmdb_data = tmdb_fetch_korean(page=page)
-        movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
-    return {"results": movies}
-
-@router.get("/international")
-def get_international_movies(page: int = Query(1, ge=1)):
-    """Return International movies (Spanish, French, German, Italian)."""
-    movies = list(
-        movies_collection.find(
-            {"language": {"$in": ["es", "fr", "de", "it"]}}, 
-            {"_id": 0}
-        )
-        .sort("popularity_score", -1)
-        .limit(20)
-    )
-    if len(movies) < 5:
-        genre_map = fetch_genre_list()
-        tmdb_data = tmdb_fetch_international(page=page)
-        movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
-    return {"results": movies}
+    return {"mood": mood_name, "page": page, "results": movies}
 
 @router.get("/anime")
 def get_anime(page: int = Query(1, ge=1)):

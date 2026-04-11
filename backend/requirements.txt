@@ -40,3 +40,6 @@ tenacity>=9.0.0           # Retry logic for external APIs
 
 # Rate limiting
 slowapi>=0.1.9
+
+# Async HTTP (mega ingest pipeline)
+aiohttp>=3.10.0
