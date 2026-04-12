@@ -32,6 +32,12 @@ class PostgresMovie(Base):
     
     # Availabilities
     platforms = Column(ARRAY(String))
+    ott_global = Column(JSON) # {"netflix": ["IN","US"], "prime": ["IN"]}
+    
+    # Regional & Cultural
+    cinema_region = Column(String(50), index=True)  # 'bollywood', 'korean', 'french'
+    is_indian = Column(Boolean, default=False)
+    indian_industry = Column(String(50))
     
     # Scores & Ratings unified from BIG THREE
     tmdb_rating = Column(Float)
@@ -45,6 +51,8 @@ class PostgresMovie(Base):
     metacritic = Column(String(20))
     box_office = Column(String(100))
     awards = Column(Text)
+    filmfare_wins = Column(Integer, default=0)
+    oscar_wins = Column(Integer, default=0)
     
     # Media
     poster_url = Column(Text)
