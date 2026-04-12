@@ -10,22 +10,26 @@ const API = "http://localhost:8000";
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const mood = searchParams.get("mood") || "";
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) return;
+    if (!query.trim() && !mood) return;
 
     async function doSearch() {
       setLoading(true);
       setSearched(true);
       try {
-        const res = await fetch(
-          `${API}/api/search?q=${encodeURIComponent(query)}`
-        );
+        let url = `${API}/api/v2/search?`;
+        if (query) url += `q=${encodeURIComponent(query)}&`;
+        if (mood) url += `mood=${encodeURIComponent(mood)}`;
+        
+        const res = await fetch(url);
         const data = await res.json();
-        setResults(data.results || []);
+        // V2 search returns an array directly based on my router, not { results: [] }
+        setResults(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
         console.error("Search error:", err);
       } finally {
@@ -34,7 +38,7 @@ function SearchContent() {
     }
 
     doSearch();
-  }, [query]);
+  }, [query, mood]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -44,8 +48,11 @@ function SearchContent() {
           <Search className="w-6 h-6 text-imdb-gold" />
           {query ? (
             <>
-              Results for{" "}
-              <span className="text-imdb-gold">&quot;{query}&quot;</span>
+              Results for <span className="text-imdb-gold">&quot;{query}&quot;</span>
+            </>
+          ) : mood ? (
+            <>
+              Browsing Mood: <span className="text-imdb-gold capitalize">{mood.replace('_', ' ')}</span>
             </>
           ) : (
             "Search Movies & Shows"
