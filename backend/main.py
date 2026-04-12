@@ -11,19 +11,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import structlog
 
-# Routers
-# These routes folders likely hold the existing logic, we'll keep them and merge the new ones
-try:
-    from routes import movies, recommendations as legacy_recommendations, genres, search, tracking, imdb, trakt, auth
-except ImportError:
-    pass
-
-# We created this one newly during the scaffold phase
-try:
-    from routers.recommendations import router as recs_router
-except ImportError:
-    recs_router = None
-
 log = structlog.get_logger()
 
 @asynccontextmanager
@@ -35,8 +22,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="NeuralFlix Engine",
-    description="Production-grade ML Movie Recommendation Platform",
-    version="6.0.0",
+    description="Production-grade ML Movie Recommendation Platform — Global Cinema Edition",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -81,15 +68,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─── Import Routers ───────────────────────────────────────────
+# Legacy routes
+try:
+    from routes import movies, recommendations as legacy_recommendations, genres, search, tracking, imdb, trakt, auth
+    HAS_LEGACY_ROUTES = True
+except ImportError as e:
+    log.warning(f"Legacy routes not fully loaded: {e}")
+    HAS_LEGACY_ROUTES = False
+
+# New V2 routers
+try:
+    from routers.recommendations import router as recs_router
+except ImportError:
+    recs_router = None
+
+# ─── Register Routes ──────────────────────────────────────────
 @app.get('/v1/metrics/health')
 def health_check():
-    return {'status': 'healthy', 'version': '6.0.0'}
+    return {'status': 'healthy', 'version': '3.0.0', 'engine': 'NeuralFlix Global Cinema'}
 
-# Merge routers safely
+@app.get('/')
+def root():
+    return {
+        "name": "NeuralFlix Engine",
+        "version": "3.0.0",
+        "description": "Global Cinema Discovery & ML Recommendation Platform",
+        "endpoints": {
+            "health": "/v1/metrics/health",
+            "movies": "/api/movies",
+            "search": "/api/search",
+            "recommendations": "/api/recommendations",
+            "docs": "/docs"
+        }
+    }
+
 if recs_router:
     app.include_router(recs_router, prefix='/v1', tags=["Neural Engine V2"])
 
-try:
+if HAS_LEGACY_ROUTES:
     app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
     app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
     app.include_router(legacy_recommendations.router, prefix="/api/recommendations", tags=["Legacy Recs"])
@@ -98,10 +115,3 @@ try:
     app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
     app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
     app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
-except NameError:
-    pass
-
-            "docs": "/docs"
-        }
-    }
-
