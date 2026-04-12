@@ -154,15 +154,30 @@ def get_by_region(region_name: str, page: int = Query(1, ge=1)):
 
 @router.get("/mood/{mood_name}")
 def get_by_mood(mood_name: str, page: int = Query(1, ge=1)):
-    """Return movies by mood."""
+    """Return movies by mood — 18+ moods covering global cinema."""
     mood_map = {
-        "feel_good": {"genres": {"$in": ["Comedy", "Romance", "Family"]}},
-        "mind_blown": {"genres": {"$in": ["Thriller", "Mystery", "Science Fiction"]}},
-        "adrenaline": {"genres": {"$in": ["Action", "Adventure", "Crime"]}},
+        # Universal moods
+        "feel_good":     {"genres": {"$in": ["Comedy", "Romance", "Family"]}},
+        "mind_blown":    {"genres": {"$in": ["Thriller", "Mystery", "Science Fiction"]}},
+        "adrenaline":    {"genres": {"$in": ["Action", "Adventure", "Crime"]}},
+        "want_to_cry":   {"genres": {"$in": ["Drama"]}, "rating": {"$gte": 7.0}},
         "deep_thoughts": {"genres": {"$in": ["Drama", "Documentary"]}},
-        "desi_vibes": {"cinema_region": "indian"},
-        "korean_wave": {"cinema_region": "korean"},
-        "french_mood": {"cinema_region": "french"}
+        "family_time":   {"genres": {"$in": ["Family", "Animation"]}},
+        "date_night":    {"genres": {"$in": ["Romance", "Comedy"]}},
+        # Culture-specific moods
+        "desi_vibes":    {"cinema_region": "indian"},
+        "korean_wave":   {"cinema_region": "korean"},
+        "anime_night":   {"$or": [{"language": "ja"}, {"genres": {"$regex": "Animation", "$options": "i"}}]},
+        "french_mood":   {"cinema_region": "french"},
+        "nollywood_night": {"cinema_region": "nollywood"},
+        # Era moods
+        "90s_bollywood": {"cinema_region": "indian", "year": {"$gte": 1990, "$lte": 1999}},
+        "80s_nostalgia": {"year": {"$gte": 1980, "$lte": 1989}},
+        "classic_cinema": {"year": {"$lte": 1970}, "rating": {"$gte": 7.5}},
+        "new_releases":  {"year": {"$gte": 2024}},
+        # Special moods
+        "award_winners": {"rating": {"$gte": 7.8}, "votes": {"$gte": 5000}},
+        "hidden_gems":   {"rating": {"$gte": 7.5}, "votes": {"$lte": 5000, "$gte": 200}},
     }
     query_filter = mood_map.get(mood_name.lower(), {})
     skip = (page - 1) * 20
@@ -172,6 +187,12 @@ def get_by_mood(mood_name: str, page: int = Query(1, ge=1)):
         .skip(skip)
         .limit(20)
     )
+    # TMDB fallback for sparse moods
+    if len(movies) < 5:
+        from utils.tmdb_api import fetch_by_mood
+        genre_map = fetch_genre_list()
+        tmdb_data = fetch_by_mood(mood_name, page=page)
+        movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
     return {"mood": mood_name, "page": page, "results": movies}
 
 @router.get("/anime")
