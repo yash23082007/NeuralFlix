@@ -80,8 +80,15 @@ except ImportError as e:
 # New V2 routers
 try:
     from routers.recommendations import router as recs_router
-except ImportError:
+    from routers.movies import router as movies_router
+    from routers.regions import router as regions_router
+    from routers.search import router as search_router
+except ImportError as e:
+    log.warning(f"V2 routers missing: {e}")
     recs_router = None
+    movies_router = None
+    regions_router = None
+    search_router = None
 
 # ─── Register Routes ──────────────────────────────────────────
 @app.get('/v1/metrics/health')
@@ -104,7 +111,13 @@ def root():
     }
 
 if recs_router:
-    app.include_router(recs_router, prefix='/v1', tags=["Neural Engine V2"])
+    app.include_router(recs_router, prefix='/api/v2', tags=["Neural Engine V2"])
+if movies_router:
+    app.include_router(movies_router, prefix='/api/v2', tags=["V2 Movies"])
+if regions_router:
+    app.include_router(regions_router, prefix='/api/v2', tags=["V2 Regions"])
+if search_router:
+    app.include_router(search_router, prefix='/api/v2', tags=["V2 Search"])
 
 if HAS_LEGACY_ROUTES:
     app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
