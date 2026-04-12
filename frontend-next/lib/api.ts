@@ -87,13 +87,13 @@ export async function getSeries(page = 1): Promise<Movie[]> {
 // ─── Regional Cinema ────────────────────────────────────────
 
 export async function getByRegion(region: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/movies/region/${region}?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<Movie[]>(`/api/v2/regions/${region}?page=${page}`);
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getByMood(mood: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/movies/mood/${mood}?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<Movie[]>(`/api/v2/search?mood=${mood}&page=${page}`);
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getByGenre(genre: string, page = 1): Promise<Movie[]> {
