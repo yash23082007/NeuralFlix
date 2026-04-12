@@ -1,144 +1,140 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { useState } from 'react';
-import { StarIcon, PlayIcon, PlusIcon, HeartIcon } from 'lucide-react';
-import Link from 'next/link';
+import Image from "next/image";
+import Link from "next/link";
+import { Star, Plus, Play, Heart } from "lucide-react";
+import { useState } from "react";
 
-export interface Movie {
-  _id?: string;
-  tmdb_id?: number | string;
-  title: string;
-  poster_url?: string;
-  poster_path?: string; // fallback
-  rating?: number;
-  vote_average?: number; // fallback
-  year?: number;
-  release_year?: string | number; // fallback
-  language?: string;
-  genres?: string[];
-  runtime?: number;
-}
+import { Movie } from "../lib/api";
 
-interface MovieCardProps {
-  movie: Movie;
-  rank?: number;
-}
-
+// ─── Language → Flag Map (Global Cinema) ────────────────────
 const LANGUAGE_FLAGS: Record<string, string> = {
-  hi: '🇮🇳',
-  ko: '🇰🇷',
-  ja: '🇯🇵',
-  fr: '🇫🇷',
-  es: '🇪🇸',
-  it: '🇮🇹',
-  de: '🇩🇪',
-  te: '🌟', // Tollywood
-  ta: '🎭', // Kollywood
-  ml: '🌿', // Mollywood
-  zh: '🇨🇳',
-  ar: '🇸🇦',
-  en: '🇺🇸',
+  // Indian Languages
+  hi: "🇮🇳", ta: "🇮🇳", te: "🇮🇳", ml: "🇮🇳", kn: "🇮🇳",
+  bn: "🇮🇳", pa: "🇮🇳", mr: "🇮🇳", gu: "🇮🇳", or: "🇮🇳",
+  as: "🇮🇳", ur: "🇮🇳",
+  // East Asian
+  ko: "🇰🇷", ja: "🇯🇵", zh: "🇨🇳", yue: "🇭🇰",
+  // European
+  fr: "🇫🇷", it: "🇮🇹", es: "🇪🇸", de: "🇩🇪", pt: "🇧🇷",
+  nl: "🇳🇱", pl: "🇵🇱", ro: "🇷🇴", cs: "🇨🇿", el: "🇬🇷",
+  hu: "🇭🇺", da: "🇩🇰", sv: "🇸🇪", no: "🇳🇴", fi: "🇫🇮",
+  // Middle East & Central Asia
+  fa: "🇮🇷", ar: "🇪🇬", tr: "🇹🇷", he: "🇮🇱",
+  // Southeast Asian
+  th: "🇹🇭", id: "🇮🇩", vi: "🇻🇳", tl: "🇵🇭", ms: "🇲🇾",
+  // Other
+  ru: "🇷🇺", uk: "🇺🇦", en: "🇺🇸", af: "🇿🇦",
 };
 
+// ─── Language → Display Name ─────────────────────────────────
 const LANGUAGE_NAMES: Record<string, string> = {
-  hi: 'Hindi', ko: 'Korean', ja: 'Japanese', fr: 'French',
-  es: 'Spanish', it: 'Italian', de: 'German', te: 'Telugu',
-  ta: 'Tamil', ml: 'Malayalam', zh: 'Chinese', en: 'English'
+  hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada",
+  bn: "Bengali", pa: "Punjabi", mr: "Marathi", gu: "Gujarati",
+  ko: "Korean", ja: "Japanese", zh: "Chinese", fr: "French",
+  it: "Italian", es: "Spanish", de: "German", pt: "Portuguese",
+  fa: "Persian", ar: "Arabic", tr: "Turkish", th: "Thai",
+  id: "Indonesian", ru: "Russian", en: "English", sv: "Swedish",
 };
 
-export function MovieCard({ movie, rank }: MovieCardProps) {
+export function MovieCard({ movie }: { movie: Movie }) {
+  const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-
-  const posterSrc = movie.poster_url || (movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/placeholder-poster.jpg');
-  const rating = movie.rating || movie.vote_average || 0;
-  const year = movie.year || movie.release_year;
-  const flag = movie.language ? LANGUAGE_FLAGS[movie.language] : '';
-  const langName = movie.language ? LANGUAGE_NAMES[movie.language] || movie.language.toUpperCase() : '';
+  const movieId = movie.tmdb_id || movie._id;
+  const flag = LANGUAGE_FLAGS[movie.language || "en"] || "🌍";
+  const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
 
   return (
-    <div className="flex flex-col gap-2 group">
-      <Link href={`/movie/${movie.tmdb_id || movie._id}`} className="block">
-        <motion.div
-          className="relative rounded-xl overflow-hidden cursor-pointer aspect-[2/3] bg-surface"
-          whileHover={{ scale: 1.03 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
-        >
-          {/* Rank badge */}
-          {rank && rank <= 10 && (
-            <div className="absolute top-2 left-2 z-10 bg-accent text-black text-xs font-bold px-2 py-1 rounded">
-              #{rank}
-            </div>
-          )}
-
-          {/* Poster */}
-          <div className="w-full h-full relative">
-            <Image
-              src={posterSrc}
-              alt={movie.title}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
+    <Link
+      href={`/movie/${movieId}?type=${movie.media_type || "movie"}`}
+      className="group relative flex-shrink-0 cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      id={`movie-card-${movieId}`}
+    >
+      {/* Poster */}
+      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-surface border border-border shadow-card transition-all duration-300 group-hover:scale-[1.07] group-hover:-translate-y-1 group-hover:shadow-2xl group-hover:border-accent/40">
+        {movie.poster_url && !imgError ? (
+          <Image
+            src={movie.poster_url}
+            alt={movie.title}
+            fill
+            className="object-cover transition-all duration-500 group-hover:brightness-75"
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 200px"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-elevated text-text-muted gap-2">
+            <span className="text-4xl opacity-50">🎬</span>
+            <span className="text-xs text-center px-2 line-clamp-2">{movie.title}</span>
           </div>
+        )}
 
-          {/* Flag & Rating Overlay (persistent) */}
-          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
-            {flag && <span className="text-sm">{flag}</span>}
-            <div className="flex items-center gap-1 text-xs font-bold text-white">
-              <StarIcon className="w-3.5 h-3.5 text-accent fill-accent" />
-              <span>{rating > 0 ? rating.toFixed(1) : 'NR'}</span>
-            </div>
+        {/* Country Flag Badge */}
+        <div className="absolute top-2 left-2 z-10">
+          <span className="country-flag text-lg drop-shadow-lg">{flag}</span>
+        </div>
+
+        {/* Rating Badge */}
+        {movie.rating != null && movie.rating > 0 && (
+          <div className="absolute top-2 right-2 z-10 imdb-rating">
+            <Star className="w-3 h-3 fill-current" />
+            {movie.rating.toFixed(1)}
           </div>
+        )}
 
-          {/* Hover overlay actions */}
-          <AnimatePresence>
-            {isHovered && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-center items-center gap-4 z-20"
-              >
-                <button className="bg-accent text-black rounded-full p-3 hover:bg-yellow-400 transition-colors transform hover:scale-110">
-                  <PlayIcon className="w-6 h-6 fill-black" />
-                </button>
-                <div className="flex gap-3">
-                  <button className="bg-surface/80 p-2 rounded-full hover:bg-white hover:text-black transition-colors backdrop-blur-sm">
-                    <PlusIcon className="w-4 h-4" />
-                  </button>
-                  <button className="bg-surface/80 p-2 rounded-full hover:bg-white hover:text-black transition-colors backdrop-blur-sm">
-                    <HeartIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </Link>
+        {/* Language Badge */}
+        {movie.language && movie.language !== "en" && (
+          <div className="absolute bottom-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/60 text-white backdrop-blur-sm">
+            {langName}
+          </div>
+        )}
 
-      {/* Title & Meta below card */}
-      <div className="px-1">
-        <Link href={`/movie/${movie.tmdb_id || movie._id}`}>
-          <h3 className="font-display font-semibold text-text-primary text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-accent transition-colors">
-            {movie.title}
-          </h3>
-        </Link>
-        <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1.5">
-          {year ? <span>{year}</span> : null}
-          {year && langName && <span>•</span>}
-          {langName && <span className="font-medium">{langName}</span>}
+        {/* Hover Overlay with Actions */}
+        <div className={`absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"} flex items-end p-3`}>
+          <div className="flex gap-2 w-full">
+            <button
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all"
+              title="Add to Watchlist"
+              onClick={(e) => e.preventDefault()}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all"
+              title="Play Trailer"
+              onClick={(e) => e.preventDefault()}
+            >
+              <Play className="w-4 h-4 fill-current" />
+            </button>
+            <button
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all ml-auto"
+              title="Like"
+              onClick={(e) => e.preventDefault()}
+            >
+              <Heart className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Info Below Card */}
+      <div className="mt-2 space-y-0.5 px-0.5">
+        <p className="text-sm font-semibold text-text-primary truncate group-hover:text-accent transition-colors font-heading">
+          {movie.title}
+        </p>
+        <div className="flex items-center gap-2 text-xs text-text-muted">
+          {movie.year && <span>{movie.year}</span>}
           {movie.genres && movie.genres.length > 0 && (
             <>
-              <span>•</span>
-              <span className="truncate">{movie.genres[0]}</span>
+              <span className="opacity-30">•</span>
+              <span className="truncate">{movie.genres.slice(0, 2).join(", ")}</span>
             </>
           )}
-        </p>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
+
+export default MovieCard;
