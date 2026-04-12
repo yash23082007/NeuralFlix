@@ -1,66 +1,82 @@
-import { api } from "../lib/api";
 import HeroCarousel from "../components/HeroCarousel";
 import MovieRow from "../components/MovieRow";
 import { MoodSelector } from "../components/recommendation/MoodSelector";
-import { Suspense } from "react";
+import CinemaWorldMap from "../components/CinemaWorldMap";
+import {
+  getTrending, getTopRated, getNowPlaying, getTrendingAll,
+  getAnime, getByRegion, getByMood, getByGenre,
+} from "../lib/api";
 
-async function MovieContent() {
-  // Parallel data fetching on the server using the pinned API client
+export const revalidate = 1800; // ISR: refresh every 30 minutes
+
+export default async function HomePage() {
+  // Parallel data fetching — all regions simultaneously
   const [
-    trending,
-    topRated,
-    nowPlaying,
-    indian,
-    korean,
-    international,
-    anime,
-    series
+    trending, topRated, nowPlaying, trendingAll,
+    indianMovies, koreanMovies, japaneseMovies, frenchMovies,
+    anime, awardWinners, hiddenGems, actionMovies,
   ] = await Promise.all([
-    api.movies.getTrending().catch(() => ({ results: [] })),
-    api.movies.getTopRated().catch(() => ({ results: [] })),
-    api.movies.getNowPlaying().catch(() => ({ results: [] })),
-    api.movies.getIndian().catch(() => ({ results: [] })),
-    api.movies.getKorean().catch(() => ({ results: [] })),
-    api.movies.getInternational().catch(() => ({ results: [] })),
-    api.movies.getAnime().catch(() => ({ results: [] })),
-    api.movies.getSeries().catch(() => ({ results: [] })),
+    getTrending(),
+    getTopRated(),
+    getNowPlaying(),
+    getTrendingAll(),
+    getByRegion("indian"),
+    getByRegion("korean"),
+    getByRegion("japanese"),
+    getByRegion("french"),
+    getAnime(),
+    getByMood("award_winners"),
+    getByMood("hidden_gems"),
+    getByGenre("action"),
   ]);
 
   return (
-    <div className="space-y-0">
-      {/* Hero Carousel - Using Now Playing as initial hero data */}
-      <HeroCarousel movies={nowPlaying.results} />
+    <main className="min-h-screen bg-background page-enter">
+      {/* ── Cinematic Hero Carousel ────────────────── */}
+      <HeroCarousel movies={trending} />
 
-      {/* Movie Rows using server-fetched data */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
-        <div className="py-4"><MoodSelector /></div>
-        <MovieRow title="Trending Now" movies={trending.results} />
-        <MovieRow title="Top Rated" movies={topRated.results} />
-        <MovieRow title="Now Playing" movies={nowPlaying.results} />
-        <MovieRow title="Indian Cinema" movies={indian.results} />
-        <MovieRow title="Korean Sensations" movies={korean.results} />
-        <MovieRow title="International Cinema" movies={international.results} />
-        <MovieRow title="Anime & Animation" movies={anime.results} />
-        <MovieRow title="TV Series" movies={series.results} />
+      {/* ── Content Rows ──────────────────────────── */}
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 space-y-10 py-10">
+        {/* Mood Discovery */}
+        <section>
+          <MoodSelector />
+        </section>
+
+        {/* Trending Globally */}
+        <MovieRow title="🔥 Trending This Week" movies={trendingAll} />
+
+        {/* Trending in India */}
+        <MovieRow title="🇮🇳 Trending in India" movies={indianMovies} />
+
+        {/* Now Playing */}
+        <MovieRow title="🎬 Now Playing in Theaters" movies={nowPlaying} />
+
+        {/* Korean Sensations */}
+        <MovieRow title="🇰🇷 Korean Cinema" movies={koreanMovies} />
+
+        {/* Award Winners */}
+        <MovieRow title="🏆 Award-Winning Masterpieces" movies={awardWinners} />
+
+        {/* Top Rated All Time */}
+        <MovieRow title="⭐ Top Rated of All Time" movies={topRated} />
+
+        {/* Hidden Gems */}
+        <MovieRow title="💎 Hidden Gems from Around the World" movies={hiddenGems} />
+
+        {/* Japanese / Anime */}
+        <MovieRow title="🇯🇵 Japanese Cinema & Anime" movies={anime} />
+
+        {/* French Cinema */}
+        <MovieRow title="🇫🇷 French Cinema" movies={frenchMovies} />
+
+        {/* Action */}
+        <MovieRow title="⚔️ Adrenaline Rush — Action" movies={actionMovies} />
+
+        {/* Cinema World Map */}
+        <section className="pt-6">
+          <CinemaWorldMap />
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
-
-export default function HomePage() {
-  return (
-    <Suspense 
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="space-y-4 text-center">
-            <div className="w-10 h-10 border-2 border-imdb-gold border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-text-muted text-sm font-semibold tracking-wide uppercase">NeuralFlix Engine Warming Up...</p>
-          </div>
-        </div>
-      }
-    >
-      <MovieContent />
-    </Suspense>
-  );
-}
-
