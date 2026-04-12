@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { MovieCard, Movie } from "../../../components/MovieCard";
+import MovieCard from "../../../components/MovieCard";
+import { Movie } from "../../../lib/api";
 import Link from "next/link";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
