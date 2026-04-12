@@ -1,6 +1,6 @@
 import HeroCarousel from "../components/HeroCarousel";
 import MovieRow from "../components/MovieRow";
-import { MoodSelector } from "../components/recommendation/MoodSelector";
+import { MoodPicker } from "../components/recommendation/MoodPicker";
 import CinemaWorldMap from "../components/CinemaWorldMap";
 import {
   getTrending, getTopRated, getNowPlaying, getTrendingAll,
@@ -39,7 +39,7 @@ export default async function HomePage() {
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 space-y-10 py-10">
         {/* Mood Discovery */}
         <section>
-          <MoodSelector />
+          <MoodPicker />
         </section>
 
         {/* Trending Globally */}
