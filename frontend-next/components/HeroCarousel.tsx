@@ -5,17 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, ChevronLeft, ChevronRight, Play } from "lucide-react";
 
-interface Movie {
-  tmdb_id: number;
-  title: string;
-  overview: string;
-  rating: number;
-  year: number;
-  genres: string[];
-  backdrop_url: string;
-  poster_url: string;
-  media_type?: string;
-}
+import { Movie } from "../lib/api";
 
 export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   const [current, setCurrent] = useState(0);
