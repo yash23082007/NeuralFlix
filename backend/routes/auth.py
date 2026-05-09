@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from pydantic import BaseModel, EmailStr
-import jwt
+from jose import jwt
 from datetime import datetime, timedelta
 import asyncio
 from passlib.context import CryptContext
