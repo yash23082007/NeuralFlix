@@ -64,3 +64,16 @@ class AsyncTaskResponse(BaseModel):
 class GenericResponse(BaseModel):
     message: str
     error_id: Optional[str] = None
+
+
+# ─── Tracking Schemas ────────────────────────────────────────
+class TrackingEventSchema(BaseModel):
+    user_id: str
+    event_type: str  # "click", "watch", "like", "watchlist_add"
+    item_id: str
+    metadata: Optional[dict] = None
+
+class SearchTrackSchema(BaseModel):
+    user_id: str
+    query: str
+    results_count: int = 0

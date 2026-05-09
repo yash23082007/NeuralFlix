@@ -16,9 +16,9 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize DB and ML context
-    log.info("Application starting up...", event="startup")
+    log.info("Application starting up...")
     yield
-    log.info("Application shutting down...", event="shutdown")
+    log.info("Application shutting down...")
 
 app = FastAPI(
     title="NeuralFlix Engine",

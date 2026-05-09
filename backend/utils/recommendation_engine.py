@@ -31,7 +31,7 @@ try:
     SURPRISE_AVAILABLE = True
 except ImportError:
     SURPRISE_AVAILABLE = False
-    print("⚠️ Surprise library not available.")
+    print("Surprise library not available.")
 
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
 logger = logging.getLogger("API_MONITOR")

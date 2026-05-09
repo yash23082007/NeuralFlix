@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, JSON, Boolean
 from sqlalchemy.orm import declarative_base
 
 try:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
-from ..models.user_profile import ImplicitEvent
+from models.user_profile import ImplicitEvent
 from typing import Dict, Any
 from datetime import datetime
 
