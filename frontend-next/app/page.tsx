@@ -10,7 +10,6 @@ import {
 export const revalidate = 1800; // ISR: refresh every 30 minutes
 
 export default async function HomePage() {
-  // Parallel data fetching — all regions simultaneously
   const [
     trending, topRated, nowPlaying, trendingAll,
     indianMovies, koreanMovies, japaneseMovies, frenchMovies,
@@ -31,50 +30,49 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-background page-enter">
+    <main className="min-h-screen bg-background page-enter film-grain relative overflow-hidden">
+      {/* Background ambient glow */}
+      <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] bg-neural-crimson/20 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
+      <div className="absolute top-[20%] right-10 w-[40vw] h-[40vw] bg-neural-electric/10 rounded-full blur-[100px] -z-10 mix-blend-screen pointer-events-none" />
+
       {/* ── Cinematic Hero Carousel ────────────────── */}
       <HeroCarousel movies={trending} />
 
       {/* ── Content Rows ──────────────────────────── */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 space-y-10 py-10">
-        {/* Mood Discovery */}
-        <section>
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 space-y-12 py-12 relative z-10">
+        
+        {/* Mood Discovery (Glassmorphism wrapper) */}
+        <section className="glass-card p-6 md:p-8 transform transition-transform hover:scale-[1.01] duration-500 shadow-glow">
           <MoodPicker />
         </section>
 
-        {/* Trending Globally */}
-        <MovieRow title="🔥 Trending This Week" movies={trendingAll} />
+        <div className="space-y-10">
+          <MovieRow title="🔥 Trending Globally" movies={trendingAll} />
+          
+          <div className="glass-card p-6 border-l-4 border-l-accent-india">
+            <MovieRow title="🇮🇳 Blockbusters from India" movies={indianMovies} />
+          </div>
 
-        {/* Trending in India */}
-        <MovieRow title="🇮🇳 Trending in India" movies={indianMovies} />
+          <MovieRow title="🎬 Now Playing in Theaters" movies={nowPlaying} />
+          <MovieRow title="🇰🇷 Korean Sensations" movies={koreanMovies} />
+          
+          <div className="glass-card p-6 border-l-4 border-l-imdb-gold bg-gradient-to-r from-imdb-gold/5 to-transparent">
+            <MovieRow title="🏆 Award-Winning Masterpieces" movies={awardWinners} />
+          </div>
 
-        {/* Now Playing */}
-        <MovieRow title="🎬 Now Playing in Theaters" movies={nowPlaying} />
-
-        {/* Korean Sensations */}
-        <MovieRow title="🇰🇷 Korean Cinema" movies={koreanMovies} />
-
-        {/* Award Winners */}
-        <MovieRow title="🏆 Award-Winning Masterpieces" movies={awardWinners} />
-
-        {/* Top Rated All Time */}
-        <MovieRow title="⭐ Top Rated of All Time" movies={topRated} />
-
-        {/* Hidden Gems */}
-        <MovieRow title="💎 Hidden Gems from Around the World" movies={hiddenGems} />
-
-        {/* Japanese / Anime */}
-        <MovieRow title="🇯🇵 Japanese Cinema & Anime" movies={anime} />
-
-        {/* French Cinema */}
-        <MovieRow title="🇫🇷 French Cinema" movies={frenchMovies} />
-
-        {/* Action */}
-        <MovieRow title="⚔️ Adrenaline Rush — Action" movies={actionMovies} />
+          <MovieRow title="⭐ Top Rated of All Time" movies={topRated} />
+          <MovieRow title="💎 Hidden Gems" movies={hiddenGems} />
+          <MovieRow title="🇯🇵 Japanese Cinema & Anime" movies={anime} />
+          <MovieRow title="🇫🇷 French Cinema" movies={frenchMovies} />
+          <MovieRow title="⚔️ Adrenaline Rush — Action" movies={actionMovies} />
+        </div>
 
         {/* Cinema World Map */}
-        <section className="pt-6">
-          <CinemaWorldMap />
+        <section className="pt-10">
+          <div className="glass-card p-4 md:p-8 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-neural-purple/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <CinemaWorldMap />
+          </div>
         </section>
       </div>
     </main>
