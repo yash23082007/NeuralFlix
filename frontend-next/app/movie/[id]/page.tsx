@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Clock, Calendar, Play, ExternalLink, ChevronLeft } from "lucide-react";
+import { Star, Clock, Calendar, Play, ChevronLeft } from "lucide-react";
 import MovieRow from "../../../components/MovieRow";
 
-const API = "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface MovieDetail {
   tmdb_id: number;
@@ -36,9 +36,11 @@ interface MovieDetail {
   media_type: string;
 }
 
-export default function MovieDetailPage({ params, searchParams }: { params: any, searchParams: any }) {
+export default function MovieDetailPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
-  const type = searchParams.type || 'movie';
+  const type = searchParams.get("type") || "movie";
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export default function MovieDetailPage({ params, searchParams }: { params: any,
     }
 
     fetchMovie();
-  }, [id]);
+  }, [id, type]);
 
   if (loading) {
     return (
@@ -86,7 +88,7 @@ export default function MovieDetailPage({ params, searchParams }: { params: any,
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen page-enter">
       {/* Backdrop Hero */}
       <section className="relative h-[40vh] md:h-[55vh] overflow-hidden">
         <div className="absolute inset-0">
