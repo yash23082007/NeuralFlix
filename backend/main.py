@@ -71,7 +71,7 @@ app.add_middleware(
 # ─── Import Routers ───────────────────────────────────────────
 # Legacy routes
 try:
-    from routes import movies, recommendations as legacy_recommendations, genres, search, tracking, imdb, trakt, auth
+    from routes import movies, recommendations as legacy_recommendations, genres, search, tracking, imdb, trakt, auth, chat
     HAS_LEGACY_ROUTES = True
 except ImportError as e:
     log.warning(f"Legacy routes not fully loaded: {e}")
@@ -106,6 +106,7 @@ def root():
             "movies": "/api/movies",
             "search": "/api/search",
             "recommendations": "/api/recommendations",
+            "chat": "/api/chat/recommend",
             "docs": "/docs"
         }
     }
@@ -128,3 +129,4 @@ if HAS_LEGACY_ROUTES:
     app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
     app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
     app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
+    app.include_router(chat.router, prefix="/api/chat", tags=["AI Chat"])
