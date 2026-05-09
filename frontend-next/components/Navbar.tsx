@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import {
   Search, Film, Menu, X, ChevronDown,
-  Sun, Moon, Globe, Map, Sparkles, Command
+  Sun, Moon, Globe, Map, Sparkles, Command,
+  LogIn, MessageCircle, LogOut, User
 } from "lucide-react";
+import { isAuthenticated, getUser, logout } from "../lib/auth";
 
 const CINEMA_REGIONS = [
   { name: "Bollywood",  href: "/cinema/bollywood",  flag: "🇮🇳", accent: "text-[#FF6B35]" },
@@ -29,8 +31,16 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    setLoggedIn(isAuthenticated());
+    const user = getUser();
+    if (user?.name) setUserName(user.name);
+    else if (user?.email) setUserName(user.email.charAt(0).toUpperCase());
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -129,6 +139,14 @@ export default function Navbar() {
             <Map className="w-4 h-4" />
             Map
           </Link>
+
+          <Link
+            href="/chat"
+            className="nav-link px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors rounded-lg hover:bg-glass flex items-center gap-1"
+          >
+            <MessageCircle className="w-4 h-4" />
+            AI Chat
+          </Link>
         </div>
 
         {/* ── Right Actions ──────────────────── */}
@@ -162,6 +180,34 @@ export default function Navbar() {
                 <Moon className="w-4 h-4" />
               )}
             </button>
+          )}
+
+          {/* Auth Button */}
+          {mounted && (
+            loggedIn ? (
+              <div className="relative group">
+                <button className="w-8 h-8 rounded-full bg-accent text-black font-bold text-sm flex items-center justify-center">
+                  {userName.charAt(0) || "U"}
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-40 bg-surface border border-border rounded-xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                  <button
+                    onClick={() => { logout(); setLoggedIn(false); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-accent text-black font-semibold text-sm rounded-lg hover:bg-accent/90 transition-all"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Sign In
+              </Link>
+            )
           )}
 
           {/* Mobile Menu Toggle */}
