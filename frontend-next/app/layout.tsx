@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display, DM_Sans } from "next/font/google";
 import "../styles/globals.css";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
 
@@ -102,6 +103,7 @@ export default function RootLayout({
           <Navbar />
           <CommandPalette />
           {children}
+          <Footer />
         </ThemeProvider>
       </body>
     </html>
