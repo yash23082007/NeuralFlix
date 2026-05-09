@@ -13,16 +13,16 @@
   --font-body:    'Inter', sans-serif;
 
   /* ── Premiere Mode (Light) ──────────────────── */
-  --bg-primary:    #f4f4f8;
+  --bg-primary:    #f8f9fa;
   --bg-surface:    #ffffff;
-  --bg-elevated:   #f0f0f5;
-  --border:        #e0e0ee;
-  --accent:        #c0870a;
-  --text-primary:  #0d0d14;
-  --text-secondary:#4a4a60;
-  --text-muted:    #8888a0;
-  --glass-bg:      rgba(0, 0, 0, 0.05);
-  --glass-border:  rgba(0, 0, 0, 0.08);
+  --bg-elevated:   #f1f3f5;
+  --border:        #e9ecef;
+  --accent:        #e0a800;
+  --text-primary:  #212529;
+  --text-secondary:#495057;
+  --text-muted:    #868e96;
+  --glass-bg:      rgba(255, 255, 255, 0.6);
+  --glass-border:  rgba(255, 255, 255, 0.4);
 
   /* ── Cinema Region Accents ──────────────────── */
   --accent-india:   #ff6b35;
@@ -66,17 +66,17 @@
 
 .dark {
   /* ── Cinema Mode (Dark) ─────────────────────── */
-  --bg-primary:    #0a0a0f;
-  --bg-surface:    #12121a;
-  --bg-elevated:   #1a1a2a;
-  --border:        #1e1e2e;
-  --accent:        #e8a020;
+  --bg-primary:    #050507;
+  --bg-surface:    #0f0f13;
+  --bg-elevated:   #1a1a24;
+  --border:        #232332;
+  --accent:        #F5C518;
   --text-primary:  #ffffff;
   --text-secondary:#a1a1b5;
   --text-muted:    #6b6b80;
-  --glass-bg:      rgba(255, 255, 255, 0.05);
-  --glass-border:  rgba(255, 255, 255, 0.08);
-  --shadow-card:   0 4px 24px rgba(0,0,0,0.6);
+  --glass-bg:      rgba(15, 15, 19, 0.6);
+  --glass-border:  rgba(255, 255, 255, 0.05);
+  --shadow-card:   0 8px 32px rgba(0,0,0,0.8);
 }
 
 /* ── Tailwind Theme Mapping ───────────────────── */
@@ -122,12 +122,23 @@
    COMPONENT STYLES
    ═══════════════════════════════════════════════ */
 
-/* ── Glassmorphism Card ───────────────────────── */
+/* ── Liquid Glassmorphism ───────────────────────── */
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px);
-  border-radius: 1rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.bento-box {
+  @apply glass-card p-6 flex flex-col;
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s ease;
+}
+.bento-box:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
 }
 
 /* ── Section Heading ──────────────────────────── */
@@ -258,6 +269,23 @@
 }
 .fade-in-up {
   animation: fadeInUp 400ms var(--ease-smooth) both;
+}
+
+/* Aurora Background Animation */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob {
+  animation: blob 12s infinite alternate ease-in-out;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 
 /* Film grain texture overlay (optional) */

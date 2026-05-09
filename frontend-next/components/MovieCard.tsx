@@ -90,29 +90,29 @@ export function MovieCard({ movie }: { movie: Movie }) {
           </div>
         )}
 
-        {/* Hover Overlay with Actions */}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"} flex items-end p-3`}>
-          <div className="flex gap-2 w-full">
+        {/* Hover Overlay with Actions - Liquid Glass */}
+        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300 ${isHovered ? "opacity-100" : "opacity-0"} flex flex-col justify-end p-4`}>
+          <div className="flex justify-center gap-3 w-full translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
             <button
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110"
               title="Add to Watchlist"
               onClick={(e) => e.preventDefault()}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
             </button>
             <button
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-accent hover:bg-accent/90 text-black shadow-gold transition-all hover:scale-110"
               title="Play Trailer"
               onClick={(e) => e.preventDefault()}
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-5 h-5 fill-current ml-0.5" />
             </button>
             <button
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-all ml-auto"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110"
               title="Like"
               onClick={(e) => e.preventDefault()}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className="w-5 h-5" />
             </button>
           </div>
         </div>

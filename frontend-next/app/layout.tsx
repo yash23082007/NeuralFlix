@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
+import AuroraBackground from "../components/AuroraBackground";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -100,6 +101,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <AuroraBackground />
           <Navbar />
           <CommandPalette />
           {children}

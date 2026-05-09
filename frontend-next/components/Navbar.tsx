@@ -51,13 +51,13 @@ export default function Navbar() {
   return (
     <nav
       id="navbar"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 transition-all duration-500 rounded-full ${
         scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border shadow-lg"
-          : "bg-transparent"
+          ? "glass-card shadow-card py-1 px-4"
+          : "bg-surface/50 backdrop-blur-md border border-border/50 shadow-lg py-2 px-6"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
+      <div className="h-14 flex items-center justify-between gap-4">
         {/* ── Logo ───────────────────────────── */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="relative w-8 h-8 flex items-center justify-center rounded-lg bg-neural-crimson text-white font-black text-sm">

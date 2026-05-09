@@ -129,11 +129,11 @@ export default function MovieDetailPage() {
             </div>
           </div>
 
-          {/* Details */}
-          <div className="flex-1 space-y-5 pt-4 md:pt-12">
+          {/* Details - Bento Box */}
+          <div className="flex-1 bento-box space-y-5">
             {/* Title */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+              <h1 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">
                 {movie.title}
                 {movie.year && (
                   <span className="text-text-muted font-normal ml-3 text-2xl">
@@ -162,7 +162,7 @@ export default function MovieDetailPage() {
               )}
               {movie.director && (
                 <span>
-                  Director: <strong className="text-white">{movie.director}</strong>
+                  Director: <strong className="text-text-primary">{movie.director}</strong>
                 </span>
               )}
             </div>
@@ -182,7 +182,7 @@ export default function MovieDetailPage() {
                   <div className="bg-imdb-gold text-black font-black text-xs px-1.5 py-0.5 rounded">
                     IMDb
                   </div>
-                  <span className="text-white font-bold text-lg">
+                  <span className="text-text-primary font-bold text-lg">
                     {movie.omdb_rating || movie.rating?.toFixed(1)}
                   </span>
                   <span className="text-text-muted text-sm">
@@ -238,7 +238,7 @@ export default function MovieDetailPage() {
               {movie.box_office && movie.box_office !== "N/A" && (
                 <div>
                   <span className="text-text-muted">Box Office: </span>
-                  <span className="text-white font-medium">{movie.box_office}</span>
+                  <span className="text-text-primary font-medium">{movie.box_office}</span>
                 </div>
               )}
             </div>
@@ -247,7 +247,7 @@ export default function MovieDetailPage() {
 
         {/* Cast Section */}
         {movie.cast && movie.cast.length > 0 && (
-          <section className="mt-12 space-y-4">
+          <section className="mt-8 bento-box space-y-4">
             <h3 className="section-heading">Top Cast</h3>
             <div className="scroll-row">
               {movie.cast.map((actor) => (
@@ -267,7 +267,7 @@ export default function MovieDetailPage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-white truncate">{actor.name}</p>
+                  <p className="text-sm font-semibold text-text-primary truncate">{actor.name}</p>
                   <p className="text-xs text-text-muted truncate">{actor.character}</p>
                 </div>
               ))}
