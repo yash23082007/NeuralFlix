@@ -1,83 +1,77 @@
 import logging
-from typing import List, Optional, Dict, Any
+import math
+import os
+from typing import Optional, Dict, Any
 
 from database import get_movies_collection
-from utils.tmdb_api import search_multi as tmdb_search_multi, get_poster_url, get_backdrop_url, fetch_genre_list
-from services.movie_service import MovieService
+from utils.tmdb_api import search_multi as tmdb_search_multi, get_poster_url, fetch_genre_list
 
 logger = logging.getLogger("SEARCH_SERVICE")
+EXTERNAL_FILL = os.getenv("NEURALFLIX_EXTERNAL_FALLBACK", "false").lower() == "true"
+
+def _normalize_item(item: Dict[str, Any], genre_map: Dict[int, str], media_type: str = "movie") -> Dict[str, Any]:
+    genre_names = [genre_map.get(gid, "") for gid in item.get("genre_ids", []) if gid in genre_map]
+    date_field = item.get("release_date") or item.get("first_air_date")
+    year = None
+    if date_field:
+        try:
+            year = int(date_field[:4])
+        except (ValueError, IndexError):
+            pass
+    votes = item.get("vote_count", 0)
+    rating = item.get("vote_average", 0)
+    popularity = round(rating * math.log10(votes + 1), 2) if votes > 0 else 0
+    title = item.get("title") or item.get("name", "Unknown")
+    return {
+        "tmdb_id": item.get("id"), "title": title, "overview": item.get("overview", ""),
+        "year": year, "release_date": date_field, "language": item.get("original_language", "en"),
+        "genres": genre_names, "rating": round(rating, 1), "votes": votes,
+        "popularity_score": popularity, "poster_url": get_poster_url(item.get("poster_path")),
+        "media_type": media_type,
+    }
 
 class SearchService:
-    """Handles multi-source search (Mongo + TMDB) with deduplication."""
-
-    @classmethod
-    def _normalize_item(cls, item: Dict[str, Any], genre_map_movie: Dict[int, str], genre_map_tv: Dict[int, str]) -> Dict[str, Any]:
-        """Normalize TMDB multi-search item."""
-        media_type = item.get("media_type", "movie")
-        genre_map = genre_map_tv if media_type == "tv" else genre_map_movie
-        return MovieService._normalize_tmdb(item, genre_map, media_type=media_type)
-
     @classmethod
     async def search(cls, q: str, language: Optional[str] = None, page: int = 1) -> Dict[str, Any]:
-        """Hybrid search combining local results and global TMDB results."""
         results = []
         seen_ids = set()
-        
         movies_col = get_movies_collection()
 
-        # 1. MongoDB Full-Text Search
         query_filter = {"$text": {"$search": q}}
         if language:
             query_filter["language"] = language
 
-        # Search against movies, adding projection for shared fields
         try:
-            mongo_results = list(
-                movies_col.find(query_filter, {"_id": 0})
-                .sort("popularity_score", -1)
-                .limit(20)
-            )
+            mongo_results = list(movies_col.find(query_filter, {"_id": 0}).sort("popularity_score", -1).limit(20))
         except Exception:
             regex_filter = {"title": {"$regex": q, "$options": "i"}}
             if language:
                 regex_filter["language"] = language
-            mongo_results = list(
-                movies_col.find(regex_filter, {"_id": 0})
-                .sort("popularity_score", -1)
-                .limit(20)
-            )
+            mongo_results = list(movies_col.find(regex_filter, {"_id": 0}).sort("popularity_score", -1).limit(20))
 
         for m in mongo_results:
-            # Standardize ID
             mid = str(m.get("tmdb_id") or m.get("imdb_id"))
             if mid not in seen_ids:
                 results.append(m)
                 seen_ids.add(mid)
 
-        # 2. TMDB Multi-Search (Movies + TV)
-        genre_map_movie = fetch_genre_list("movie")
-        genre_map_tv = fetch_genre_list("tv")
-        
-        tmdb_results = tmdb_search_multi(q, page=page)
-        
-        for item in tmdb_results:
-            if item.get("media_type") not in ["movie", "tv"]:
-                continue
-                
-            mid = item.get("id")
-            if mid not in seen_ids:
-                normalized = cls._normalize_item(item, genre_map_movie, genre_map_tv)
-                if language and normalized.get("language") != language:
+        if not results or EXTERNAL_FILL:
+            genre_map_movie = await fetch_genre_list("movie")
+            genre_map_tv = await fetch_genre_list("tv")
+
+            tmdb_results = await tmdb_search_multi(q, page=page)
+            for item in tmdb_results:
+                mt = item.get("media_type")
+                if mt not in ("movie", "tv"):
                     continue
-                results.append(normalized)
-                seen_ids.add(mid)
+                mid = item.get("id")
+                if mid not in seen_ids:
+                    genre_map = genre_map_tv if mt == "tv" else genre_map_movie
+                    normalized = _normalize_item(item, genre_map, media_type=mt)
+                    if language and normalized.get("language") != language:
+                        continue
+                    results.append(normalized)
+                    seen_ids.add(mid)
 
-        # Re-sort combined list by popularity
         results.sort(key=lambda x: x.get("popularity_score", 0), reverse=True)
-
-        return {
-            "query": q,
-            "page": page,
-            "total": len(results),
-            "results": results
-        }
+        return {"query": q, "page": page, "total": len(results), "results": results}
