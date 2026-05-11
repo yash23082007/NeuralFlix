@@ -131,14 +131,31 @@ def get_now_playing(page: int = Query(1, ge=1)):
     genre_map = fetch_genre_list()
     tmdb_data = fetch_now_playing(page=page)
     movies = [_normalize_tmdb(m, genre_map) for m in tmdb_data]
+    if not movies:
+        movies = list(
+            movies_collection.find({}, {"_id": 0})
+            .sort("year", -1)
+            .limit(20)
+        )
     return {"results": movies}
 
 @router.get("/region/{region_name}")
 def get_by_region(region_name: str, page: int = Query(1, ge=1)):
     """Return movies by cinema region (e.g. korean, french, indian)."""
     skip = (page - 1) * 20
+    region_key = region_name.lower()
+    query_filter = {"cinema_region": region_key}
+    if region_key == "indian":
+        query_filter = {
+            "$or": [
+                {"cinema_region": "indian"},
+                {"cinema_region": {"$in": ["bollywood", "tollywood", "kollywood", "mollywood"]}},
+                {"language": {"$in": ["hi", "ta", "te", "ml", "kn"]}},
+            ]
+        }
+
     movies = list(
-        movies_collection.find({"cinema_region": region_name.lower()}, {"_id": 0})
+        movies_collection.find(query_filter, {"_id": 0})
         .sort("popularity_score", -1)
         .skip(skip)
         .limit(20)
@@ -165,7 +182,7 @@ def get_by_mood(mood_name: str, page: int = Query(1, ge=1)):
         "family_time":   {"genres": {"$in": ["Family", "Animation"]}},
         "date_night":    {"genres": {"$in": ["Romance", "Comedy"]}},
         # Culture-specific moods
-        "desi_vibes":    {"cinema_region": "indian"},
+        "desi_vibes":    {"cinema_region": {"$in": ["indian", "bollywood", "tollywood", "kollywood", "mollywood"]}},
         "korean_wave":   {"cinema_region": "korean"},
         "anime_night":   {"$or": [{"language": "ja"}, {"genres": {"$regex": "Animation", "$options": "i"}}]},
         "french_mood":   {"cinema_region": "french"},
@@ -231,6 +248,13 @@ def get_trending_all():
 
     results = [_normalize_tmdb(m, genre_map_movie, media_type="movie") for m in movies]
     results += [_normalize_tmdb(s, genre_map_tv, media_type="tv") for s in series]
+
+    if not results:
+        results = list(
+            movies_collection.find({}, {"_id": 0})
+            .sort("popularity_score", -1)
+            .limit(20)
+        )
 
     import random
     random.shuffle(results)

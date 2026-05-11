@@ -31,11 +31,21 @@ class SearchService:
             query_filter["language"] = language
 
         # Search against movies, adding projection for shared fields
-        mongo_results = list(
-            movies_col.find(query_filter, {"_id": 0})
-            .sort("popularity_score", -1)
-            .limit(20)
-        )
+        try:
+            mongo_results = list(
+                movies_col.find(query_filter, {"_id": 0})
+                .sort("popularity_score", -1)
+                .limit(20)
+            )
+        except Exception:
+            regex_filter = {"title": {"$regex": q, "$options": "i"}}
+            if language:
+                regex_filter["language"] = language
+            mongo_results = list(
+                movies_col.find(regex_filter, {"_id": 0})
+                .sort("popularity_score", -1)
+                .limit(20)
+            )
 
         for m in mongo_results:
             # Standardize ID

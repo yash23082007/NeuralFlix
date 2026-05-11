@@ -1,7 +1,9 @@
 import os
 import requests
 from dotenv import load_dotenv
-from database import db, SessionLocal, client
+from database import get_db, SessionLocal, DatabaseManager
+client = DatabaseManager.get_mongo_client()
+db = get_db()
 from sqlalchemy import text
 
 # Load environment variables

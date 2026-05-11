@@ -22,3 +22,12 @@ async def search(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search operation failed: {str(e)}")
 
+
+@router.get("/movies", response_model=SearchResponse)
+async def search_movies(
+    query: str = Query(..., min_length=1),
+    language: Optional[str] = Query(None, description="Filter by language code (e.g. en, hi, ja)"),
+    page: int = Query(1, ge=1),
+):
+    """Compatibility endpoint used by the web app command palette."""
+    return await search(q=query, language=language, page=page)
