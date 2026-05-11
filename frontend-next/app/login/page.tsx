@@ -6,8 +6,6 @@ import Link from "next/link";
 import { Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
 import { setToken, setUser } from "../../lib/auth";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -16,138 +14,112 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      const res = await fetch(`${API}/api/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      const data = await res.json();
-
       if (!res.ok) {
-        setError(data.detail || "Invalid credentials");
-        return;
+        const data = await res.json();
+        throw new Error(data.detail || "Login failed");
       }
-
+      const data = await res.json();
       setToken(data.access_token);
-      setUser({ user_id: email, email });
+      setUser(data.user || { email });
       router.push("/");
-    } catch (err) {
-      setError("Connection failed. Make sure the backend is running.");
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center px-4 page-enter">
-      {/* Background Glow */}
-      <div className="absolute top-1/4 left-1/3 w-[40vw] h-[40vw] bg-neural-crimson/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/3 w-[30vw] h-[30vw] bg-neural-electric/10 rounded-full blur-[100px] pointer-events-none" />
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 pt-20">
+      <div className="relative w-full max-w-md">
+        {/* Background glow */}
+        <div className="absolute -inset-10 rounded-3xl bg-gradient-to-br from-accent/5 to-neural-purple/5 blur-3xl" />
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-neural-crimson text-white font-black text-xl mb-4 shadow-glow">
-            N
-          </div>
-          <h1 className="text-3xl font-heading font-bold text-text-primary">
-            Welcome Back
-          </h1>
-          <p className="text-text-muted text-sm mt-1">
-            Sign in to your NeuralFlix account
-          </p>
-        </div>
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="glass-card p-8 space-y-5"
-        >
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-lg">
-              {error}
+        <div className="premium-card relative rounded-2xl p-8">
+          <div className="mb-8 flex flex-col items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl premium-gradient shadow-sm">
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all text-sm"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full px-4 py-3 pr-11 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
+            <div className="text-center">
+              <h1 className="text-xl font-bold tracking-tight text-text-primary">Welcome back</h1>
+              <p className="mt-1 text-sm text-text-muted">Sign in to your NeuralFlix account</p>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-accent hover:bg-accent/90 text-black font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-gold"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-            ) : (
-              <>
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </>
+          <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+              <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent">
+                {error}
+              </div>
             )}
-          </button>
 
-          <p className="text-center text-sm text-text-muted">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-accent hover:text-accent/80 font-semibold transition-colors"
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-text-secondary">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/30"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-text-secondary">Password</label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 pr-11 text-sm text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/30"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neural-crimson-dim disabled:opacity-50 flex items-center justify-center gap-2"
             >
+              {loading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <LogIn className="h-4 w-4" />
+              )}
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-text-muted">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-medium text-accent hover:text-neural-crimson-dim transition-colors">
               Create one
             </Link>
           </p>
-        </form>
-
-        {/* Footer */}
-        <p className="text-center text-[10px] text-text-muted mt-6">
-          <Sparkles className="w-3 h-3 inline mr-1" />
-          NeuralFlix ML - Global Cinema Recommendation System
-        </p>
+        </div>
       </div>
     </main>
   );
