@@ -3,7 +3,7 @@ import os
 import asyncio
 from utils.recommendation_engine import hybrid_recommendation
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 celery_app = Celery("neuralflix", broker=REDIS_URL, backend=REDIS_URL)
 
