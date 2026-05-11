@@ -36,7 +36,7 @@ export function MoodPicker() {
             <button
               key={signal.id}
               onClick={() => router.push(`/search?mood=${signal.id}`)}
-              className="group flex min-h-[112px] flex-col justify-between rounded-lg border border-border bg-surface p-4 text-left shadow-card transition-all hover:-translate-y-1 hover:border-accent/45"
+              className="premium-card group flex min-h-[112px] flex-col justify-between rounded-lg p-4 text-left transition-all hover:-translate-y-1 hover:border-accent/45"
             >
               <Icon className={`h-5 w-5 ${signal.tone}`} />
               <div>
