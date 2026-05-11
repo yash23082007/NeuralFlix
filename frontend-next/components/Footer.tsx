@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Film, Github, Globe2, Mail } from "lucide-react";
+import { BarChart3, Film, Github, Globe2, Mail, Sparkles } from "lucide-react";
 
 const CINEMA_LINKS = [
   { name: "Indian Cinema", href: "/cinema/indian" },
@@ -11,7 +11,7 @@ const CINEMA_LINKS = [
 ];
 
 const FEATURE_LINKS = [
-  { name: "Recommender", href: "/" },
+  { name: "Home", href: "/" },
   { name: "Explore", href: "/discover" },
   { name: "Preference Signals", href: "/mood" },
   { name: "World Map", href: "/world-map" },
@@ -20,37 +20,37 @@ const FEATURE_LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-border bg-surface/70 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-4 py-12 md:px-6">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+    <footer className="mt-auto border-t border-border bg-surface">
+      <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="mb-4 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neural-crimson text-sm font-black text-white">
-                N
+            <Link href="/" className="mb-4 flex items-center gap-2.5 group">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-neural-purple text-sm font-bold text-white shadow-sm">
+                <Sparkles className="h-4 w-4" />
               </div>
-              <span className="text-lg font-black text-text-primary">
-                Neural<span className="text-accent">Flix</span> ML
+              <span className="text-lg font-bold tracking-tight text-text-primary">
+                Neural<span className="text-accent">Flix</span>
               </span>
             </Link>
-            <p className="text-sm leading-6 text-text-muted">
-              A global cinema recommender built around hybrid retrieval, ranking, and feedback signals.
+            <p className="mt-3 text-sm leading-relaxed text-text-muted max-w-xs">
+              AI-powered global cinema discovery platform. Explore films from every corner of the world with intelligent recommendations.
             </p>
-            <div className="mt-4 flex items-center gap-3">
-              <a href="https://github.com" className="text-text-muted transition-colors hover:text-text-primary" aria-label="GitHub">
+            <div className="mt-5 flex items-center gap-3">
+              <a href="https://github.com" className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-text-muted transition-all hover:bg-bg-elevated hover:text-text-primary" aria-label="GitHub">
                 <Github className="h-4 w-4" />
               </a>
-              <a href="mailto:hello@neuralflix.com" className="text-text-muted transition-colors hover:text-text-primary" aria-label="Email">
+              <a href="mailto:hello@neuralflix.com" className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-text-muted transition-all hover:bg-bg-elevated hover:text-text-primary" aria-label="Email">
                 <Mail className="h-4 w-4" />
               </a>
             </div>
           </div>
 
           <div>
-            <h4 className="mb-4 flex items-center gap-1.5 text-sm font-black text-text-primary">
+            <h4 className="mb-5 flex items-center gap-2 text-sm font-bold text-text-primary">
               <Globe2 className="h-4 w-4 text-accent" />
               Cinema
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-3">
               {CINEMA_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-text-muted transition-colors hover:text-text-primary">
@@ -62,11 +62,11 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-4 flex items-center gap-1.5 text-sm font-black text-text-primary">
+            <h4 className="mb-5 flex items-center gap-2 text-sm font-bold text-text-primary">
               <Film className="h-4 w-4 text-accent" />
               App
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-3">
               {FEATURE_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-text-muted transition-colors hover:text-text-primary">
@@ -78,25 +78,25 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-4 flex items-center gap-1.5 text-sm font-black text-text-primary">
+            <h4 className="mb-5 flex items-center gap-2 text-sm font-bold text-text-primary">
               <BarChart3 className="h-4 w-4 text-accent" />
               Stack
             </h4>
-            <ul className="space-y-2.5 text-sm text-text-muted">
-              <li>FastAPI recommendation API</li>
-              <li>Next.js App Router</li>
-              <li>MongoDB fallback catalog</li>
-              <li>TF-IDF and hybrid ranking</li>
+            <ul className="space-y-3 text-sm text-text-muted">
+              <li>FastAPI + Python</li>
+              <li>Next.js 15 + React 19</li>
+              <li>Tailwind CSS v4</li>
+              <li>TF-IDF + Hybrid ML</li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-xs text-text-muted">
-            Copyright {new Date().getFullYear()} NeuralFlix ML.
+            &copy; {new Date().getFullYear()} NeuralFlix. All rights reserved.
           </p>
           <p className="text-xs text-text-muted">
-            Movie metadata compatible with TMDB and OMDb sources.
+            Powered by TMDB & OMDb APIs
           </p>
         </div>
       </div>
