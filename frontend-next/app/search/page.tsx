@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import MovieCard from "../../components/MovieCard";
-import { BarChart3, Search } from "lucide-react";
+import { BarChart3, Search, Sparkles } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -17,7 +17,6 @@ function SearchContent() {
 
   useEffect(() => {
     if (!query.trim() && !mood) return;
-
     async function doSearch() {
       setLoading(true);
       setSearched(true);
@@ -34,31 +33,31 @@ function SearchContent() {
         setLoading(false);
       }
     }
-
     doSearch();
   }, [query, mood]);
 
-  const label = query ? `"${query}"` : mood ? mood.replace(/_/g, " ") : "Catalog search";
+  const label = query ? `"${query}"` : mood ? mood.replace(/_/g, " ") : "Search";
 
   return (
-    <main className="min-h-screen bg-background pt-24 page-enter">
+    <main className="min-h-screen bg-background pt-28 page-enter">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        <section className="mb-8 rounded-lg border border-border bg-surface p-6 shadow-card">
-          <p className="text-xs font-black uppercase tracking-wide text-accent">Search</p>
-          <h1 className="mt-2 flex items-center gap-3 text-3xl font-black text-text-primary">
-            <Search className="h-7 w-7 text-accent" />
+        <section className="premium-card mb-8 rounded-2xl p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-accent">Search</p>
+          <h1 className="mt-2 flex items-center gap-3 text-2xl font-bold tracking-tight text-text-primary">
+            <Search className="h-6 w-6 text-accent" />
             {label}
           </h1>
           {searched && !loading && (
-            <p className="mt-2 text-sm font-semibold text-text-muted">
-              {results.length} result{results.length !== 1 ? "s" : ""} in the candidate set
-            </p>
+            <p className="mt-2 text-sm text-text-muted">{results.length} result{results.length !== 1 ? "s" : ""}</p>
           )}
         </section>
 
         {loading && (
           <div className="flex justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <p className="text-sm text-text-muted">Searching catalog...</p>
+            </div>
           </div>
         )}
 
@@ -71,10 +70,10 @@ function SearchContent() {
         )}
 
         {!loading && searched && results.length === 0 && (
-          <div className="rounded-lg border border-border bg-surface py-20 text-center">
+          <div className="rounded-2xl border border-border bg-surface py-24 text-center">
             <BarChart3 className="mx-auto mb-4 h-10 w-10 text-text-muted" />
-            <p className="text-lg font-black text-text-primary">No matching candidates</p>
-            <p className="mt-2 text-sm text-text-muted">Try a title, genre, region, or another ranking signal.</p>
+            <p className="text-lg font-bold text-text-primary">No matching results</p>
+            <p className="mt-2 text-sm text-text-muted">Try a different title, genre, or mood.</p>
           </div>
         )}
       </div>
@@ -84,13 +83,14 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-background pt-24">
-          <div className="mx-auto mt-20 h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
-      }
-    >
+    <Suspense fallback={
+      <main className="min-h-screen bg-background pt-28 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="text-sm text-text-muted">Loading...</p>
+        </div>
+      </main>
+    }>
       <SearchContent />
     </Suspense>
   );
