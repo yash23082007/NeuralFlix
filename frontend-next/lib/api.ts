@@ -1,6 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// ─── Types ──────────────────────────────────────────────────
 export interface Movie {
   _id?: string;
   tmdb_id?: number;
@@ -19,6 +18,7 @@ export interface Movie {
   media_type?: string;
   cinema_region?: string;
   popularity_score?: number;
+  rec_score?: number;
 }
 
 export interface MovieDetail extends Movie {
@@ -33,13 +33,21 @@ export interface MovieDetail extends Movie {
   metacritic?: number;
   box_office?: string;
   awards?: string;
-  deep_metadata?: any;
+  deep_metadata?: unknown;
 }
 
-// ─── HTTP Helpers ───────────────────────────────────────────
+export interface MlOverview {
+  catalog_size: number;
+  average_rating: number;
+  top_genres: { name: string; count: number }[];
+  top_regions: { name: string; count: number }[];
+  pipeline: { stage: string; method: string }[];
+  model_cards: { name: string; type: string; status: string; purpose: string }[];
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit & { revalidate?: number }): Promise<T | null> {
   try {
-    const { revalidate = 3600, ...fetchOptions } = options || {};
+    const { revalidate = 600, ...fetchOptions } = options || {};
     const res = await fetch(`${API_BASE}${path}`, {
       next: { revalidate },
       ...fetchOptions,
@@ -51,8 +59,6 @@ async function apiFetch<T>(path: string, options?: RequestInit & { revalidate?: 
     return null;
   }
 }
-
-// ─── Movie Endpoints ────────────────────────────────────────
 
 export async function getTrending(): Promise<Movie[]> {
   const data = await apiFetch<{ results: Movie[] }>("/api/movies/trending");
@@ -84,16 +90,14 @@ export async function getSeries(page = 1): Promise<Movie[]> {
   return data?.results || [];
 }
 
-// ─── Regional Cinema ────────────────────────────────────────
-
 export async function getByRegion(region: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<Movie[]>(`/api/v2/regions/${region}?page=${page}`);
-  return Array.isArray(data) ? data : [];
+  const data = await apiFetch<{ results: Movie[] }>(`/api/movies/region/${region}?page=${page}`);
+  return data?.results || [];
 }
 
 export async function getByMood(mood: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<Movie[]>(`/api/v2/search?mood=${mood}&page=${page}`);
-  return Array.isArray(data) ? data : [];
+  const data = await apiFetch<{ results: Movie[] }>(`/api/movies/mood/${mood}?page=${page}`);
+  return data?.results || [];
 }
 
 export async function getByGenre(genre: string, page = 1): Promise<Movie[]> {
@@ -101,27 +105,29 @@ export async function getByGenre(genre: string, page = 1): Promise<Movie[]> {
   return data?.results || [];
 }
 
-// ─── Movie Details ──────────────────────────────────────────
-
 export async function getMovieDetails(id: string, mediaType = "movie"): Promise<MovieDetail | null> {
   return await apiFetch<MovieDetail>(`/api/movies/${id}?media_type=${mediaType}`);
 }
 
-// ─── Search ─────────────────────────────────────────────────
-
 export async function searchMovies(query: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/search/movies?query=${encodeURIComponent(query)}&page=${page}`);
+  const data = await apiFetch<{ results: Movie[] }>(
+    `/api/search/movies?query=${encodeURIComponent(query)}&page=${page}`,
+    { revalidate: 60 },
+  );
   return data?.results || [];
 }
 
-// ─── Recommendations ────────────────────────────────────────
-
 export async function getRecommendations(movieId: string, mediaType = "movie"): Promise<Movie[]> {
-  const data = await apiFetch<{ recommendations: Movie[] }>(`/api/recommendations/${movieId}?media_type=${mediaType}`);
+  const data = await apiFetch<{ recommendations: Movie[] }>(
+    `/api/recommendations/${movieId}?media_type=${mediaType}`,
+    { revalidate: 120 },
+  );
   return data?.recommendations || [];
 }
 
-// ─── Convenience Wrappers ───────────────────────────────────
+export async function getMlOverview(): Promise<MlOverview | null> {
+  return await apiFetch<MlOverview>("/api/ml/overview", { revalidate: 120 });
+}
 
 export async function getIndianMovies(page = 1): Promise<Movie[]> {
   return getByRegion("indian", page);
