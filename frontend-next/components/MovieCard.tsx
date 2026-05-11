@@ -2,136 +2,140 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Plus, Play, Heart } from "lucide-react";
+import { BarChart3, Heart, Play, Plus, Star } from "lucide-react";
 import { useState } from "react";
 
 import { Movie } from "../lib/api";
 
-// ─── Language → Flag Map (Global Cinema) ────────────────────
-const LANGUAGE_FLAGS: Record<string, string> = {
-  // Indian Languages
-  hi: "🇮🇳", ta: "🇮🇳", te: "🇮🇳", ml: "🇮🇳", kn: "🇮🇳",
-  bn: "🇮🇳", pa: "🇮🇳", mr: "🇮🇳", gu: "🇮🇳", or: "🇮🇳",
-  as: "🇮🇳", ur: "🇮🇳",
-  // East Asian
-  ko: "🇰🇷", ja: "🇯🇵", zh: "🇨🇳", yue: "🇭🇰",
-  // European
-  fr: "🇫🇷", it: "🇮🇹", es: "🇪🇸", de: "🇩🇪", pt: "🇧🇷",
-  nl: "🇳🇱", pl: "🇵🇱", ro: "🇷🇴", cs: "🇨🇿", el: "🇬🇷",
-  hu: "🇭🇺", da: "🇩🇰", sv: "🇸🇪", no: "🇳🇴", fi: "🇫🇮",
-  // Middle East & Central Asia
-  fa: "🇮🇷", ar: "🇪🇬", tr: "🇹🇷", he: "🇮🇱",
-  // Southeast Asian
-  th: "🇹🇭", id: "🇮🇩", vi: "🇻🇳", tl: "🇵🇭", ms: "🇲🇾",
-  // Other
-  ru: "🇷🇺", uk: "🇺🇦", en: "🇺🇸", af: "🇿🇦",
+export type { Movie } from "../lib/api";
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: "Hindi",
+  ta: "Tamil",
+  te: "Telugu",
+  ml: "Malayalam",
+  kn: "Kannada",
+  bn: "Bengali",
+  ko: "Korean",
+  ja: "Japanese",
+  zh: "Chinese",
+  fr: "French",
+  it: "Italian",
+  es: "Spanish",
+  de: "German",
+  pt: "Portuguese",
+  fa: "Persian",
+  ar: "Arabic",
+  tr: "Turkish",
+  th: "Thai",
+  id: "Indonesian",
+  ru: "Russian",
+  en: "English",
+  sv: "Swedish",
 };
 
-// ─── Language → Display Name ─────────────────────────────────
-const LANGUAGE_NAMES: Record<string, string> = {
-  hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada",
-  bn: "Bengali", pa: "Punjabi", mr: "Marathi", gu: "Gujarati",
-  ko: "Korean", ja: "Japanese", zh: "Chinese", fr: "French",
-  it: "Italian", es: "Spanish", de: "German", pt: "Portuguese",
-  fa: "Persian", ar: "Arabic", tr: "Turkish", th: "Thai",
-  id: "Indonesian", ru: "Russian", en: "English", sv: "Swedish",
-};
+function getMovieHref(movie: Movie) {
+  const movieId = movie.tmdb_id || movie._id;
+  return `/movie/${movieId}?type=${movie.media_type || "movie"}`;
+}
 
 export function MovieCard({ movie }: { movie: Movie }) {
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const movieId = movie.tmdb_id || movie._id;
-  const flag = LANGUAGE_FLAGS[movie.language || "en"] || "🌍";
   const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
+  const score = movie.rec_score || movie.popularity_score;
 
   return (
     <Link
-      href={`/movie/${movieId}?type=${movie.media_type || "movie"}`}
-      className="group relative flex-shrink-0 cursor-pointer"
+      href={getMovieHref(movie)}
+      className="group relative block min-w-0"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      id={`movie-card-${movieId}`}
     >
-      {/* Poster */}
-      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-surface border border-border shadow-card transition-all duration-300 group-hover:scale-[1.07] group-hover:-translate-y-1 group-hover:shadow-2xl group-hover:border-accent/40">
+      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg border border-border bg-surface shadow-card transition-all duration-300 group-hover:-translate-y-1 group-hover:border-accent/50">
         {movie.poster_url && !imgError ? (
           <Image
             src={movie.poster_url}
             alt={movie.title}
             fill
-            className="object-cover transition-all duration-500 group-hover:brightness-75"
+            className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-75"
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 200px"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-elevated text-text-muted gap-2">
-            <span className="text-4xl opacity-50">🎬</span>
-            <span className="text-xs text-center px-2 line-clamp-2">{movie.title}</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-bg-elevated px-3 text-center text-text-muted">
+            <BarChart3 className="h-8 w-8 opacity-60" />
+            <span className="line-clamp-2 text-xs font-bold">{movie.title}</span>
           </div>
         )}
 
-        {/* Country Flag Badge */}
-        <div className="absolute top-2 left-2 z-10">
-          <span className="country-flag text-lg drop-shadow-lg">{flag}</span>
+        <div className="absolute left-2 top-2 rounded border border-white/15 bg-black/60 px-1.5 py-0.5 text-[10px] font-black uppercase text-white backdrop-blur">
+          {movie.cinema_region || movie.language || "film"}
         </div>
 
-        {/* Rating Badge */}
         {movie.rating != null && movie.rating > 0 && (
-          <div className="absolute top-2 right-2 z-10 imdb-rating">
-            <Star className="w-3 h-3 fill-current" />
+          <div className="absolute right-2 top-2 imdb-rating">
+            <Star className="h-3 w-3 fill-current" />
             {movie.rating.toFixed(1)}
           </div>
         )}
 
-        {/* Language Badge */}
-        {movie.language && movie.language !== "en" && (
-          <div className="absolute bottom-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/60 text-white backdrop-blur-sm">
+        {langName && movie.language !== "en" && (
+          <div className="absolute bottom-2 left-2 rounded bg-black/65 px-2 py-1 text-[10px] font-black uppercase text-white backdrop-blur">
             {langName}
           </div>
         )}
 
-        {/* Hover Overlay with Actions - Liquid Glass */}
-        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300 ${isHovered ? "opacity-100" : "opacity-0"} flex flex-col justify-end p-4`}>
-          <div className="flex justify-center gap-3 w-full translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+        <div
+          className={`absolute inset-0 flex items-end bg-black/45 p-3 backdrop-blur-sm transition-opacity duration-300 ${
+            isHovered ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <div className="flex w-full justify-center gap-2">
             <button
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110"
-              title="Add to Watchlist"
-              onClick={(e) => e.preventDefault()}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-white/20 bg-white/10 text-white backdrop-blur transition-transform hover:scale-105"
+              title="Add to watchlist"
+              onClick={(event) => event.preventDefault()}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="h-4 w-4" />
             </button>
             <button
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-accent hover:bg-accent/90 text-black shadow-gold transition-all hover:scale-110"
-              title="Play Trailer"
-              onClick={(e) => e.preventDefault()}
+              className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-black shadow-gold transition-transform hover:scale-105"
+              title="Open details"
+              onClick={(event) => event.preventDefault()}
             >
-              <Play className="w-5 h-5 fill-current ml-0.5" />
+              <Play className="ml-0.5 h-4 w-4 fill-current" />
             </button>
             <button
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-white/20 bg-white/10 text-white backdrop-blur transition-transform hover:scale-105"
               title="Like"
-              onClick={(e) => e.preventDefault()}
+              onClick={(event) => event.preventDefault()}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Info Below Card */}
-      <div className="mt-2 space-y-0.5 px-0.5">
-        <p className="text-sm font-semibold text-text-primary truncate group-hover:text-accent transition-colors font-heading">
+      <div className="mt-2 min-w-0 space-y-1 px-0.5">
+        <p className="truncate text-sm font-extrabold text-text-primary transition-colors group-hover:text-accent">
           {movie.title}
         </p>
-        <div className="flex items-center gap-2 text-xs text-text-muted">
+        <div className="flex min-w-0 items-center gap-2 text-xs text-text-muted">
           {movie.year && <span>{movie.year}</span>}
           {movie.genres && movie.genres.length > 0 && (
             <>
-              <span className="opacity-30">•</span>
+              <span className="opacity-40">/</span>
               <span className="truncate">{movie.genres.slice(0, 2).join(", ")}</span>
             </>
           )}
         </div>
+        {score != null && score > 0 && (
+          <div className="flex items-center gap-1 text-[11px] font-bold text-text-muted">
+            <BarChart3 className="h-3 w-3 text-accent" />
+            <span>ML score {Number(score).toFixed(2)}</span>
+          </div>
+        )}
       </div>
     </Link>
   );

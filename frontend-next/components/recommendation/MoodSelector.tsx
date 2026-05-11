@@ -1,37 +1,26 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import MovieRow from '../MovieRow';
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { Activity, Brain, Clapperboard, Compass, Gem, Heart, Landmark, Sparkles, Trophy } from "lucide-react";
+import MovieRow from "../MovieRow";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const MOODS = [
-  // Universal Moods
-  { id: 'feel_good',     emoji: '😄',  label: 'Feel Good',     color: '#FFD700', desc: 'Uplifting & heartwarming' },
-  { id: 'mind_blown',    emoji: '🤯',  label: 'Mind Blown',    color: '#9B59B6', desc: 'Twists & revelations' },
-  { id: 'adrenaline',    emoji: '🔥',  label: 'Adrenaline',    color: '#FF4500', desc: 'Epic action & thrills' },
-  { id: 'want_to_cry',   emoji: '🌧️',  label: 'Cry It Out',    color: '#6B9AFF', desc: 'Emotional deep-dives' },
-  { id: 'deep_thoughts',  emoji: '🧠',  label: 'Thoughtful',    color: '#00D4FF', desc: 'Philosophical & profound' },
-  { id: 'family_time',   emoji: '👨‍👩‍👧', label: 'Family Time',   color: '#10B981', desc: 'All-ages entertainment' },
-  { id: 'date_night',    emoji: '💕',  label: 'Date Night',    color: '#EC4899', desc: 'Romance & charm' },
-  
-  // Culture-Specific Moods
-  { id: 'desi_vibes',    emoji: '🇮🇳',  label: 'Desi Vibes',    color: '#FF6B35', desc: 'Indian cinema magic' },
-  { id: 'korean_wave',   emoji: '🇰🇷',  label: 'Korean Wave',   color: '#4A90D9', desc: 'K-drama & thrillers' },
-  { id: 'anime_night',   emoji: '🇯🇵',  label: 'Anime Night',   color: '#C0392B', desc: 'Japanese animation' },
-  { id: 'french_mood',   emoji: '🇫🇷',  label: 'French Mood',   color: '#6C5CE7', desc: 'Art-house & romance' },
-  
-  // Special Moods
-  { id: 'award_winners', emoji: '🏆',  label: 'Award Winners', color: '#F5C518', desc: 'Critically acclaimed' },
-  { id: 'hidden_gems',   emoji: '💎',  label: 'Hidden Gems',   color: '#00D4FF', desc: 'Undiscovered masterpieces' },
-  { id: 'classic_cinema',emoji: '🕰️',  label: 'Classic Cinema', color: '#F97316', desc: 'Timeless masterpieces' },
-  { id: 'new_releases',  emoji: '🌟',  label: 'New Releases',  color: '#10B981', desc: 'Fresh from theaters' },
-  { id: '90s_bollywood', emoji: '🎵',  label: '90s Bollywood', color: '#F39C12', desc: 'Golden era nostalgia' },
+const SIGNALS = [
+  { id: "feel_good", label: "Feel-good", icon: Heart, color: "#00A6C7", desc: "Comedy, romance, family" },
+  { id: "mind_blown", label: "High novelty", icon: Brain, color: "#7057FF", desc: "Thriller, mystery, sci-fi" },
+  { id: "adrenaline", label: "Action bias", icon: Clapperboard, color: "#E50914", desc: "Action and adventure" },
+  { id: "deep_thoughts", label: "Reflective", icon: Activity, color: "#27AE60", desc: "Drama and documentary" },
+  { id: "desi_vibes", label: "Indian cluster", icon: Compass, color: "#FF6B35", desc: "Indian language cinema" },
+  { id: "korean_wave", label: "Korean cluster", icon: Landmark, color: "#4A90D9", desc: "Korean thrillers and drama" },
+  { id: "award_winners", label: "Critical acclaim", icon: Trophy, color: "#F5C518", desc: "High-rated broad consensus" },
+  { id: "hidden_gems", label: "Long-tail gems", icon: Gem, color: "#00D4FF", desc: "High rating, lower vote count" },
+  { id: "new_releases", label: "Freshness", icon: Sparkles, color: "#10B981", desc: "Recent release recency boost" },
 ];
 
 export function MoodSelector() {
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>("hidden_gems");
   const [moodMovies, setMoodMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,8 +38,8 @@ export function MoodSelector() {
           const data = await res.json();
           setMoodMovies(data.results || []);
         }
-      } catch (e) {
-        console.error("Failed to fetch mood movies:", e);
+      } catch (error) {
+        console.error("Failed to fetch signal movies:", error);
       } finally {
         setLoading(false);
       }
@@ -59,71 +48,50 @@ export function MoodSelector() {
     fetchMoodMovies();
   }, [selectedMood]);
 
-  const handleSelection = (moodId: string) => {
-    setSelectedMood(selectedMood === moodId ? null : moodId);
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-heading font-bold text-text-primary mb-2">
-          How do you want to <span className="text-accent">feel</span> today?
-        </h2>
-        <p className="text-sm text-text-muted">
-          Pick a mood and discover films from around the world
+    <div className="space-y-7">
+      <div>
+        <p className="text-xs font-black uppercase tracking-wide text-accent">Signal workbench</p>
+        <h1 className="mt-2 text-4xl font-black text-text-primary">Preference signal testing</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
+          Inspect how different intent proxies alter recall and ranking behavior.
         </p>
       </div>
 
-      {/* Mood Grid */}
-      <div className="flex flex-wrap justify-center gap-3 max-w-5xl mx-auto">
-        {MOODS.map((mood) => (
-          <motion.button
-            key={mood.id}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleSelection(mood.id)}
-            className={`cursor-pointer rounded-xl flex items-center gap-2.5 px-4 py-3 border-2 transition-all duration-200 ${
-              selectedMood === mood.id
-                ? 'border-accent bg-accent/10 shadow-lg shadow-accent/20'
-                : 'border-transparent bg-surface hover:bg-bg-elevated hover:border-border'
-            }`}
-          >
-            <span
-              className="text-2xl drop-shadow-lg"
-              style={{ filter: `drop-shadow(0 0 8px ${mood.color}40)` }}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {SIGNALS.map((signal) => {
+          const Icon = signal.icon;
+          return (
+            <motion.button
+              key={signal.id}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedMood(selectedMood === signal.id ? null : signal.id)}
+              className={`rounded-lg border p-4 text-left transition-all ${
+                selectedMood === signal.id
+                  ? "border-accent bg-accent/10 shadow-gold"
+                  : "border-border bg-surface shadow-card hover:border-accent/40"
+              }`}
             >
-              {mood.emoji}
-            </span>
-            <div className="text-left">
-              <p className={`font-bold text-sm tracking-tight ${
-                selectedMood === mood.id ? 'text-accent' : 'text-text-primary'
-              }`}>
-                {mood.label}
-              </p>
-              <p className="text-[10px] text-text-muted hidden sm:block">
-                {mood.desc}
-              </p>
-            </div>
-          </motion.button>
-        ))}
+              <Icon className="mb-5 h-5 w-5" style={{ color: signal.color }} />
+              <p className="font-black text-text-primary">{signal.label}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-text-muted">{signal.id.replace(/_/g, " ")}</p>
+              <p className="mt-3 text-sm leading-5 text-text-muted">{signal.desc}</p>
+            </motion.button>
+          );
+        })}
       </div>
 
-      {/* Results Row */}
       {loading && (
         <div className="flex justify-center py-8">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       )}
 
       {moodMovies.length > 0 && !loading && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <MovieRow
-            title={`${MOODS.find(m => m.id === selectedMood)?.emoji} ${MOODS.find(m => m.id === selectedMood)?.label} — Results`}
+            title={`${SIGNALS.find((signal) => signal.id === selectedMood)?.label || "Signal"} results`}
             movies={moodMovies}
           />
         </motion.div>
