@@ -98,20 +98,20 @@ export default function CinemaWorldMap() {
 
       {tooltipData && (
         <div
-          className="pointer-events-none fixed z-[90] rounded-lg border border-white/10 bg-black/85 px-4 py-3 text-white shadow-card backdrop-blur"
+          className="pointer-events-none fixed z-[90] rounded-lg border border-border bg-white/95 px-4 py-3 text-text-primary shadow-card backdrop-blur"
           style={{ top: tooltipData.y + 15, left: tooltipData.x + 15 }}
         >
           <div className="mb-1 flex items-center justify-between gap-3 text-base font-black">
             {tooltipData.content.name}
-            <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white/70">
+            <span className="rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] font-bold uppercase text-text-muted">
               {tooltipData.content.region}
             </span>
           </div>
-          <div className="text-sm text-white/70">
+          <div className="text-sm text-text-muted">
             <span className="font-black text-accent">{tooltipData.content.count.toLocaleString()}</span> titles indexed
           </div>
-          <div className="mt-1 border-t border-white/10 pt-1 text-sm text-white/70">
-            Anchor: <span className="text-white">{tooltipData.content.topMovie}</span>
+          <div className="mt-1 border-t border-border pt-1 text-sm text-text-muted">
+            Anchor: <span className="text-text-primary">{tooltipData.content.topMovie}</span>
           </div>
         </div>
       )}
