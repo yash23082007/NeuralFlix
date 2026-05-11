@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import MovieCard from "../../components/MovieCard";
-import { Search } from "lucide-react";
+import { BarChart3, Search } from "lucide-react";
 
-const API = "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -22,16 +22,14 @@ function SearchContent() {
       setLoading(true);
       setSearched(true);
       try {
-        let url = `${API}/api/v2/search?`;
-        if (query) url += `q=${encodeURIComponent(query)}&`;
-        if (mood) url += `mood=${encodeURIComponent(mood)}`;
-        
+        const url = mood
+          ? `${API}/api/movies/mood/${encodeURIComponent(mood)}`
+          : `${API}/api/search/movies?query=${encodeURIComponent(query)}`;
         const res = await fetch(url);
         const data = await res.json();
-        // V2 search returns an array directly based on my router, not { results: [] }
         setResults(Array.isArray(data) ? data : data.results || []);
-      } catch (err) {
-        console.error("Search error:", err);
+      } catch (error) {
+        console.error("Search error:", error);
       } finally {
         setLoading(false);
       }
@@ -40,57 +38,47 @@ function SearchContent() {
     doSearch();
   }, [query, mood]);
 
+  const label = query ? `"${query}"` : mood ? mood.replace(/_/g, " ") : "Catalog search";
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Search Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Search className="w-6 h-6 text-imdb-gold" />
-          {query ? (
-            <>
-              Results for <span className="text-imdb-gold">&quot;{query}&quot;</span>
-            </>
-          ) : mood ? (
-            <>
-              Browsing Mood: <span className="text-imdb-gold capitalize">{mood.replace('_', ' ')}</span>
-            </>
-          ) : (
-            "Search Movies & Shows"
+    <main className="min-h-screen bg-background pt-24 page-enter">
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+        <section className="mb-8 rounded-lg border border-border bg-surface p-6 shadow-card">
+          <p className="text-xs font-black uppercase tracking-wide text-accent">Search</p>
+          <h1 className="mt-2 flex items-center gap-3 text-3xl font-black text-text-primary">
+            <Search className="h-7 w-7 text-accent" />
+            {label}
+          </h1>
+          {searched && !loading && (
+            <p className="mt-2 text-sm font-semibold text-text-muted">
+              {results.length} result{results.length !== 1 ? "s" : ""} in the candidate set
+            </p>
           )}
-        </h1>
-        {searched && !loading && (
-          <p className="text-text-muted text-sm mt-2">
-            {results.length} result{results.length !== 1 ? "s" : ""} found
-          </p>
+        </section>
+
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          </div>
+        )}
+
+        {!loading && results.length > 0 && (
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {results.map((movie: any) => (
+              <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
+            ))}
+          </div>
+        )}
+
+        {!loading && searched && results.length === 0 && (
+          <div className="rounded-lg border border-border bg-surface py-20 text-center">
+            <BarChart3 className="mx-auto mb-4 h-10 w-10 text-text-muted" />
+            <p className="text-lg font-black text-text-primary">No matching candidates</p>
+            <p className="mt-2 text-sm text-text-muted">Try a title, genre, region, or another ranking signal.</p>
+          </div>
         )}
       </div>
-
-      {/* Loading */}
-      {loading && (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-imdb-gold border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {/* Results Grid */}
-      {!loading && results.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-          {results.map((movie: any) => (
-            <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
-          ))}
-        </div>
-      )}
-
-      {/* No Results */}
-      {!loading && searched && results.length === 0 && (
-        <div className="text-center py-20">
-          <p className="text-text-secondary text-lg">No results found.</p>
-          <p className="text-text-muted text-sm mt-2">
-            Try searching with different keywords.
-          </p>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
 
@@ -98,9 +86,9 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="w-8 h-8 border-2 border-imdb-gold border-t-transparent rounded-full animate-spin mx-auto mt-20" />
-        </div>
+        <main className="min-h-screen bg-background pt-24">
+          <div className="mx-auto mt-20 h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        </main>
       }
     >
       <SearchContent />

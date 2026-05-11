@@ -1,263 +1,241 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, Globe, Calendar, Sparkles, Film } from "lucide-react";
-import { MovieCard, Movie } from "../../components/MovieCard";
+import { useEffect, useState } from "react";
+import { BarChart3, Film, Globe2, SlidersHorizontal } from "lucide-react";
+import MovieCard, { Movie } from "../../components/MovieCard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const GENRES = [
-  "Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi",
-  "Thriller", "Animation", "Adventure", "Crime", "Fantasy",
-  "Mystery", "Documentary",
+  "Action",
+  "Comedy",
+  "Drama",
+  "Horror",
+  "Romance",
+  "Science Fiction",
+  "Thriller",
+  "Animation",
+  "Adventure",
+  "Crime",
+  "Fantasy",
+  "Mystery",
+  "Documentary",
 ];
 
 const REGIONS = [
-  { value: "indian",   label: "🇮🇳 Indian Cinema" },
-  { value: "bollywood", label: "🎬 Bollywood" },
-  { value: "tollywood", label: "🌟 Tollywood" },
-  { value: "kollywood", label: "🎭 Kollywood" },
-  { value: "mollywood", label: "🌿 Mollywood" },
-  { value: "korean",   label: "🇰🇷 Korean" },
-  { value: "japanese", label: "🇯🇵 Japanese" },
-  { value: "french",   label: "🇫🇷 French" },
-  { value: "spanish",  label: "🇪🇸 Spanish" },
-  { value: "hollywood",label: "🇺🇸 Hollywood" },
-  { value: "nollywood",label: "🇳🇬 Nollywood" },
-  { value: "iranian",  label: "🇮🇷 Iranian" },
-  { value: "chinese",  label: "🇨🇳 Chinese" },
-  { value: "thai",     label: "🇹🇭 Thai" },
-  { value: "turkish",  label: "🇹🇷 Turkish" },
-];
-
-const ERAS = [
-  { label: "All Time", value: "" },
-  { label: "2020s", value: "2020s" },
-  { label: "2010s", value: "2010s" },
-  { label: "2000s", value: "2000s" },
-  { label: "1990s", value: "1990s" },
-  { label: "1980s", value: "1980s" },
-  { label: "Classics (Pre-1980)", value: "classic" },
+  { value: "indian", label: "Indian Cinema" },
+  { value: "bollywood", label: "Bollywood" },
+  { value: "tollywood", label: "Tollywood" },
+  { value: "korean", label: "Korean" },
+  { value: "japanese", label: "Japanese" },
+  { value: "french", label: "French" },
+  { value: "spanish", label: "Spanish" },
+  { value: "hollywood", label: "Hollywood" },
+  { value: "iranian", label: "Iranian" },
 ];
 
 const SORT_OPTIONS = [
-  { label: "Most Popular", value: "popularity" },
-  { label: "Highest Rated", value: "rating" },
-  { label: "Newest First", value: "newest" },
+  { label: "Popularity", value: "popularity" },
+  { label: "Rating", value: "rating" },
+  { label: "Newest", value: "newest" },
 ];
 
 export default function DiscoverPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [filters, setFilters] = useState({
     region: "",
     genre: "",
-    era: "",
     sort: "popularity",
-    query: "",
   });
   const [page, setPage] = useState(1);
-  const [filtersOpen, setFiltersOpen] = useState(true);
 
   useEffect(() => {
+    const fetchMovies = async () => {
+      setLoading(true);
+      try {
+        let url = `${API_BASE}/api/movies/?page=${page}&limit=40`;
+        if (filters.region) url = `${API_BASE}/api/movies/region/${filters.region}?page=${page}`;
+        if (filters.genre) url = `${API_BASE}/api/movies/genre/${filters.genre.toLowerCase()}?page=${page}`;
+
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          let nextMovies = data.results || [];
+          if (filters.sort === "rating") {
+            nextMovies = [...nextMovies].sort((a: Movie, b: Movie) => (b.rating || 0) - (a.rating || 0));
+          }
+          if (filters.sort === "newest") {
+            nextMovies = [...nextMovies].sort((a: Movie, b: Movie) => (b.year || 0) - (a.year || 0));
+          }
+          setMovies(nextMovies);
+        }
+      } catch (error) {
+        console.error("Discover fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMovies();
   }, [filters, page]);
 
-  const fetchMovies = async () => {
-    setLoading(true);
-    try {
-      let url = "";
-
-      // Determine the best endpoint based on active filters
-      if (filters.region) {
-        url = `${API_BASE}/api/movies/region/${filters.region}?page=${page}`;
-      } else if (filters.genre) {
-        url = `${API_BASE}/api/movies/genre/${filters.genre}?page=${page}`;
-      } else {
-        url = `${API_BASE}/api/movies/?page=${page}&limit=40`;
-      }
-
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setMovies(data.results || []);
-      }
-    } catch (e) {
-      console.error("Discover fetch error:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const updateFilter = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((previous) => ({ ...previous, [key]: value }));
     setPage(1);
   };
 
   return (
-    <main className="min-h-screen bg-background pt-20 page-enter">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-accent/10 via-transparent to-accent-korea/10 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <Sparkles className="w-8 h-8 text-accent" />
-            <h1 className="text-4xl md:text-5xl font-heading font-bold text-text-primary">
-              Discover
-            </h1>
+    <main className="min-h-screen bg-background pt-24 page-enter">
+      <div className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+        <section className="mb-8 rounded-lg border border-border bg-surface p-6 shadow-card md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-accent">Catalog explorer</p>
+              <h1 className="mt-2 text-4xl font-black text-text-primary md:text-5xl">
+                Feature-rich movie search
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
+                Browse by genre, region, and ranking signal across the recommendation catalog.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-lg border border-border bg-bg-elevated px-4 py-3">
+                <div className="text-lg font-black text-text-primary">{movies.length}</div>
+                <div className="text-[10px] font-bold uppercase text-text-muted">Results</div>
+              </div>
+              <div className="rounded-lg border border-border bg-bg-elevated px-4 py-3">
+                <div className="text-lg font-black text-text-primary">{REGIONS.length}</div>
+                <div className="text-[10px] font-bold uppercase text-text-muted">Regions</div>
+              </div>
+              <div className="rounded-lg border border-border bg-bg-elevated px-4 py-3">
+                <div className="text-lg font-black text-text-primary">{GENRES.length}</div>
+                <div className="text-[10px] font-bold uppercase text-text-muted">Genres</div>
+              </div>
+            </div>
           </div>
-          <p className="text-lg text-text-secondary max-w-2xl">
-            Explore cinema from 50+ countries. Filter by region, genre, era, and mood to find your next favorite film.
-          </p>
-        </div>
-      </div>
+        </section>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pb-20">
-        {/* Filter Toggle */}
         <button
-          onClick={() => setFiltersOpen(!filtersOpen)}
-          className="flex items-center gap-2 mb-6 text-sm font-semibold text-text-secondary hover:text-text-primary transition-colors"
+          onClick={() => setFiltersOpen((value) => !value)}
+          className="mb-5 inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-bold text-text-secondary transition-colors hover:text-text-primary"
         >
-          <SlidersHorizontal className="w-4 h-4" />
-          {filtersOpen ? "Hide" : "Show"} Filters
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
         </button>
 
-        {/* Filters */}
         {filtersOpen && (
-          <div className="glass-card p-6 mb-8 space-y-6">
-            {/* Cinema Region */}
+          <section className="mb-8 space-y-6 rounded-lg border border-border bg-surface p-5 shadow-card">
             <div>
-              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Globe className="w-4 h-4" /> Cinema Region
-              </h3>
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-text-muted">
+                <Globe2 className="h-4 w-4" />
+                Region
+              </h2>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => updateFilter("region", "")}
-                  className={`genre-pill ${!filters.region ? "!bg-accent !text-black !border-accent" : ""}`}
+                  className={`genre-pill ${!filters.region ? "!border-accent !bg-accent !text-black" : ""}`}
                 >
-                  All Regions
+                  All regions
                 </button>
-                {REGIONS.map((r) => (
+                {REGIONS.map((region) => (
                   <button
-                    key={r.value}
-                    onClick={() => updateFilter("region", r.value)}
-                    className={`genre-pill ${filters.region === r.value ? "!bg-accent !text-black !border-accent" : ""}`}
+                    key={region.value}
+                    onClick={() => updateFilter("region", region.value)}
+                    className={`genre-pill ${filters.region === region.value ? "!border-accent !bg-accent !text-black" : ""}`}
                   >
-                    {r.label}
+                    {region.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Genre */}
             <div>
-              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Film className="w-4 h-4" /> Genre
-              </h3>
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-text-muted">
+                <Film className="h-4 w-4" />
+                Genre
+              </h2>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => updateFilter("genre", "")}
-                  className={`genre-pill ${!filters.genre ? "!bg-accent !text-black !border-accent" : ""}`}
+                  className={`genre-pill ${!filters.genre ? "!border-accent !bg-accent !text-black" : ""}`}
                 >
-                  All Genres
+                  All genres
                 </button>
-                {GENRES.map((g) => (
+                {GENRES.map((genre) => (
                   <button
-                    key={g}
-                    onClick={() => updateFilter("genre", g.toLowerCase())}
-                    className={`genre-pill ${filters.genre === g.toLowerCase() ? "!bg-accent !text-black !border-accent" : ""}`}
+                    key={genre}
+                    onClick={() => updateFilter("genre", genre)}
+                    className={`genre-pill ${filters.genre === genre ? "!border-accent !bg-accent !text-black" : ""}`}
                   >
-                    {g}
+                    {genre}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Era */}
-            <div>
-              <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Era
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {ERAS.map((e) => (
-                  <button
-                    key={e.value}
-                    onClick={() => updateFilter("era", e.value)}
-                    className={`genre-pill ${filters.era === e.value ? "!bg-accent !text-black !border-accent" : ""}`}
-                  >
-                    {e.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          </section>
         )}
 
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-text-muted">
-            {loading ? "Searching..." : `${movies.length} films found`}
-            {filters.region && ` in ${REGIONS.find(r => r.value === filters.region)?.label || filters.region}`}
-            {filters.genre && ` • ${filters.genre}`}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-semibold text-text-muted">
+            {loading ? "Loading candidates" : `${movies.length} candidates`}
           </p>
           <div className="flex gap-2">
-            {SORT_OPTIONS.map((s) => (
+            {SORT_OPTIONS.map((option) => (
               <button
-                key={s.value}
-                onClick={() => updateFilter("sort", s.value)}
-                className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  filters.sort === s.value
-                    ? "bg-accent text-black font-bold"
-                    : "bg-surface text-text-muted hover:text-text-primary"
+                key={option.value}
+                onClick={() => updateFilter("sort", option.value)}
+                className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-black transition-colors ${
+                  filters.sort === option.value
+                    ? "bg-accent text-black"
+                    : "border border-border bg-surface text-text-muted hover:text-text-primary"
                 }`}
               >
-                {s.label}
+                <BarChart3 className="h-3 w-3" />
+                {option.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Movie Grid */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-            {Array.from({ length: 18 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="skeleton aspect-[2/3] rounded-xl" />
-                <div className="skeleton h-4 w-3/4 rounded" />
-                <div className="skeleton h-3 w-1/2 rounded" />
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {Array.from({ length: 18 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <div className="skeleton aspect-[2/3]" />
+                <div className="skeleton h-4 w-3/4" />
+                <div className="skeleton h-3 w-1/2" />
               </div>
             ))}
           </div>
         ) : movies.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-            {movies.map((m) => (
-              <MovieCard key={m.tmdb_id || m._id} movie={m} />
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {movies.map((movie) => (
+              <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4 opacity-50">🎬</div>
-            <h3 className="text-xl font-semibold mb-2">No films found</h3>
-            <p className="text-text-muted">Try adjusting your filters to discover more cinema.</p>
+          <div className="rounded-lg border border-border bg-surface py-20 text-center">
+            <Film className="mx-auto mb-4 h-10 w-10 text-text-muted" />
+            <h3 className="text-xl font-black text-text-primary">No candidates found</h3>
+            <p className="mt-2 text-sm text-text-muted">Adjust the filters to widen the recall set.</p>
           </div>
         )}
 
-        {/* Pagination */}
         {movies.length > 0 && (
-          <div className="flex justify-center gap-3 mt-12">
+          <div className="mt-12 flex justify-center gap-3">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              className="px-5 py-2.5 bg-surface border border-border rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:border-accent/40 disabled:opacity-30 transition-all"
+              className="rounded-md border border-border bg-surface px-5 py-2.5 text-sm font-bold text-text-secondary transition-colors hover:text-text-primary disabled:opacity-30"
             >
               Previous
             </button>
-            <span className="px-4 py-2.5 bg-accent text-black font-bold text-sm rounded-lg">
-              Page {page}
-            </span>
+            <span className="rounded-md bg-accent px-4 py-2.5 text-sm font-black text-black">Page {page}</span>
             <button
               onClick={() => setPage(page + 1)}
-              className="px-5 py-2.5 bg-surface border border-border rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:border-accent/40 transition-all"
+              className="rounded-md border border-border bg-surface px-5 py-2.5 text-sm font-bold text-text-secondary transition-colors hover:text-text-primary"
             >
               Next
             </button>

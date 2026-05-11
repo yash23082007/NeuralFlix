@@ -100,7 +100,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Password"
                 className="w-full px-4 py-3 pr-11 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all text-sm"
               />
               <button
@@ -146,7 +146,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-center text-[10px] text-text-muted mt-6">
           <Sparkles className="w-3 h-3 inline mr-1" />
-          NeuralFlix — Global Cinema Discovery & AI Recommendations
+          NeuralFlix ML - Global Cinema Recommendation System
         </p>
       </div>
     </main>

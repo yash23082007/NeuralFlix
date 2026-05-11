@@ -1,55 +1,37 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, DM_Sans } from "next/font/google";
 import "../styles/globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
-import AuroraBackground from "../components/AuroraBackground";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-  weight: ["400", "600", "700", "800"],
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: {
-    default: "NeuralFlix — Global Cinema Discovery & AI Recommendations",
-    template: "%s | NeuralFlix",
+    default: "NeuralFlix ML | Movie Recommendation System",
+    template: "%s | NeuralFlix ML",
   },
   description:
-    "The world's first truly global movie discovery platform. Bollywood, Korean, Japanese, French & 50+ cinema traditions — all powered by AI recommendations. Free forever.",
+    "An advanced machine learning web app for movie discovery, hybrid recommendations, and global cinema exploration.",
   keywords: [
-    "movie recommendations", "bollywood movies", "korean movies", "world cinema",
-    "movie database", "AI recommendations", "Indian cinema", "NeuralFlix",
-    "best movies", "movie discovery", "watch movies online", "TMDB",
+    "machine learning",
+    "movie recommendations",
+    "recommender system",
+    "collaborative filtering",
+    "content based filtering",
+    "world cinema",
+    "NeuralFlix",
   ],
   openGraph: {
-    title: "NeuralFlix — Global Cinema Discovery",
-    description: "Discover cinema from 50+ countries with AI-powered recommendations.",
+    title: "NeuralFlix ML",
+    description: "Hybrid ML recommendations for global cinema.",
     type: "website",
-    siteName: "NeuralFlix",
+    siteName: "NeuralFlix ML",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NeuralFlix — Global Cinema Discovery",
-    description: "Discover cinema from 50+ countries with AI-powered recommendations.",
+    title: "NeuralFlix ML",
+    description: "Hybrid ML recommendations for global cinema.",
   },
   robots: {
     index: true,
@@ -67,19 +49,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#0a0a0f" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        {/* JSON-LD Structured Data */}
+        <meta name="theme-color" content="#09090b" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "NeuralFlix",
+              name: "NeuralFlix ML",
               url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-              description: "Global Cinema Discovery & AI Recommendation Platform",
+              description: "Machine learning movie recommendation platform",
               potentialAction: {
                 "@type": "SearchAction",
                 target: {
@@ -92,20 +71,19 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.variable} ${playfair.variable} ${dmSans.variable} min-h-screen`}
-      >
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
-          <AuroraBackground />
-          <Navbar />
-          <CommandPalette />
-          {children}
-          <Footer />
+          <div className="app-shell">
+            <Navbar />
+            <CommandPalette />
+            {children}
+            <Footer />
+          </div>
         </ThemeProvider>
       </body>
     </html>
