@@ -49,10 +49,10 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center bg-black/65 p-4 pt-[15vh] backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center bg-slate-900/35 p-4 pt-[15vh] backdrop-blur-sm">
       <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
       <Command
-        className="relative z-50 w-full max-w-2xl overflow-hidden rounded-lg border border-border bg-surface text-text-primary shadow-card"
+        className="premium-card relative z-50 w-full max-w-2xl overflow-hidden rounded-lg text-text-primary"
         label="NeuralFlix command menu"
       >
         <div className="flex items-center border-b border-border px-3">
