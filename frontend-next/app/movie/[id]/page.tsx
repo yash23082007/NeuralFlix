@@ -101,7 +101,13 @@ export default function MovieDetailPage() {
       <section className="relative h-[55vh] md:h-[70vh] w-full overflow-hidden">
         <div className="absolute inset-0">
           {movie.backdrop_url ? (
-            <Image src={movie.backdrop_url} alt={movie.title} fill className="object-cover object-top opacity-60 saturate-[1.2] transition-transform duration-1000 page-enter-scale" priority />
+            <Image 
+              src={movie.backdrop_url} 
+              alt={movie.title} 
+              fill 
+              className="object-cover object-top opacity-60 saturate-[1.2] transition-transform duration-1000 page-enter-scale" 
+              priority 
+            />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated to-bg-surface" />
           )}
