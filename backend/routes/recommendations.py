@@ -93,7 +93,14 @@ async def get_user_recommendations(
         pass
 
     # 3. Generate Recommendations using hybrid pipeline
-    rec_pairs = recommender.recommend(user_id=user_id, watch_history=user_history, top_k=top_k)
+    all_candidates = []
+    try:
+        from database import movies_collection
+        all_candidates = [m.get("tmdb_id") for m in movies_collection.find({}, {"tmdb_id": 1, "_id": 0}).limit(500)]
+    except Exception:
+        pass
+
+    rec_pairs = recommender.recommend(user_id=user_id, watch_history=user_history, all_candidate_ids=all_candidates, top_k=top_k)
 
     if not rec_pairs:
         # Fallback: use the existing recommendation engine

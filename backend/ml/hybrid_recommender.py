@@ -22,49 +22,60 @@ class HybridRecommender:
         self.seq = seq_model
         self.gnn = gnn_model
 
-    def recommend(self, user_id: int, watch_history: List[int], all_candidate_ids: List[int], top_k: int = 20) -> List[int]:
+    def recommend(self, user_id: int, watch_history: List[int], all_candidate_ids: Optional[List[int]] = None, top_k: int = 20) -> List[Tuple[int, float]]:
         """
         Produce top-k recommendations blending Content-Based, NCF, and Sequential models.
+        Returns a list of (movie_id, score) tuples.
         """
         # Weights (tunable via configuration or A/B testing)
         W_CONTENT = 0.20
         W_NCF = 0.40
         W_SEQ = 0.40
-        # W_GNN = 0.20 if self.gnn else 0.0
 
         scores: Dict[int, float] = {}
         
-        # 1. Content-based Candidate Retrieval -> Fast fallback baseline
+        # 1. Content-based Candidate Retrieval
         candidates = []
         if watch_history:
-            # get similar for the last watched movie
-            similar = self.content.get_similar(watch_history[-1], top_k=100)
-            candidates.extend(similar)
-            for rank, movie_id in enumerate(similar):
-                scores[movie_id] = scores.get(movie_id, 0) + W_CONTENT * (1 / (rank + 1))
+            try:
+                # get similar for the last watched movie
+                similar = self.content.get_similar(watch_history[-1], top_k=100)
+                candidates.extend(similar)
+                for rank, movie_id in enumerate(similar):
+                    scores[movie_id] = scores.get(movie_id, 0) + W_CONTENT * (1 / (rank + 1))
+            except Exception:
+                pass
         
-        # Build candidates pool to rank (we shouldn't score the entire catalog with NCF/SASRec to save time)
-        # In a real system, we combine candidates from FAISS, Popularity, and Trending
+        # Build candidates pool to rank
         if not candidates:
-            # Fallback if no watch history -> typically we'd use popular movies here
-            candidates = all_candidate_ids[:200]
-        else:
+            candidates = all_candidate_ids[:200] if all_candidate_ids else []
+        elif all_candidate_ids:
             # Pad candidates to ensure we have enough to rank
             candidates = list(set(candidates + all_candidate_ids[:100]))
             
+        if not candidates:
+            return []
+
         # 2. Score candidates with NCF
-        ncf_scores = self.ncf.predict_for_user(user_id, candidates)
-        for movie_id, score in ncf_scores:
-            scores[movie_id] = scores.get(movie_id, 0) + W_NCF * score
+        try:
+            if self.ncf:
+                ncf_scores = self.ncf.predict_for_user(user_id, candidates)
+                for movie_id, score in ncf_scores:
+                    scores[movie_id] = scores.get(movie_id, 0) + W_NCF * score
+        except Exception:
+            pass
             
         # 3. Score candidates with Sequential Model
-        if watch_history:
-            seq_scores = self.seq.predict_next(watch_history, candidates)
-            for movie_id, score in seq_scores:
-                scores[movie_id] = scores.get(movie_id, 0) + W_SEQ * score
+        try:
+            if watch_history and self.seq:
+                seq_scores = self.seq.predict_next(watch_history, candidates)
+                for movie_id, score in seq_scores:
+                    scores[movie_id] = scores.get(movie_id, 0) + W_SEQ * score
+        except Exception:
+            pass
 
         # 4. Filter watched and sort
         filtered_scores = {k: v for k, v in scores.items() if k not in watch_history}
         sorted_recs = sorted(filtered_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
         
-        return [rec[0] for rec in sorted_recs]
+        return sorted_recs

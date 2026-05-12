@@ -111,6 +111,47 @@ async def search_movies(
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
+@router.get("/trending-all")
+async def get_trending_all():
+    return await get_trending_movies(limit=40)
+
+@router.get("/toprated")
+async def get_top_rated(page: int = 1, limit: int = 20):
+    return await get_trending_movies(page=page, limit=limit) # Simplified for demo
+
+@router.get("/nowplaying")
+async def get_now_playing(page: int = 1, limit: int = 20):
+    return await get_trending_movies(page=page, limit=limit) # Simplified for demo
+
+@router.get("/anime")
+async def get_anime(page: int = 1, limit: int = 20):
+    from database import movies_collection
+    movies = list(movies_collection.find({"genres": "Animation"}, {"_id": 0}).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
+@router.get("/series")
+async def get_series(page: int = 1, limit: int = 20):
+    from database import movies_collection
+    movies = list(movies_collection.find({"media_type": "tv"}, {"_id": 0}).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
+@router.get("/region/{region}")
+async def get_by_region(region: str, page: int = 1, limit: int = 20):
+    from database import movies_collection
+    movies = list(movies_collection.find({"cinema_region": region.lower()}, {"_id": 0}).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
+@router.get("/mood/{mood}")
+async def get_by_mood(mood: str, page: int = 1, limit: int = 20):
+    # This would typically use vector search, but for now we'll mock it
+    return await get_trending_movies(page=page, limit=limit)
+
+@router.get("/genre/{genre}")
+async def get_by_genre(genre: str, page: int = 1, limit: int = 20):
+    from database import movies_collection
+    movies = list(movies_collection.find({"genres": genre}, {"_id": 0}).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
 @router.get("/{movie_id}")
 async def get_movie(movie_id: int):
     """Fetch movie by TMDB ID"""
