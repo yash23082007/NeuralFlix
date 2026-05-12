@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Inter, Outfit, Playfair_Display } from "next/font/google";
 import "../styles/globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
+import Providers from "../components/Providers";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${playfair.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="theme-color" content="#F7F9FC" />
@@ -78,12 +84,14 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <div className="app-shell">
-            <Navbar />
-            <CommandPalette />
-            {children}
-            <Footer />
-          </div>
+          <Providers>
+            <div className="app-shell">
+              <Navbar />
+              <CommandPalette />
+              {children}
+              <Footer />
+            </div>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

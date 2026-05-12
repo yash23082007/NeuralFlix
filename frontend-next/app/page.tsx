@@ -1,7 +1,9 @@
 import { Database, Gauge, GitBranch, Layers3, Sparkles } from "lucide-react";
 import CinemaWorldMap from "../components/CinemaWorldMap";
-import HeroCarousel from "../components/HeroCarousel";
+import HeroScene from "../components/three/HeroScene";
+import MovieCard3D from "../components/three/MovieCard3D";
 import MovieRow from "../components/MovieRow";
+import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
 import { MoodPicker } from "../components/recommendation/MoodPicker";
 import {
   getAnime, getByGenre, getByMood, getByRegion, getMlOverview,
@@ -33,7 +35,14 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-background page-enter">
-      <HeroCarousel movies={trending.length ? trending : trendingAll} />
+      <HeroScene>
+        {/* Render a 3D movie card inside the parallax container of HeroScene for the top trending movie */}
+        {trendingAll.length > 0 && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+             <MovieCard3D movie={{...trendingAll[0], id: trendingAll[0].tmdb_id || trendingAll[0].id}} />
+          </div>
+        )}
+      </HeroScene>
 
       {/* Stats dashboard */}
       <div className="relative z-10 -mt-10 mx-auto max-w-7xl px-4 md:px-6">
@@ -82,6 +91,9 @@ export default async function HomePage() {
 
         {/* Movie rows */}
         <div className="space-y-12">
+          {/* Real-time ML recommendations */}
+          <PersonalizedRecommendations />
+
           <MovieRow title="Trending Now" movies={trendingAll} seeAllHref="/discover" />
           <MovieRow title="In Theaters" movies={nowPlaying} />
           <MovieRow title="Top Rated" movies={topRated} />

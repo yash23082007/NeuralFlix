@@ -9,52 +9,35 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-playfair)", "serif"],
-        heading: ["var(--font-dm-sans)", "sans-serif"],
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        display: ["'Clash Display'", "sans-serif"],
+        heading: ["'Clash Display'", "sans-serif"],
+        sans: ["'Plus Jakarta Sans'", "sans-serif"],
+        body: ["'Plus Jakarta Sans'", "sans-serif"],
       },
       colors: {
-        // Dynamic CSS variable colors (theme-aware)
         background: "var(--bg-primary)",
-        surface: "var(--bg-surface)",
-        "bg-elevated": "var(--bg-elevated)",
-        border: "var(--border)",
-        accent: "var(--accent)",
-        glass: "var(--glass-bg)",
+        "bg-secondary": "var(--bg-secondary)",
+        "bg-glass": "var(--bg-glass)",
+        "bg-glass-border": "var(--bg-glass-border)",
+        
         "text-primary": "var(--text-primary)",
         "text-secondary": "var(--text-secondary)",
         "text-muted": "var(--text-muted)",
 
-        // Cinema Region Accents
-        "accent-india": "var(--accent-india)",
-        "accent-korea": "var(--accent-korea)",
-        "accent-japan": "var(--accent-japan)",
-        "accent-france": "var(--accent-france)",
-        "accent-hollywood": "var(--accent-hollywood)",
-        "accent-iran": "var(--accent-iran)",
-        "accent-latin": "var(--accent-latin)",
-        "accent-africa": "var(--accent-africa)",
-
-        // Brand Colors
-        "imdb-gold": "#F5C518",
-        "imdb-gold-dark": "#D4A100",
-        "rt-red": "#FA320A",
-        "mc-green": "#6C3",
-        "neural-crimson": "#E50914",
-        "neural-electric": "#00D4FF",
-        "neural-purple": "#7B2FFF",
-        "neural-gold": "#F5C518",
+        "accent-primary": "var(--accent-primary)",
+        "accent-secondary": "var(--accent-secondary)",
+        "accent-warm": "var(--accent-warm)",
+        "accent-success": "var(--accent-success)",
       },
-      borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)",
+      backgroundImage: {
+        'gradient-hero': "var(--gradient-hero)",
+        'gradient-card': "var(--gradient-card)",
       },
       boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
         card: "var(--shadow-card)",
-        glow: "var(--shadow-glow)",
-        gold: "var(--shadow-gold)",
+        hover: "var(--shadow-hover)",
       },
       transitionTimingFunction: {
         spring: "var(--ease-spring)",

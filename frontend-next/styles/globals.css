@@ -3,41 +3,87 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --bg-primary: #F7F9FC;
+  /* Backgrounds */
+  --bg-primary: #FAFAFA;
+  --bg-secondary: #F4F4F5;
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --bg-glass-border: rgba(255, 255, 255, 0.9);
   --bg-surface: #FFFFFF;
-  --bg-surface-light: #F1F5F9;
-  --bg-elevated: #EAF0F7;
-  --border: rgba(15, 23, 42, 0.12);
-  --text-primary: #111827;
-  --text-secondary: #334155;
-  --text-muted: #64748B;
-  --accent: #E11D48;
-  --accent-foreground: #FFFFFF;
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(15, 23, 42, 0.10);
-  --accent-india: #FF6B35;
-  --accent-korea: #2563EB;
-  --accent-japan: #BE123C;
-  --accent-france: #7C3AED;
-  --accent-hollywood: #D97706;
-  --accent-iran: #059669;
-  --accent-latin: #EA580C;
-  --accent-africa: #F39C12;
-  --neural-crimson: #E11D48;
-  --neural-crimson-dim: #BE123C;
-  --neural-gold: #F5C518;
-  --neural-electric: #0284C7;
-  --neural-purple: #7C3AED;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
-  --radius-full: 9999px;
-  --shadow-card: 0 18px 48px rgba(15, 23, 42, 0.10);
-  --shadow-glow: 0 22px 54px rgba(225, 29, 72, 0.18);
-  --shadow-gold: 0 16px 38px rgba(245, 197, 24, 0.18);
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Text */
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-muted: #A1A1AA;
+
+  /* Accents */
+  --accent-primary: #6366F1;     /* Indigo */
+  --accent-secondary: #8B5CF6;   /* Violet */
+  --accent-warm: #F59E0B;        /* Amber for ratings */
+  --accent-success: #10B981;
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 50%, #FDF4FF 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(249,250,251,0.7));
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-card: 0 20px 60px rgba(99,102,241,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-hover: 0 30px 80px rgba(99,102,241,0.15), 0 8px 24px rgba(0,0,0,0.08);
+
+  /* Maintain existing variables mapped to new scheme */
+  --border: var(--bg-glass-border);
+  --glass-bg: var(--bg-glass);
 }
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+@layer utilities {
+  .display-font {
+    font-family: 'Clash Display', sans-serif;
+  }
+  .body-font {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .movie-card-3d {
+    background: var(--gradient-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--bg-glass-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    transform-style: preserve-3d;
+  }
+  
+  .stat-card {
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--bg-glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    transform-style: preserve-3d;
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotateX(0deg); }
+  50% { transform: translateY(-12px) rotateX(2deg); }
+}
+
+.stat-card:nth-child(2) { animation-delay: -2s; }
+.stat-card:nth-child(3) { animation-delay: -4s; }
 
 .dark {
   --bg-primary: #000000;
@@ -104,8 +150,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4 { letter-spacing: 0; }
-  .tracking-tight { letter-spacing: 0 !important; }
+  h1, h2, h3, h4 { 
+    font-family: var(--font-outfit), system-ui, sans-serif;
+    letter-spacing: -0.02em; 
+  }
+  .tracking-tight { letter-spacing: -0.02em !important; }
   ::selection { background: rgba(225, 29, 72, 0.18); color: var(--text-primary); }
 }
 
@@ -136,8 +185,28 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.premium-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  opacity: 0.5;
 }
 
 .bento-box {

@@ -98,104 +98,82 @@ export default function MovieDetailPage() {
 
   return (
     <main className="min-h-screen bg-background page-enter">
-      <section className="relative h-[45vh] overflow-hidden border-b border-border md:h-[60vh]">
+      <section className="relative h-[55vh] md:h-[70vh] w-full overflow-hidden">
         <div className="absolute inset-0">
-          {movie.backdrop_url && (
-            <Image src={movie.backdrop_url} alt={movie.title} fill className="object-cover object-top opacity-80 saturate-[1.08]" priority />
+          {movie.backdrop_url ? (
+            <Image src={movie.backdrop_url} alt={movie.title} fill className="object-cover object-top opacity-60 saturate-[1.2] transition-transform duration-1000 page-enter-scale" priority />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-bg-elevated to-bg-surface" />
           )}
-          <div className="hero-light-veil absolute inset-0" />
-          <div className="film-grain absolute inset-0 opacity-40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/30 to-transparent md:via-background/10 md:w-3/4" />
+          <div className="film-grain absolute inset-0 opacity-[0.15]" />
         </div>
 
-        <Link href="/" className="absolute left-6 top-6 z-20 inline-flex items-center gap-1.5 rounded-xl border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-text-primary shadow-card backdrop-blur-md transition-all hover:bg-white">
-          <ChevronLeft className="h-4 w-4" /> Back
+        <Link href="/" className="absolute left-6 top-6 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm font-medium text-white shadow-card backdrop-blur-md transition-all hover:bg-white hover:text-black">
+          <ChevronLeft className="h-4 w-4" /> Back to Home
         </Link>
       </section>
 
-      <div className="relative z-10 mx-auto -mt-36 max-w-7xl px-4 pb-16">
-        <div className="flex flex-col gap-8 md:flex-row">
-          <div className="mx-auto shrink-0 md:mx-0">
-            <div className="relative flex aspect-[2/3] w-[220px] items-center justify-center overflow-hidden rounded-2xl border-2 border-border bg-white shadow-2xl md:w-[280px]">
+      <div className="relative z-10 mx-auto -mt-48 max-w-6xl px-4 md:px-8 pb-20">
+        <div className="flex flex-col gap-10 md:flex-row md:items-end">
+          <div className="mx-auto shrink-0 md:mx-0 group perspective-1000">
+            <div className="relative flex aspect-[2/3] w-[240px] items-center justify-center overflow-hidden rounded-2xl border-4 border-white/10 bg-bg-surface shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:rotate-y-6 group-hover:-translate-y-2 md:w-[300px]">
               {movie.poster_url ? (
-                <Image src={movie.poster_url} alt={movie.title} fill className="object-cover" />
+                <Image src={movie.poster_url} alt={movie.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
               ) : (
-                <Film className="h-12 w-12 text-text-muted" />
+                <Film className="h-16 w-16 text-text-muted" />
               )}
+              {/* Premium glare effect */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             </div>
           </div>
 
-          <div className="premium-card flex-1 space-y-6 rounded-2xl p-6 md:p-8">
-            <div>
-              <h1 className="text-3xl font-bold text-text-primary md:text-4xl">
+          <div className="flex-1 space-y-6 pb-4">
+            <div className="space-y-2">
+              <h1 className="font-heading text-4xl font-extrabold text-foreground md:text-5xl lg:text-6xl drop-shadow-lg text-white">
                 {movie.title}
-                {movie.year && <span className="ml-3 text-2xl font-normal text-text-muted">({movie.year})</span>}
+                {movie.year && <span className="ml-4 text-3xl font-light text-white/70">({movie.year})</span>}
               </h1>
-              {movie.tagline && <p className="mt-2 text-text-muted italic">{movie.tagline}</p>}
+              {movie.tagline && <p className="text-lg text-white/80 italic font-light drop-shadow-md">"{movie.tagline}"</p>}
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary">
+            <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-white/80">
               {movie.runtime && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-md">
                   <Clock className="h-4 w-4 text-accent" />
                   {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
                 </span>
               )}
               {movie.release_date && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur-md">
                   <Calendar className="h-4 w-4 text-accent" />
                   {movie.release_date}
                 </span>
               )}
-              {movie.director && (
-                <span className="text-text-muted">
-                  Directed by <span className="font-semibold text-text-primary">{movie.director}</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              {movie.genres?.map((genre) => (
+                <span key={genre} className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-black cursor-default">
+                  {genre}
                 </span>
-              )}
+              ))}
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {movie.genres?.map((genre) => <span key={genre} className="genre-pill">{genre}</span>)}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-5">
-              {(movie.omdb_rating || movie.rating > 0) && (
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-imdb-gold px-2 py-1 text-xs font-bold text-black">IMDb</div>
-                  <span className="text-lg font-bold text-text-primary">{movie.omdb_rating || movie.rating?.toFixed(1)}</span>
-                  <span className="text-sm text-text-muted">/10{movie.votes ? ` / ${(movie.votes / 1000).toFixed(0)}K` : ""}</span>
-                </div>
-              )}
-              {movie.rt_rating && (
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-rt-red px-2 py-1 text-xs font-bold text-white">RT</div>
-                  <span className="font-bold text-text-primary">{movie.rt_rating}%</span>
-                </div>
-              )}
-              {movie.metacritic && (
-                <div className="flex items-center gap-2">
-                  <div className={`rounded-lg px-2 py-1 text-xs font-bold text-white ${movie.metacritic >= 60 ? "bg-mc-green" : movie.metacritic >= 40 ? "bg-yellow-500" : "bg-red-500"}`}>MC</div>
-                  <span className="font-bold text-text-primary">{movie.metacritic}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase text-text-muted">Overview</h3>
-              <p className="leading-relaxed text-text-secondary">{movie.overview}</p>
-            </div>
-
-            {((movie.awards && movie.awards !== "N/A") || (movie.box_office && movie.box_office !== "N/A")) && (
-              <div className="flex flex-wrap gap-6 border-t border-border pt-2 text-sm">
-                {movie.awards && movie.awards !== "N/A" && (
-                  <div><span className="text-text-muted">Awards: </span><span className="font-semibold text-accent">{movie.awards}</span></div>
-                )}
-                {movie.box_office && movie.box_office !== "N/A" && (
-                  <div><span className="text-text-muted">Box Office: </span><span className="font-semibold text-text-primary">{movie.box_office}</span></div>
-                )}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Content Section below */}
+        <div className="mt-12 grid gap-10 md:grid-cols-3">
+          <div className="md:col-span-2 space-y-10">
+            <div className="animate-fade-in-up">
+              <h3 className="mb-4 font-heading text-2xl font-semibold text-text-primary flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-accent" /> Concept & Story
+              </h3>
+              <p className="text-lg leading-relaxed text-text-secondary font-light">
+                {movie.overview}
+              </p>
+            </div>
 
         {movie.cast && movie.cast.length > 0 && (
           <section className="premium-card mt-8 rounded-2xl p-6">
