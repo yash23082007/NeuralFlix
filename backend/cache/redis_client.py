@@ -1,57 +1,76 @@
 import json
 import os
 from functools import wraps
-import redis.asyncio as redis
+from typing import Any, Callable, Optional
 
-# Using environment variable for Redis, defaulting to local redis if not set
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_redis_client = None
 
-# Global Redis client instance
-redis_client = None
 
-async def init_redis():
-    global redis_client
-    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-    return redis_client
+async def get_redis():
+    global _redis_client
+    if _redis_client is None:
+        try:
+            import redis.asyncio as aioredis
+            _redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+        except Exception:
+            return None
+    return _redis_client
 
-async def close_redis():
-    global redis_client
-    if redis_client:
-        await redis_client.close()
 
-def cached(ttl: int, key_prefix: str):
-    """
-    Async decorator that caches the result of a function in Redis.
-    Uses the function arguments to build a unique cache key.
-    """
-    def decorator(func):
+def cached(ttl: int = 300, key_prefix: str = ""):
+    def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            if not redis_client:
-                # If Redis is not initialized, run without cache
-                return await func(*args, **kwargs)
-                
-            # Create a unique cache key from args and kwargs
-            args_str = ':'.join(str(a) for a in args)
-            kwargs_str = ':'.join(f"{k}={v}" for k, v in kwargs.items())
-            cache_key = f"{key_prefix}:{args_str}:{kwargs_str}".strip(':')
-            
             try:
-                result = await redis_client.get(cache_key)
-                if result:
-                    return json.loads(result)
-            except Exception as e:
-                print(f"Redis get error: {e}")
-                
-            # Compute the actual function result
-            result = await func(*args, **kwargs)
-            
-            try:
+                redis = await get_redis()
+                if redis is None:
+                    return await func(*args, **kwargs)
+
+                cache_key_parts = [key_prefix, func.__name__]
+                cache_key_parts.extend(str(a) for a in args)
+                cache_key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
+                cache_key = ":".join(cache_key_parts)
+
+                cached_val = await redis.get(cache_key)
+                if cached_val is not None:
+                    return json.loads(cached_val)
+
+                result = await func(*args, **kwargs)
                 if result is not None:
-                    await redis_client.setex(cache_key, ttl, json.dumps(result))
-            except Exception as e:
-                print(f"Redis set error: {e}")
-                
-            return result
+                    await redis.setex(cache_key, ttl, json.dumps(result, default=str))
+                return result
+            except Exception:
+                return await func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+async def invalidate_cache(pattern: str):
+    redis = await get_redis()
+    if redis is None:
+        return
+    try:
+        keys = await redis.keys(pattern)
+        if keys:
+            await redis.delete(*keys)
+    except Exception:
+        pass
+
+
+async def get_cached_or_set(key: str, ttl: int, fetch_fn: Callable, *args, **kwargs) -> Any:
+    redis = await get_redis()
+    if redis:
+        try:
+            cached = await redis.get(key)
+            if cached:
+                return json.loads(cached)
+        except Exception:
+            pass
+    result = await fetch_fn(*args, **kwargs)
+    if redis and result is not None:
+        try:
+            await redis.setex(key, ttl, json.dumps(result, default=str))
+        except Exception:
+            pass
+    return result

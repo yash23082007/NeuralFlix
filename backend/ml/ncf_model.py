@@ -1,6 +1,39 @@
 import torch
 import torch.nn as nn
-from typing import List, Tuple
+from typing import List, Tuple, Optional
+
+
+class UserTower(nn.Module):
+    def __init__(self, num_users: int, embedding_dim: int = 64):
+        super().__init__()
+        self.embedding = nn.Embedding(num_users, embedding_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.embedding(x)
+
+
+class MovieTower(nn.Module):
+    def __init__(self, num_movies: int, semantic_dim: int = 384, embedding_dim: int = 64):
+        super().__init__()
+        self.embedding = nn.Embedding(num_movies, embedding_dim)
+        self.semantic_proj = nn.Linear(semantic_dim, embedding_dim)
+
+    def forward(self, x: torch.Tensor, semantic: torch.Tensor) -> torch.Tensor:
+        return self.embedding(x) + self.semantic_proj(semantic)
+
+
+class TwoTowerNCF(nn.Module):
+    def __init__(self, user_tower: UserTower, movie_tower: MovieTower):
+        super().__init__()
+        self.user_tower = user_tower
+        self.movie_tower = movie_tower
+        self.predict = nn.Linear(128, 1)
+
+    def forward(self, user_ids: torch.Tensor, movie_ids: torch.Tensor, semantic_vectors: torch.Tensor) -> torch.Tensor:
+        u = self.user_tower(user_ids)
+        m = self.movie_tower(movie_ids, semantic_vectors)
+        return torch.sigmoid(self.predict(torch.cat([u, m], dim=-1))).squeeze()
+
 
 class NCFModel(nn.Module):
     """

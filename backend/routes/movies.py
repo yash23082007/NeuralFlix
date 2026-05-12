@@ -1,15 +1,45 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
 from typing import List, Optional
 
-from db.connection import get_db
-from models.sql_models import PostgresMovie
 from models.schemas import MovieListResponse, MovieDetail, MovieBase
 
 router = APIRouter()
 
-def serialize_movie(movie: PostgresMovie) -> dict:
+# Optional PostgreSQL dependencies
+_has_pg = False
+try:
+    import os
+    if os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() != "true":
+        from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy import select, func, or_
+        from db.connection import get_db
+        from models.sql_models import PostgresMovie
+        _has_pg = True
+except Exception:
+    pass
+
+def _serialize_movie_from_dict(m: dict) -> dict:
+    return {
+        "tmdb_id": m.get("tmdb_id"),
+        "title": m.get("title", ""),
+        "overview": m.get("overview", ""),
+        "year": m.get("year"),
+        "release_date": m.get("release_date"),
+        "language": m.get("language", "en"),
+        "genres": m.get("genres", []),
+        "rating": m.get("rating", 0.0),
+        "votes": m.get("votes", 0),
+        "popularity_score": m.get("popularity_score", 0.0),
+        "poster_url": m.get("poster_url"),
+        "backdrop_url": m.get("backdrop_url"),
+        "platforms": m.get("platforms", []),
+        "media_type": "movie",
+    }
+
+
+def serialize_movie(movie) -> dict:
+    if isinstance(movie, dict):
+        return _serialize_movie_from_dict(movie)
     return {
         "tmdb_id": movie.tmdb_id,
         "title": movie.title,
@@ -18,99 +48,85 @@ def serialize_movie(movie: PostgresMovie) -> dict:
         "release_date": movie.release_date,
         "language": movie.language or "en",
         "genres": movie.genres or [],
-        "rating": movie.tmdb_rating or 0.0,
-        "votes": movie.tmdb_votes or 0,
-        "popularity_score": movie.popularity_score or 0.0,
-        "poster_url": movie.poster_url,
-        "backdrop_url": movie.backdrop_url,
-        "platforms": movie.platforms or [],
-        "media_type": "movie"
+        "rating": getattr(movie, "tmdb_rating", movie.get("rating", 0.0)) if isinstance(movie, dict) else movie.tmdb_rating or 0.0,
+        "votes": getattr(movie, "tmdb_votes", movie.get("votes", 0)) if isinstance(movie, dict) else movie.tmdb_votes or 0,
+        "popularity_score": getattr(movie, "popularity_score", movie.get("popularity_score", 0.0)) if isinstance(movie, dict) else movie.popularity_score or 0.0,
+        "poster_url": getattr(movie, "poster_url", movie.get("poster_url")) if isinstance(movie, dict) else movie.poster_url,
+        "backdrop_url": getattr(movie, "backdrop_url", movie.get("backdrop_url")) if isinstance(movie, dict) else movie.backdrop_url,
+        "platforms": getattr(movie, "platforms", movie.get("platforms", [])) if isinstance(movie, dict) else movie.platforms or [],
+        "media_type": "movie",
     }
 
-def serialize_movie_detail(movie: PostgresMovie) -> dict:
-    base = serialize_movie(movie)
-    base.update({
-        "runtime": movie.runtime,
-        "cast": movie.cast_members or [],
-        "director": movie.director,
-        "trailer_key": movie.trailer_key,
-        "similar": [], # We will fetch similarities via ML/PgVector later
-        "tagline": movie.tagline,
-        "imdb_id": movie.imdb_id,
-        "rt_rating": movie.rt_rating,
-        "box_office": movie.box_office,
-        "awards": movie.awards,
-        "metacritic": None
-    })
-    return base
 
-
-@router.get("/trending", response_model=MovieListResponse)
+@router.get("/trending")
 async def get_trending_movies(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
 ):
-    offset = (page - 1) * limit
-    # Sort by popularity
-    stmt_total = select(func.count(PostgresMovie.id))
-    total = await db.scalar(stmt_total)
-    
-    # Check if total is None (empty table)
-    if total is None:
-        total = 0
-    
-    stmt = select(PostgresMovie).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
-    result = await db.execute(stmt)
-    movies = result.scalars().all()
-    
-    return {
-        "page": page,
-        "total": total,
-        "results": [serialize_movie(m) for m in movies]
-    }
+    if _has_pg:
+        try:
+            async for session in get_db():
+                offset = (page - 1) * limit
+                stmt_total = select(func.count(PostgresMovie.id))
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+        except Exception:
+            pass
+
+    from database import movies_collection
+    movies = list(movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
-@router.get("/search", response_model=MovieListResponse)
+@router.get("/search")
 async def search_movies(
     q: str = Query(..., min_length=2),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db)
 ):
-    offset = (page - 1) * limit
-    
-    search_term = f"%{q}%"
-    filters = or_(
-        PostgresMovie.title.ilike(search_term),
-        PostgresMovie.overview.ilike(search_term)
-    )
-    
-    stmt_total = select(func.count(PostgresMovie.id)).where(filters)
-    total = await db.scalar(stmt_total)
-    
-    if total is None:
-        total = 0
-    
-    stmt = select(PostgresMovie).where(filters).limit(limit).offset(offset)
-    result = await db.execute(stmt)
-    movies = result.scalars().all()
-    
-    return {
-        "page": page,
-        "total": total,
-        "results": [serialize_movie(m) for m in movies]
-    }
+    if _has_pg:
+        try:
+            async for session in get_db():
+                offset = (page - 1) * limit
+                search_term = f"%{q}%"
+                filters = or_(PostgresMovie.title.ilike(search_term), PostgresMovie.overview.ilike(search_term))
+                stmt_total = select(func.count(PostgresMovie.id)).where(filters)
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).where(filters).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+        except Exception:
+            pass
+
+    from database import movies_collection
+    import re
+    pattern = re.compile(re.escape(q), re.IGNORECASE)
+    movies = list(movies_collection.find(
+        {"$or": [{"title": pattern}, {"overview": pattern}]}, {"_id": 0}
+    ).limit(limit))
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
-@router.get("/{movie_id}", response_model=MovieDetail)
-async def get_movie(movie_id: int, db: AsyncSession = Depends(get_db)):
+@router.get("/{movie_id}")
+async def get_movie(movie_id: int):
     """Fetch movie by TMDB ID"""
-    stmt = select(PostgresMovie).where(PostgresMovie.tmdb_id == movie_id)
-    result = await db.execute(stmt)
-    movie = result.scalar_one_or_none()
-    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt = select(PostgresMovie).where(PostgresMovie.tmdb_id == movie_id)
+                result = await session.execute(stmt)
+                movie = result.scalar_one_or_none()
+                if movie:
+                    return serialize_movie(movie)
+        except Exception:
+            pass
+
+    from database import movies_collection
+    movie = movies_collection.find_one({"tmdb_id": movie_id}, {"_id": 0})
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
-        
-    return serialize_movie_detail(movie)
+    return serialize_movie(movie)

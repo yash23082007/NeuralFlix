@@ -1,66 +1,88 @@
-from sentence_transformers import SentenceTransformer
-import faiss
 import numpy as np
-from typing import List, Dict
+import os
+import pickle
+from typing import List, Optional
+
+CONTENT_INDEX_PATH = os.getenv("CONTENT_INDEX_PATH", "models/content_index.faiss")
+CONTENT_MAP_PATH = os.getenv("CONTENT_MAP_PATH", "models/movie_id_map.pkl")
+
 
 class ContentBasedEngine:
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2'):
-        # using a lightweight model for fast embeddings CPU/GPU
-        self.model = SentenceTransformer(model_name)
-        self.index = None  # FAISS index
+    def __init__(self):
+        self.model = None
+        self.index = None
         self.movie_ids = []
+        self._loaded = False
 
-    def build_index(self, movies: List[Dict]):
-        """Build FAISS index from movie metadata embeddings"""
+    def load(self):
+        if self._loaded:
+            return
+        try:
+            import faiss
+            self.index = faiss.read_index(CONTENT_INDEX_PATH)
+            with open(CONTENT_MAP_PATH, "rb") as f:
+                self.movie_ids = pickle.load(f)
+            self._loaded = True
+        except Exception as e:
+            print(f"Content index not found, run build_content_index.py: {e}")
+
+    def build_index(self, movies: List[dict]):
+        from sentence_transformers import SentenceTransformer
+        import faiss
+
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
         texts = []
-        for m in movies:
-            # Combine relevant metadata into a singular context string
-            title = m.get('title', '')
-            overview = m.get('overview', '')
-            genres = ' '.join(m.get('genres', []))
-            keywords = ' '.join(m.get('keywords', []))
-            cast = ' '.join(m.get('cast', [])[:3])
-            director = m.get('director', '')
-            
-            context_string = f"{title} {overview} {genres} {keywords} {cast} {director}"
-            texts.append(context_string)
+        ids = []
 
-        print(f"Encoding {len(texts)} movies...")
+        for m in movies:
+            parts = [
+                m.get("title", ""),
+                m.get("overview", ""),
+                " ".join(m.get("genres", [])),
+                m.get("director", ""),
+            ]
+            cast = m.get("cast", [])
+            if isinstance(cast, list):
+                parts.append(" ".join(str(c) for c in cast[:3]))
+            texts.append(" ".join(parts))
+            ids.append(m.get("tmdb_id") or m.get("id"))
+
         embeddings = self.model.encode(texts, batch_size=64, show_progress_bar=True)
-        # Normalize for Inner Product (Cosine Similarity)
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        
-        # Build FAISS index for quick candidate retrieval 
+
         self.index = faiss.IndexFlatIP(embeddings.shape[1])
-        self.index.add(embeddings.astype('float32'))
-        self.movie_ids = [m['id'] for m in movies]
-        print("FAISS Index build complete.")
+        self.index.add(embeddings.astype("float32"))
+        self.movie_ids = ids
+
+        os.makedirs(os.path.dirname(CONTENT_INDEX_PATH) or ".", exist_ok=True)
+        faiss.write_index(self.index, CONTENT_INDEX_PATH)
+        with open(CONTENT_MAP_PATH, "wb") as f:
+            pickle.dump(self.movie_ids, f)
+
+        self._loaded = True
 
     def get_similar(self, movie_id: int, top_k: int = 50) -> List[int]:
-        if not self.index:
-            raise ValueError("FAISS index not built yet.")
-            
-        try:
-            idx = self.movie_ids.index(movie_id)
-        except ValueError:
-            return [] # Movie not found
-        
+        if not self._loaded:
+            self.load()
+        if self.index is None or movie_id not in self.movie_ids:
+            return []
+        idx = self.movie_ids.index(movie_id)
         query = self.index.reconstruct(idx).reshape(1, -1)
-        # return top_k + 1 since the first result is usually the exact movie
         distances, indices = self.index.search(query, top_k + 1)
-        
         return [self.movie_ids[i] for i in indices[0] if i != idx][:top_k]
 
-    def save_index(self, index_path: str, map_path: str):
-        if self.index:
-            faiss.write_index(self.index, index_path)
-            import pickle
-            with open(map_path, 'wb') as f:
-                pickle.dump(self.movie_ids, f)
+    def search_by_text(self, query: str, top_k: int = 20) -> List[dict]:
+        if not self._loaded:
+            self.load()
+        if self.model is None or self.index is None:
+            return []
+        emb = self.model.encode([query])
+        emb = emb / np.linalg.norm(emb, axis=1, keepdims=True)
+        distances, indices = self.index.search(emb.astype("float32"), top_k)
+        return [
+            {"movie_id": self.movie_ids[i], "score": float(distances[0][j])}
+            for j, i in enumerate(indices[0])
+        ]
 
-    def load_index(self, index_path: str, map_path: str):
-        if os.path.exists(index_path) and os.path.exists(map_path):
-            self.index = faiss.read_index(index_path)
-            import pickle
-            with open(map_path, 'rb') as f:
-                self.movie_ids = pickle.load(f)
+
+content_engine = ContentBasedEngine()

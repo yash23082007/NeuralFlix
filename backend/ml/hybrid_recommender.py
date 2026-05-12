@@ -1,8 +1,19 @@
-from typing import List, Dict, Tuple
-from .content_based import ContentBasedEngine
+from typing import List, Dict, Tuple, Optional
+from .content_based import ContentBasedEngine, content_engine
 from .ncf_model import NCFModel
 from .sasrec_model import SASRec
 import torch
+
+# Singleton instances used across the application
+ncf_model: Optional[NCFModel] = None
+sasrec_model: Optional[SASRec] = None
+gnn_model = None
+
+try:
+    ncf_model = NCFModel(num_users=100000, num_items=100000)
+    sasrec_model = SASRec(num_items=100000)
+except Exception:
+    pass
 
 class HybridRecommender:
     def __init__(self, content_engine: ContentBasedEngine, ncf_model: NCFModel, seq_model: SASRec, gnn_model=None):

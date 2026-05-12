@@ -4,27 +4,26 @@ import uuid
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from typing import Optional
-from cache.redis_client import init_redis, close_redis
-from api.websocket import router as websocket_router
-
 log = structlog.get_logger()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("Application starting up")
-    app.state.cache = await init_redis()
+    log.info("NeuralFlix ML Engine starting up")
+    from cache.redis_client import get_redis
+    app.state.redis = await get_redis()
+    log.info("Redis connection established")
     yield
-    log.info("Application shutting down")
-    await close_redis()
+    if app.state.redis:
+        await app.state.redis.close()
+    log.info("NeuralFlix ML Engine shutting down")
 
 
 app = FastAPI(
@@ -42,13 +41,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())
-    log.error(
-        "unhandled_exception",
-        error=str(exc),
-        error_id=error_id,
-        path=request.url.path,
-        method=request.method,
-    )
+    log.error("unhandled_exception", error=str(exc), error_id=error_id,
+              path=request.url.path, method=request.method)
     return JSONResponse(
         status_code=500,
         content={"message": "Internal Server Error", "error_id": error_id},
@@ -62,14 +56,9 @@ async def production_observability_middleware(request: Request, call_next):
     response = await call_next(request)
     process_time = time.time() - start_time
 
-    log.info(
-        "request_processed",
-        request_id=request_id,
-        path=request.url.path,
-        method=request.method,
-        latency=f"{process_time:.4f}s",
-        status_code=response.status_code,
-    )
+    log.info("request_processed", request_id=request_id,
+             path=request.url.path, method=request.method,
+             latency=f"{process_time:.4f}s", status_code=response.status_code)
     response.headers["X-Process-Time"] = str(process_time)
     response.headers["X-Request-ID"] = request_id
     return response
@@ -87,10 +76,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# ─── Legacy Route Registration ───────────────────────────
 try:
     from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt
-
     HAS_ROUTES = True
 except ImportError as exc:
     log.warning("legacy_routes_not_loaded", error=str(exc))
@@ -102,7 +90,23 @@ except ImportError as exc:
     log.warning("feedback_router_not_loaded", error=str(exc))
     feedback_router = None
 
+# ─── New API Routes ───────────────────────────────────────
+try:
+    from api.routes.events import router as events_router
+    app.include_router(events_router, prefix="/api/v1", tags=["Events"])
+    log.info("Event routes loaded")
+except ImportError as exc:
+    log.warning("event_routes_not_loaded", error=str(exc))
 
+
+# ─── WebSocket Endpoint ────────────────────────────────────
+@app.websocket("/ws/recommendations/{user_id}")
+async def websocket_recommendations(websocket: WebSocket, user_id: int):
+    from api.websocket import handle_websocket
+    await handle_websocket(websocket, user_id)
+
+
+# ─── Health Endpoints ─────────────────────────────────────
 @app.get("/v1/metrics/health")
 def health_check():
     return {"status": "healthy", "version": "3.0.0", "engine": "NeuralFlix ML Engine"}
@@ -125,11 +129,14 @@ def root():
             "search": "/api/search",
             "recommendations": "/api/recommendations",
             "ml": "/api/ml/overview",
+            "events": "/api/v1/events",
+            "websocket": "/ws/recommendations/{user_id}",
             "docs": "/docs",
         },
     }
 
 
+# ─── Legacy Route Inclusion ───────────────────────────────
 if feedback_router:
     app.include_router(feedback_router, prefix="/api/v2", tags=["Feedback"])
 
@@ -143,5 +150,3 @@ if HAS_ROUTES:
     app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
     app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
     app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
-    
-app.include_router(websocket_router, prefix="/ws", tags=["Real-time Live Recommendations"])

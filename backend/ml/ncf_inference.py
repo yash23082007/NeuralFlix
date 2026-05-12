@@ -1,8 +1,10 @@
 import torch
 import os
+import logging
 from ml.ncf_model import TwoTowerNCF, UserTower, MovieTower
 from dotenv import load_dotenv
 
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Configuration for Phase 10 Neural Handover
@@ -25,10 +27,10 @@ class NCFInferenceEngine:
         self.model = TwoTowerNCF(user_tower, movie_tower).to(self.device)
         
         if os.path.exists(MODEL_WEIGHTS_PATH):
-            print(f"🧠 Loading Neural Weights from {MODEL_WEIGHTS_PATH}...")
+            logger.info(f"Loading Neural Weights from {MODEL_WEIGHTS_PATH}...")
             self.model.load_state_dict(torch.load(MODEL_WEIGHTS_PATH, map_location=self.device))
         else:
-            print("⚠️ Weights not found. Using cold-start initialization.")
+            logger.warning("Weights not found. Using cold-start initialization.")
         
         self.model.eval()
 
