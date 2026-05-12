@@ -39,7 +39,7 @@ export default async function HomePage() {
         {/* Render a 3D movie card inside the parallax container of HeroScene for the top trending movie */}
         {trendingAll.length > 0 && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-             <MovieCard3D movie={{...trendingAll[0], id: trendingAll[0].tmdb_id || trendingAll[0].id}} />
+             <MovieCard3D movie={{...trendingAll[0], id: (trendingAll[0].tmdb_id as number)}} />
           </div>
         )}
       </HeroScene>

@@ -5,8 +5,8 @@ import Image from 'next/image';
 interface Movie {
   id: number;
   title: string;
-  poster_url: string;
-  genres: string[];
+  poster_url?: string | null;
+  genres?: string[];
   match_score?: number;
 }
 
