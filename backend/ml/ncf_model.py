@@ -1,74 +1,62 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from typing import List, Tuple
 
-class UserTower(nn.Module):
+class NCFModel(nn.Module):
     """
-    Tower A: Learns dense representations of user preferences.
-    Input: User ID + User Interaction history features.
+    Neural Collaborative Filtering.
+    Learns latent user/item embeddings via neural networks based on 2017 NeurIPS paper.
     """
-    def __init__(self, num_users, embedding_dim=64):
-        super(UserTower, self).__init__()
-        self.user_embedding = nn.Embedding(num_users, embedding_dim)
-        self.fc_layers = nn.Sequential(
-            nn.Linear(embedding_dim, 128),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(128, embedding_dim)
-        )
-
-    def forward(self, user_ids):
-        embedded = self.user_embedding(user_ids)
-        return self.fc_layers(embedded)
-
-class MovieTower(nn.Module):
-    """
-    Tower B: Learns dense representations of movie content/metadata.
-    Input: Movie ID + Pre-computed Semantic Vector (from sentence-transformers).
-    """
-    def __init__(self, num_movies, semantic_dim=384, embedding_dim=64):
-        super(MovieTower, self).__init__()
-        self.movie_embedding = nn.Embedding(num_movies, embedding_dim)
-        # We project the 384-dim semantic vector into the same latent space as the user
-        self.semantic_projection = nn.Linear(semantic_dim, embedding_dim)
+    def __init__(self, num_users: int, num_items: int, embedding_dim: int = 64, layers: List[int] = [128, 64, 32]):
+        super().__init__()
         
-        self.fc_layers = nn.Sequential(
-            nn.Linear(embedding_dim * 2, 128),
-            nn.ReLU(),
-            nn.Linear(128, embedding_dim)
-        )
+        # GMF branch (Generalized Matrix Factorization - dot product)
+        self.user_gmf_emb = nn.Embedding(num_users, embedding_dim)
+        self.item_gmf_emb = nn.Embedding(num_items, embedding_dim)
+        
+        # MLP branch (Multi-Layer Perceptron)
+        self.user_mlp_emb = nn.Embedding(num_users, embedding_dim)
+        self.item_mlp_emb = nn.Embedding(num_items, embedding_dim)
+        
+        mlp_layers = []
+        input_size = embedding_dim * 2
+        for layer_size in layers:
+            mlp_layers.extend([
+                nn.Linear(input_size, layer_size), 
+                nn.ReLU(), 
+                nn.Dropout(0.2)
+            ])
+            input_size = layer_size
+            
+        self.mlp = nn.Sequential(*mlp_layers)
+        
+        # Final prediction layer combining GMF and MLP outputs
+        self.predict = nn.Linear(embedding_dim + layers[-1], 1)
+        self.sigmoid = nn.Sigmoid()
 
-    def forward(self, movie_ids, semantic_vectors):
-        embedded_id = self.movie_embedding(movie_id_tensor)
-        projected_semantic = self.semantic_projection(semantic_vectors)
-        combined = torch.cat([embedded_id, projected_semantic], dim=-1)
-        return self.fc_layers(combined)
-
-class TwoTowerNCF(nn.Module):
-    """
-    Neural Collaborative Filtering (NCF) with Two-Tower Architecture.
-    Predicts the probability of a user liking a movie via dot product of towers.
-    """
-    def __init__(self, user_tower, movie_tower):
-        super(TwoTowerNCF, self).__init__()
-        self.user_tower = user_tower
-        self.movie_tower = movie_tower
-
-    def forward(self, user_ids, movie_ids, semantic_vectors):
-        user_vec = self.user_tower(user_ids)
-        movie_vec = self.movie_tower(movie_ids, semantic_vectors)
-        # Dot product similarity (score)
-        score = torch.sum(user_vec * movie_vec, dim=-1)
-        return torch.sigmoid(score)
-
-# 🚀 COBALT EXPORT (Colab Snippet)
-# This code is designed to be run on a T4 GPU and exported as .pt
-def train_and_export():
-    """
-    Snippet for the user to paste into Google Colab.
-    Trains on MovieLens 25M and exports weights.
-    """
-    # ... Training loop logic would go here ...
-    # model = TwoTowerNCF(...)
-    # torch.save(model.state_dict(), 'neuralflix_ncf_weights.pt')
-    pass
+    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor) -> torch.Tensor:
+        # GMF path
+        user_gmf = self.user_gmf_emb(user_ids)
+        item_gmf = self.item_gmf_emb(item_ids)
+        gmf_out = user_gmf * item_gmf
+        
+        # MLP path
+        user_mlp = self.user_mlp_emb(user_ids)
+        item_mlp = self.item_mlp_emb(item_ids)
+        mlp_in = torch.cat([user_mlp, item_mlp], dim=-1)
+        mlp_out = self.mlp(mlp_in)
+        
+        # Combine
+        combined = torch.cat([gmf_out, mlp_out], dim=-1)
+        logits = self.predict(combined)
+        return self.sigmoid(logits).squeeze()
+    
+    def predict_for_user(self, user_id: int, item_candidates: List[int]) -> List[Tuple[int, float]]:
+        self.eval()
+        with torch.no_grad():
+            u_tensor = torch.tensor([user_id] * len(item_candidates))
+            i_tensor = torch.tensor(item_candidates)
+            scores = self.forward(u_tensor, i_tensor).numpy()
+            
+        scored = list(zip(item_candidates, scores))
+        return sorted(scored, key=lambda x: x[1], reverse=True)

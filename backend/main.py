@@ -11,14 +11,20 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from typing import Optional
+from cache.redis_client import init_redis, close_redis
+from api.websocket import router as websocket_router
+
 log = structlog.get_logger()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("Application starting up")
+    app.state.cache = await init_redis()
     yield
     log.info("Application shutting down")
+    await close_redis()
 
 
 app = FastAPI(
@@ -137,3 +143,5 @@ if HAS_ROUTES:
     app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
     app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
     app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
+    
+app.include_router(websocket_router, prefix="/ws", tags=["Real-time Live Recommendations"])
