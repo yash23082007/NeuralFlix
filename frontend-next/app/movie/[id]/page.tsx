@@ -226,6 +226,30 @@ export default function MovieDetailPage() {
           </section>
         )}
 
+            </div>
+            {/* Sidebar / Extra info column */}
+            <div className="space-y-8">
+              {movie.omdb_rating && (
+                <div className="premium-card rounded-2xl p-6">
+                  <h4 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-4">Ratings</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-text-secondary">IMDb</span>
+                      <span className="text-sm font-bold text-accent">{movie.omdb_rating}</span>
+                    </div>
+                    {movie.rt_rating && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-text-secondary">Rotten Tomatoes</span>
+                        <span className="text-sm font-bold text-accent">{movie.rt_rating}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {recommendations.length > 0 && (
           <div className="mt-12">
             <MovieRow title="More Like This" movies={recommendations} />
