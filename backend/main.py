@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -76,9 +77,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # ─── Legacy Route Registration ───────────────────────────
 try:
-    from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt
+    from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data
     HAS_ROUTES = True
 except ImportError as exc:
     log.warning("legacy_routes_not_loaded", error=str(exc))
@@ -136,17 +139,28 @@ def root():
     }
 
 
-# ─── Legacy Route Inclusion ───────────────────────────────
-if feedback_router:
-    app.include_router(feedback_router, prefix="/api/v2", tags=["Feedback"])
-
+# ─── API Route Registration ───────────────────────────────
 if HAS_ROUTES:
-    app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
-    app.include_router(movies.router, prefix="/api/movies", tags=["Movies"])
-    app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
-    app.include_router(genres.router, prefix="/api/genres", tags=["Genres"])
-    app.include_router(search.router, prefix="/api/search", tags=["Search"])
-    app.include_router(ml.router, prefix="/api/ml", tags=["ML"])
-    app.include_router(tracking.router, prefix="/api/tracking", tags=["Tracking"])
-    app.include_router(imdb.router, prefix="/api/imdb", tags=["IMDb"])
-    app.include_router(trakt.router, prefix="/api/trakt", tags=["Trakt"])
+    # Core discovery and catalog
+    app.include_router(movies.router, prefix="/api/v1/movies", tags=["Movies"])
+    app.include_router(search.router, prefix="/api/v1/search", tags=["Search"])
+    
+    # ML & Personalization
+    app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["Recommendations"])
+    app.include_router(ml.router, prefix="/api/v1/ml", tags=["ML Engine"])
+    
+    # Infrastructure & Engagement
+    app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+    app.include_router(tracking.router, prefix="/api/v1/tracking", tags=["Tracking"])
+    app.include_router(genres.router, prefix="/api/v1/genres", tags=["Genres"])
+    
+    # External Integrations
+    app.include_router(imdb.router, prefix="/api/v1/imdb", tags=["IMDb"])
+    app.include_router(trakt.router, prefix="/api/v1/trakt", tags=["Trakt"])
+    
+    # Enhanced Data Layer (Streaming, Ratings, Trakt Trending)
+    app.include_router(enhanced_data.router, prefix="/api/v1/data", tags=["Enhanced Data"])
+
+if feedback_router:
+    # V2 Feedback system for real-time model tuning
+    app.include_router(feedback_router, prefix="/api/v2/feedback", tags=["Feedback"])
