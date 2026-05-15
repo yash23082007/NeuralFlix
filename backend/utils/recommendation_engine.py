@@ -221,6 +221,9 @@ class RecommenderOS:
             tasks.append(get_neural_recommendations(movie_id, limit=limit // 2))
         tasks.append(get_popularity_baseline(limit=limit // 3))
 
+        # Trakt trending as additional signal (community-sourced "what's hot now")
+        tasks.append(cls._get_trakt_signal(limit=limit // 4))
+
         results = await asyncio.gather(*tasks)
         candidates, seen_ids = [], set()
         for res_list in results:
@@ -236,6 +239,41 @@ class RecommenderOS:
         return candidates
 
     @classmethod
+    async def _get_trakt_signal(cls, limit: int = 25) -> List[dict]:
+        """Pull trending data from Trakt.tv as a community-sourced signal."""
+        try:
+            from utils.trakt_enhanced import fetch_trakt_trending
+            trakt_trending = await fetch_trakt_trending("movies", limit=limit)
+            if not trakt_trending:
+                return []
+
+            # Enrich with local DB data or return minimal stubs
+            result = []
+            for item in trakt_trending:
+                tmdb_id = item.get("tmdb_id")
+                if tmdb_id:
+                    # Try to find in local catalog first
+                    local = movies_collection.find_one({"tmdb_id": tmdb_id}, {"_id": 0})
+                    if local:
+                        local["trakt_watchers"] = item.get("trakt_watchers", 0)
+                        result.append(local)
+                    else:
+                        # Create a stub from Trakt data
+                        result.append({
+                            "tmdb_id": tmdb_id,
+                            "title": item.get("title", ""),
+                            "year": item.get("year"),
+                            "rating": item.get("rating", 0),
+                            "genres": item.get("genres", []),
+                            "overview": item.get("overview", ""),
+                            "trakt_watchers": item.get("trakt_watchers", 0),
+                            "popularity_score": item.get("trakt_watchers", 0) / 10,
+                        })
+            return result
+        except Exception:
+            return []
+
+    @classmethod
     async def rank(cls, candidates: List[dict], user_id: Optional[str], movie_id: Optional[str]) -> List[dict]:
         ranked = []
         for item in candidates:
@@ -245,6 +283,10 @@ class RecommenderOS:
             year = item.get("year")
             if year:
                 score += max(0, (year - 1980) / 45) * 0.2
+            # Trakt community signal: boost titles being watched right now
+            trakt_watchers = item.get("trakt_watchers", 0)
+            if trakt_watchers > 0:
+                score += math.log1p(trakt_watchers) * 0.15
             item["rec_score"] = round(score, 4)
             ranked.append(item)
         ranked.sort(key=lambda x: x["rec_score"], reverse=True)
