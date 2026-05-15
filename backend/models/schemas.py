@@ -1,12 +1,14 @@
-from pydantic import BaseModel, HttpUrl, Field
-from typing import List, Optional, Any
+from pydantic import BaseModel, ConfigDict, Field
+from typing import List, Optional, Any, Dict
 
 class CastMember(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     name: str
     character: str
     profile_url: Optional[str] = None
 
 class MovieBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     tmdb_id: int
     title: str
     overview: Optional[str] = ""
@@ -35,26 +37,53 @@ class MovieDetail(MovieBase):
     rt_rating: Optional[str] = None
     box_office: Optional[str] = None
     awards: Optional[str] = None
-    imdb_api_rating: Optional[float] = None
-    imdb_api_votes: Optional[int] = None
     metacritic: Optional[int] = None
     deep_metadata: Optional[Any] = None
 
 class MovieListResponse(BaseModel):
-    page: Optional[int] = 1
+    page: int = 1
+    limit: int = 20
     total: int
     results: List[MovieBase]
+    next_cursor: Optional[str] = None
 
 class SearchResponse(MovieListResponse):
     query: str
 
 class RecommendationBase(MovieBase):
-    score: Optional[float] = None
-    sources: Optional[List[Any]] = None
+    score: float = 0.0
+    sources: List[str] = []
 
 class RecommendationResponse(BaseModel):
     movie_id: str
     recommendations: List[RecommendationBase]
+    algo_used: str = "hybrid_ensemble"
+    cache_hit: bool = False
+
+class StreamingPlatform(BaseModel):
+    name: str
+    url: Optional[str] = None
+    type: str = "subscription" # subscription | rent | buy
+
+class StreamingResponse(BaseModel):
+    movie_id: int
+    platforms: List[StreamingPlatform]
+
+class OnboardingRequest(BaseModel):
+    liked_movies: List[int]
+    disliked_movies: List[int]
+    top_genres: List[str] = []
+
+class OnboardingResponse(BaseModel):
+    cluster_id: int
+    initial_recommendations: List[MovieBase]
+
+class UserProfile(BaseModel):
+    user_id: str
+    taste_vector: Optional[List[float]] = None
+    top_genres: List[Dict[str, Any]] = []
+    watched_count: int = 0
+    avg_rating: float = 0.0
 
 class AsyncTaskResponse(BaseModel):
     task_id: str
@@ -64,16 +93,3 @@ class AsyncTaskResponse(BaseModel):
 class GenericResponse(BaseModel):
     message: str
     error_id: Optional[str] = None
-
-
-# ─── Tracking Schemas ────────────────────────────────────────
-class TrackingEventSchema(BaseModel):
-    user_id: str
-    event_type: str  # "click", "watch", "like", "watchlist_add"
-    item_id: str
-    metadata: Optional[dict] = None
-
-class SearchTrackSchema(BaseModel):
-    user_id: str
-    query: str
-    results_count: int = 0

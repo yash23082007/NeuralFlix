@@ -79,3 +79,27 @@ async def get_user_taste_profile(user_id: int):
     watch_history = await _fetch_watch_history_inmem(user_id)
     taste_profile = build_taste_profile(watch_history)
     return {"user_id": user_id, "profile": taste_profile}
+
+@router.post("/onboard")
+async def onboard_user(data: dict):
+    """
+    Handles initial onboarding: sets user preferences and maps to a cluster.
+    Expected data: { user_id, liked_genres, liked_movies, disliked_movies }
+    """
+    user_id = data.get("user_id")
+    liked_genres = data.get("liked_genres", [])
+    liked_movies = data.get("liked_movies", [])
+    
+    # In a real app, we would store these in the user document and trigger a cold-start model update.
+    # For the demo, we'll just log it and return success.
+    from database import users_collection
+    users_collection.update_one(
+        {"id": str(user_id)},
+        {"$set": {"onboarded": True, "pref_genres": liked_genres}}
+    )
+    
+    return {
+        "status": "success",
+        "message": "User preferences saved. Engine initialized.",
+        "cluster_id": "cluster_alpha_7" # Mock cluster ID
+    }

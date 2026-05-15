@@ -17,6 +17,15 @@ async def get_redis():
             return None
     return _redis_client
 
+# Caching Strategy from Architecture Guide (in seconds)
+CACHE_LAYERS = {
+    "user_recommendations": 3600,      # 1 hour TTL
+    "movie_metadata": 86400,           # 24 hours
+    "similarity_matrix": 604800,       # 7 days
+    "trending_movies": 900,            # 15 minutes
+    "genre_top_lists": 3600,           # 1 hour
+}
+
 
 def cached(ttl: int = 300, key_prefix: str = ""):
     def decorator(func: Callable) -> Callable:

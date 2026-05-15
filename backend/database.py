@@ -6,14 +6,20 @@ from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker as sync_sessionmaker
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv()
 
 logger = logging.getLogger("DB_FACTORY")
 
+# Environment Configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 ASYNC_DATABASE_URL = (
@@ -25,7 +31,7 @@ MONGO_CONNECT_ATTEMPTS = int(os.getenv("MONGO_CONNECT_ATTEMPTS", "1"))
 DEMO_MODE = os.getenv("NEURALFLIX_DEMO_MODE", "true").lower()
 ALLOW_EMPTY_MONGO = os.getenv("NEURALFLIX_ALLOW_EMPTY_MONGO", "false").lower() == "true"
 
-
+# ─── Legacy Fallback Catalog ──────────────────────────────────────────
 SAMPLE_MOVIES: List[Dict[str, Any]] = [
     {
         "_id": "872585", "tmdb_id": 872585, "title": "Oppenheimer",
@@ -241,7 +247,7 @@ SAMPLE_MOVIES: List[Dict[str, Any]] = [
         "year": 2011, "release_date": "2011-02-15", "runtime": 123,
         "language": "fa", "cinema_region": "iranian",
         "genres": ["Drama"], "rating": 8.0, "votes": 2600, "popularity_score": 21.3,
-        "poster_url": "https://image.tmdb.org/t/p/w500/w6E34hGiJ5OydZtN9Xn3xU8tG8k.jpg",
+        "poster_url": "https://image.tmdb.org/t/p/w6E34hGiJ5OydZtN9Xn3xU8tG8k.jpg",
         "backdrop_url": "https://image.tmdb.org/t/p/original/9ZlGiEKmcYrrxmiQEJDhjeT2kEW.jpg",
         "platforms": ["Prime Video"], "media_type": "movie",
     },
@@ -355,7 +361,6 @@ class _InMemoryCollection:
         return _InMemoryCursor(docs)
 
     def find_one(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None):
-        # Quick O(1) lookup for common _id queries
         if query and "_id" in query and not isinstance(query["_id"], dict):
             doc = self._by_id.get(str(query["_id"]))
             if doc:
@@ -364,12 +369,6 @@ class _InMemoryCollection:
             doc = self._by_tmdb_id.get(int(query["tmdb_id"]))
             if doc:
                 return _project(doc, projection)
-        if query and "$or" in query:
-            for sub in query["$or"]:
-                for doc in self._docs:
-                    if all(_field_matches(doc.get(k), v) for k, v in sub.items()):
-                        return _project(doc, projection)
-            return None
         for doc in self._docs:
             if _matches(doc, query):
                 return _project(doc, projection)
@@ -382,39 +381,8 @@ class _InMemoryCollection:
         self._index_doc(stored)
         return type("InsertOneResult", (), {"inserted_id": stored["_id"]})()
 
-    def create_index(self, *args, **kwargs):
-        return None
-
     def count_documents(self, query: Optional[Dict[str, Any]] = None):
         return len([doc for doc in self._docs if _matches(doc, query)])
-
-    def aggregate(self, pipeline: List[Dict[str, Any]]):
-        docs = [copy.deepcopy(doc) for doc in self._docs]
-        for stage in pipeline:
-            if "$unwind" in stage:
-                field = str(stage["$unwind"]).lstrip("$")
-                unwound = []
-                for doc in docs:
-                    values = doc.get(field, [])
-                    if not isinstance(values, list):
-                        values = [values]
-                    for value in values:
-                        item = copy.deepcopy(doc)
-                        item[field] = value
-                        unwound.append(item)
-                docs = unwound
-            elif "$group" in stage:
-                group_id = str(stage["$group"].get("_id", "")).lstrip("$")
-                seen = {}
-                for doc in docs:
-                    key = doc.get(group_id)
-                    seen[key] = {"_id": key}
-                docs = list(seen.values())
-            elif "$sort" in stage:
-                for key, direction in reversed(stage["$sort"].items()):
-                    reverse = direction < 0
-                    docs.sort(key=lambda item: item.get(key) or "", reverse=reverse)
-        return docs
 
 
 class _InMemoryDatabase:
@@ -477,14 +445,21 @@ class DatabaseManager:
     def get_pg_engine(cls):
         if cls._pg_engine is None and ASYNC_DATABASE_URL:
             try:
+                # Optimized for sub-200ms targets with connection pooling (SQLAlchemy 2.0)
                 cls._pg_engine = create_async_engine(
-                    ASYNC_DATABASE_URL, pool_size=20, max_overflow=10, pool_pre_ping=True,
+                    ASYNC_DATABASE_URL,
+                    pool_size=20,
+                    max_overflow=10,
+                    pool_pre_ping=True,
+                    pool_recycle=3600,
                 )
-                cls._pg_session_factory = sessionmaker(
-                    autocommit=False, autoflush=False,
-                    bind=cls._pg_engine, class_=AsyncSession,
+                cls._pg_session_factory = async_sessionmaker(
+                    bind=cls._pg_engine,
+                    autocommit=False,
+                    autoflush=False,
+                    expire_on_commit=False,
                 )
-                logger.info("PostgreSQL engine initialized")
+                logger.info("PostgreSQL Async Engine initialized (SQLAlchemy 2.0)")
             except Exception as exc:
                 logger.error("PostgreSQL initialization error: %s", exc)
                 cls._pg_engine = None
@@ -496,7 +471,13 @@ class DatabaseManager:
             cls.get_pg_engine()
         if cls._pg_session_factory:
             async with cls._pg_session_factory() as session:
-                yield session
+                try:
+                    yield session
+                except Exception:
+                    await session.rollback()
+                    raise
+                finally:
+                    await session.close()
         else:
             yield None
 
@@ -543,8 +524,6 @@ watch_history_collection = _LazyCollection("watch_history")
 SessionLocal = None
 if DATABASE_URL:
     try:
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker as sync_sessionmaker
         _sync_engine = create_engine(
             DATABASE_URL, pool_size=5, max_overflow=5, pool_pre_ping=True,
         )
@@ -556,17 +535,22 @@ if DATABASE_URL:
 
 def init_db():
     db = get_db()
-    movies_col = db.movies
-    movies_col.create_index([("title", "text"), ("overview", "text")])
-    movies_col.create_index([("genres", 1)])
-    movies_col.create_index([("rating", -1)])
-    movies_col.create_index([("popularity_score", -1)])
-    movies_col.create_index([("language", 1)])
-    movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
-    movies_col.create_index([("year", -1)])
-    movies_col.create_index([("language", 1), ("rating", -1)])
-    movies_col.create_index([("year", -1), ("popularity_score", -1)])
-    movies_col.create_index([("status", 1)])
-    movies_col.create_index([("imdb_id", 1)], sparse=True)
-    movies_col.create_index([("cinema_region", 1)])
-    logger.info("Database indexes initialized or skipped for fallback catalog")
+    # Skip indexing for fallback catalog
+    if hasattr(db, "movies") and hasattr(db.movies, "create_index"):
+        try:
+            movies_col = db.movies
+            movies_col.create_index([("title", "text"), ("overview", "text")])
+            movies_col.create_index([("genres", 1)])
+            movies_col.create_index([("rating", -1)])
+            movies_col.create_index([("popularity_score", -1)])
+            movies_col.create_index([("language", 1)])
+            movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
+            movies_col.create_index([("year", -1)])
+            movies_col.create_index([("language", 1), ("rating", -1)])
+            movies_col.create_index([("year", -1), ("popularity_score", -1)])
+            movies_col.create_index([("status", 1)])
+            movies_col.create_index([("imdb_id", 1)], sparse=True)
+            movies_col.create_index([("cinema_region", 1)])
+            logger.info("Database indexes initialized")
+        except Exception as e:
+            logger.warning(f"Index creation failed: {e}")

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from typing import List, Optional
+from cache.utils import cache_response
 
 from models.schemas import MovieListResponse, MovieDetail, MovieBase
 
@@ -59,7 +60,9 @@ def serialize_movie(movie) -> dict:
 
 
 @router.get("/trending")
+@cache_response(expire=3600)
 async def get_trending_movies(
+    request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -112,8 +115,9 @@ async def search_movies(
 
 
 @router.get("/trending-all")
-async def get_trending_all():
-    return await get_trending_movies(limit=40)
+@cache_response(expire=3600)
+async def get_trending_all(request: Request):
+    return await get_trending_movies(request=request, limit=40)
 
 @router.get("/toprated")
 async def get_top_rated(page: int = 1, limit: int = 20):
@@ -153,7 +157,8 @@ async def get_by_genre(genre: str, page: int = 1, limit: int = 20):
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 @router.get("/{movie_id}")
-async def get_movie(movie_id: int):
+@cache_response(expire=86400)
+async def get_movie(request: Request, movie_id: int):
     """Fetch movie by TMDB ID"""
     if _has_pg:
         try:

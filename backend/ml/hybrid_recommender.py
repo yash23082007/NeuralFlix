@@ -10,8 +10,9 @@ sasrec_model: Optional[SASRec] = None
 gnn_model = None
 
 try:
-    ncf_model = NCFModel(num_users=100000, num_items=100000)
-    sasrec_model = SASRec(num_items=100000)
+    # Reduced size for development environment
+    ncf_model = NCFModel(num_users=1000, num_items=5000)
+    sasrec_model = SASRec(num_items=5000)
 except Exception:
     pass
 
