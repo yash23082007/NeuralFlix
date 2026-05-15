@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
 import { setToken, setUser } from "../../lib/auth";
+import GoogleLogin from "../../components/GoogleLogin";
+import GithubLogin from "../../components/GithubLogin";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,12 +17,47 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    if (code) {
+      handleGithubCallback(code);
+    }
+  }, []);
+
+  const handleGithubCallback = async (code: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/github`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "GitHub login failed");
+      }
+
+      const data = await res.json();
+      setToken(data.access_token);
+      setUser(data.user);
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -112,6 +150,17 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
+
+          <div className="my-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <div className="space-y-3 mb-4">
+            <GoogleLogin />
+            <GithubLogin />
+          </div>
 
           <p className="mt-6 text-center text-sm text-text-muted">
             Don&apos;t have an account?{" "}

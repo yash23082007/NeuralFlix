@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import {
-  BarChart3, ChevronDown, Film, Globe2, LogIn, LogOut, Menu, Moon, Search, Sun, X, Sparkles,
+  BarChart3, ChevronDown, Film, Globe2, LogIn, LogOut, Menu, Moon, Search, Sun, X, Sparkles, ShieldAlert,
 } from "lucide-react";
 import { getUser, isAuthenticated, logout } from "../lib/auth";
 
@@ -27,6 +27,7 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function Navbar() {
     const user = getUser();
     if (user?.name) setUserName(user.name);
     else if (user?.email) setUserName(user.email.charAt(0).toUpperCase());
+    setIsAdmin(!!user?.is_admin);
   }, []);
 
   const openSearch = () => {
@@ -127,7 +129,16 @@ export default function Navbar() {
                   <button className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-sm font-bold text-white shadow-sm transition-transform hover:scale-105">
                     {userName.charAt(0) || "U"}
                   </button>
-                  <div className="invisible absolute right-0 top-full mt-2 w-40 rounded-xl border border-glass-border bg-glass py-2 opacity-0 shadow-card backdrop-blur-2xl transition-all group-hover:visible group-hover:opacity-100">
+                  <div className="invisible absolute right-0 top-full mt-2 w-48 rounded-xl border border-glass-border bg-glass py-2 opacity-0 shadow-card backdrop-blur-2xl transition-all group-hover:visible group-hover:opacity-100">
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-accent transition-colors hover:bg-bg-elevated"
+                      >
+                        <ShieldAlert className="h-4 w-4" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={() => { logout(); setLoggedIn(false); }}
                       className="flex w-full items-center gap-2 px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-bg-elevated hover:text-text-primary"
@@ -175,6 +186,15 @@ export default function Navbar() {
                   {item.label}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-accent transition-colors hover:bg-bg-elevated"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
             </div>
           </div>
         )}
