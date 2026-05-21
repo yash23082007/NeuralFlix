@@ -1,155 +1,383 @@
-import { Database, Gauge, GitBranch, Layers3, Sparkles, TrendingUp, Zap, Globe } from "lucide-react";
+import {
+  ArrowRight,
+  Globe,
+  Star,
+  TrendingUp,
+  Layers,
+  Film,
+  Compass,
+} from "lucide-react";
 import CinemaWorldMap from "../components/CinemaWorldMap";
-import HeroScene from "../components/three/HeroScene";
-import MovieCard3D from "../components/three/MovieCard3D";
 import MovieRow from "../components/MovieRow";
 import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
-import RecommendationOrb from "../components/three/RecommendationOrb";
 import {
-  getAnime, getByGenre, getByMood, getByRegion, getMlOverview,
-  getNowPlaying, getTopRated, getTrending, getTrendingAll,
+  getAnime,
+  getByGenre,
+  getByMood,
+  getByRegion,
+  getMlOverview,
+  getNowPlaying,
+  getTopRated,
+  getTrending,
+  getTrendingAll,
 } from "../lib/api";
 
 export const dynamic = "force-dynamic";
 
-const metricIcons = [Database, Gauge, GitBranch, Layers3];
-
 export default async function HomePage() {
   const [
-    trending, topRated, nowPlaying, trendingAll, indianMovies,
-    koreanMovies, japaneseMovies, frenchMovies, anime, awardWinners,
-    hiddenGems, actionMovies, mlOverview,
+    trending,
+    topRated,
+    nowPlaying,
+    trendingAll,
+    indianMovies,
+    koreanMovies,
+    japaneseMovies,
+    frenchMovies,
+    anime,
+    awardWinners,
+    hiddenGems,
+    actionMovies,
+    mlOverview,
   ] = await Promise.all([
-    getTrending(), getTopRated(), getNowPlaying(), getTrendingAll(),
-    getByRegion("indian"), getByRegion("korean"), getByRegion("japanese"),
-    getByRegion("french"), getAnime(), getByMood("award_winners"),
-    getByMood("hidden_gems"), getByGenre("action"), getMlOverview(),
+    getTrending(),
+    getTopRated(),
+    getNowPlaying(),
+    getTrendingAll(),
+    getByRegion("indian"),
+    getByRegion("korean"),
+    getByRegion("japanese"),
+    getByRegion("french"),
+    getAnime(),
+    getByMood("award_winners"),
+    getByMood("hidden_gems"),
+    getByGenre("action"),
+    getMlOverview(),
   ]);
 
-  const metrics = [
-    { label: "Catalog Items", value: mlOverview?.catalog_size || trending.length, detail: "Movies in recommendation index", icon: Database },
-    { label: "Avg Rating", value: mlOverview?.average_rating?.toFixed(2) || "0.00", detail: "Normalized cross-source score", icon: Gauge },
-    { label: "Recall Paths", value: "3", detail: "Content, collaborative, popularity", icon: GitBranch },
-    { label: "Diversity", value: "MMR", detail: "Genre-aware diversification", icon: Layers3 },
+  const featuredMovie = (trendingAll?.[0] || {
+    title: "Electric Dreams",
+    year: 2024,
+    rating: 9.1,
+    genres: ["Sci-Fi", "Drama"],
+    director: "Sato",
+    poster_url:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDZp61_shKDtVFquc0hX5P_hmYUtE0I5S1DcNzqTueF5V-ujB9ztf7_4W76tFk0xI3kSXOrVYZ-pIOA-0eZWk6UraaGa0lZu9FvTzSAG1P2Jq8sGtoaUxbeXlShPbBif2chDYBvaFSwj6TObdChmrkZmu_m6XUrL63_Igu4W7NvwD4d-zwzcNtE4RiL6P2Wj-OP9_KkMxUNtcPHEFM2aWfDzey9doVl8qYK7FJNfh-Jjk0x23WTXE2TCacGL92BUdKynw7iPKB38eI",
+  }) as any;
+
+  const sideMovies = [
+    (trendingAll?.[1] || {
+      title: "The Frozen Path",
+      region: "Nordic",
+      poster_url:
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuD-XcPfGAl9JY2D8TgZF4ViqcmwjtvFwswNJsl9u2XK8zdqE7I-a9jS8BZoIMPSNAenrwv0QH9oQ3I4k2FiPtcg2JGewBVPUkjIFMpIrgvZVvj74gA8eYYi3ZBHr1bsb4LZlrdnHc9s5PVt3FvT43F9JMyRYiwHS21X5bcvD8HfUwVNHHmcgTCmuJQ2G2Wu0kKimrNNM57cZLHNHNW4MQA2o2gRpCSVlXljM54TCx9jmYAGRgW6TOz3mxKRjjZZ0RqLmFrSdWV0S8U",
+    }) as any,
+    (trendingAll?.[2] || {
+      title: "Echoes of Gold",
+      region: "Latin America",
+      poster_url:
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuD8Mk9yXH7A6hzGwA2rWZotVEtk7bDvUCWDXcTF8v28G_VaDiW8fAv1wHEpkZZxjyrovewO6yfs3sK8TEaYStjfeg9u7hMVPjcjZF7t2cJ9J5yPOBICZCk0CIZic89Sft_4SOaiZV2JWA81Cqib3WrW0daw8I_66nr8sSYjyv4edv4-D5JorvVBkwAgYSBwnin1bXjTrbHYD_7JKSwIczogzpABNwme8JOCIHJ6A5lP-MU_WtHimgLe-HVcSg_nkC7rmwL-ZCrsweY",
+    }) as any,
   ];
 
+  const catalogSize = mlOverview?.catalog_size || 50000;
+  const topGenres = mlOverview?.top_genres?.slice(0, 3) || [];
+
   return (
-    <main className="min-h-screen bg-background relative">
-      {/* Background Recommendation Orb */}
-      <div className="fixed top-20 right-0 h-[600px] w-[600px] opacity-20 pointer-events-none blur-xl">
-        <RecommendationOrb />
-      </div>
-      <div className="fixed bottom-0 left-0 h-[400px] w-[400px] opacity-10 pointer-events-none blur-3xl bg-accent rounded-full" />
-
-      <HeroScene>
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto h-full">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent backdrop-blur-md">
-            <Zap className="h-3 w-3" />
-            Next-Gen Recommendation Engine
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tight text-text-primary leading-[0.9]">
-            Cinema <span className="text-accent">Redefined</span>.
-          </h1>
-          <p className="mt-8 text-xl text-text-muted font-medium max-w-2xl leading-relaxed">
-            NeuralFlix uses advanced matrix factorization and sequential transformers to map your cinema DNA.
-          </p>
-          
-          <div className="mt-12 flex gap-4">
-            <button className="rounded-2xl premium-gradient px-8 py-4 text-sm font-black text-white shadow-glow transition-all hover:scale-105 active:scale-95">
-              Explore Discover
-            </button>
-            <button className="rounded-2xl border border-glass-border bg-glass px-8 py-4 text-sm font-black text-text-primary backdrop-blur-md transition-all hover:bg-white/10">
-              Watch Trailer
-            </button>
-          </div>
+    <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden page-enter">
+      {/* ── Hero Section ── */}
+      <section className="relative min-h-[90vh] flex items-end overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <img
+            className="w-full h-full object-cover opacity-40 filter brightness-75 scale-105"
+            alt="Hero Background"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnU3v5zk29nqbbtpBCibp3lIdqH-_REgrgxWZqMHxg0VNjlUcEAvRoSA7Z-XreBjN27NmCzRTDZK8tTsazunE6na6ZLfFIfish9OiSEt6xyxmfRTj5gyv5Wjo4mYYArLxiKv2GDiH5UJzZZofLwnWpbUSdIs5hcUrojEJl8j6x3kTeFNM6ZtitTAd4Ts9xzXaPE8EIV1MycYVJGJC85qUDE9GwXRUjoi0KPopdo6JTOBaklLg7Rp6AjlIBBk0p252YxBhEjJy8qxY"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/70 to-[var(--surface-primary)]/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--surface-primary)]/80 via-transparent to-transparent" />
         </div>
-      </HeroScene>
 
-      {/* Stats dashboard */}
-      <div className="relative z-10 -mt-16 mx-auto max-w-7xl px-4 md:px-6">
-        <div className="grid gap-6 md:grid-cols-4">
-          {metrics.map((metric) => (
-            <div key={metric.label} className="premium-card group rounded-2xl p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">{metric.label}</span>
-                <metric.icon className="h-5 w-5 text-accent transition-transform group-hover:scale-110" />
-              </div>
-              <div className="text-4xl font-black tracking-tight text-text-primary">{metric.value}</div>
-              <p className="mt-2 text-[11px] font-bold text-text-muted/60">{metric.detail}</p>
+        <div className="relative z-10 px-5 sm:px-8 md:px-12 w-full max-w-7xl mx-auto pb-20 pt-32 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-12">
+          {/* Left Content */}
+          <div className="max-w-2xl animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="h-[1px] w-10 bg-[var(--accent-warm)]" />
+              <span className="text-xs font-medium uppercase tracking-[0.15em] text-[var(--accent-warm)]">
+                Curated Cinema Collection
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-[var(--text-primary)] leading-[1.05] mb-8 font-[var(--font-playfair)]">
+              Discover Films <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)]">
+                Worth Watching
+              </span>
+            </h1>
+            <p className="text-lg md:text-xl text-[var(--text-secondary)] mb-10 max-w-lg leading-relaxed">
+              Explore world cinema with ML-powered recommendations. From Indian
+              masterpieces to Nordic noir, find your next favorite film.
+            </p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a
+                href="/discover"
+                className="bg-[var(--accent-warm)] text-black font-semibold px-7 py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-glow flex items-center gap-2"
+              >
+                Explore Catalog
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="/recommendations"
+                className="bg-[var(--surface-elevated)]/50 border border-[var(--border-default)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] font-medium px-7 py-3.5 rounded-xl active:scale-[0.98] transition-all backdrop-blur-md"
+              >
+                My Recommendations
+              </a>
+            </div>
+          </div>
 
-      {/* Main content */}
-      <div className="mx-auto max-w-7xl space-y-24 px-4 py-20 md:px-6">
-        {/* Personalized Section */}
-        <section className="space-y-10">
+          {/* Right: Stats Card */}
+          <div className="flex-shrink-0 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/60 backdrop-blur-xl p-6 shadow-lg w-72">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-warm)]/10 text-[var(--accent-warm)]">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+                    Catalog Size
+                  </p>
+                  <p className="text-xl font-bold text-[var(--text-primary)]">
+                    {catalogSize.toLocaleString()}+ Films
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                {topGenres.map(
+                  (g: { name: string; count: number }, i: number) => (
+                    <div key={g.name} className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--text-secondary)]">{g.name}</span>
+                      <span className="text-[var(--text-tertiary)] font-medium text-xs">
+                        {g.count.toLocaleString()}
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+              {mlOverview?.pipeline && (
+                <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium mb-2">
+                    ML Pipeline
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {mlOverview.pipeline.slice(0, 3).map((p: any) => (
+                      <span
+                        key={p.stage}
+                        className="rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] text-[var(--text-tertiary)] font-medium"
+                      >
+                        {p.method}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Main Content ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-12 py-20 space-y-24">
+        {/* Personalized Recommendations */}
+        <section className="space-y-8">
           <div className="flex items-end justify-between">
             <div>
-              <div className="flex items-center gap-2 text-accent mb-2">
+              <div className="flex items-center gap-2 text-[var(--accent-warm)] mb-2">
                 <TrendingUp className="h-4 w-4" />
-                <span className="text-xs font-black uppercase tracking-widest">Real-time Predictions</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">
+                  For You
+                </span>
               </div>
-              <h2 className="text-4xl font-black tracking-tight text-text-primary">Tailored for You</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+                Recommended Films
+              </h2>
             </div>
+            <a
+              href="/recommendations"
+              className="text-[var(--accent-warm)] font-medium text-sm hover:underline flex items-center gap-1.5"
+            >
+              View All <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
-          <PersonalizedRecommendations />
+          <div className="rounded-2xl p-6 md:p-8 border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 backdrop-blur-sm">
+            <PersonalizedRecommendations />
+          </div>
         </section>
 
-        {/* Categories Grid or Strip */}
-        <div className="space-y-20">
-          <MovieRow title="Top Trending" movies={trendingAll} seeAllHref="/discover" />
-          <MovieRow title="Recently Released" movies={nowPlaying} />
-          
-          {/* Architecture Highlight */}
-          <section className="premium-card relative overflow-hidden rounded-3xl p-8 md:p-12">
-            <div className="relative z-10 grid gap-12 lg:grid-cols-2 lg:items-center">
-              <div>
-                <div className="flex items-center gap-2 text-accent mb-4">
-                  <GitBranch className="h-4 w-4" />
-                  <span className="text-xs font-black uppercase tracking-widest">ML Infrastructure</span>
-                </div>
-                <h2 className="text-4xl font-black tracking-tight text-text-primary">The Neural Engine</h2>
-                <p className="mt-6 text-lg text-text-muted leading-relaxed">
-                  Our hybrid engine combines <span className="text-text-primary font-bold">Collaborative Filtering</span> for broad patterns, 
-                  <span className="text-text-primary font-bold">Content-Based Filtering</span> for deep feature matching, 
-                  and <span className="text-text-primary font-bold">Sequential Transformers</span> to predict your next watch session.
-                </p>
-                <div className="mt-10 grid grid-cols-2 gap-6">
-                  {mlOverview?.pipeline?.slice(0, 4).map((stage) => (
-                    <div key={stage.stage} className="space-y-2">
-                      <h4 className="text-sm font-black text-text-primary">{stage.stage}</h4>
-                      <p className="text-xs text-text-muted">{stage.method}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="relative aspect-square lg:aspect-auto h-[400px]">
-                 <RecommendationOrb />
-              </div>
-            </div>
-            {/* Background glow */}
-            <div className="absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-accent/5 blur-3xl" />
-          </section>
-
-          <MovieRow title="Global Award Winners" movies={awardWinners} />
-          <MovieRow title="Indian Cinema" movies={indianMovies} seeAllHref="/cinema/indian" />
-          <MovieRow title="Korean Excellence" movies={koreanMovies} seeAllHref="/cinema/korean" />
-        </div>
-
-        {/* Cinema World Map */}
-        <section className="space-y-10">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-              <Globe className="h-6 w-6" />
-            </div>
+        {/* Regional Masterpieces — Bento Grid */}
+        <section className="relative">
+          <div className="flex justify-between items-end mb-10">
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-accent">Global Coverage</p>
-              <h2 className="text-4xl font-black tracking-tight text-text-primary">Cinema Map</h2>
+              <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+                Regional Highlights
+              </h2>
+              <p className="text-[var(--text-secondary)] text-sm">
+                Exceptional cinema from around the world.
+              </p>
+            </div>
+            <a
+              className="text-[var(--accent-warm)] font-medium text-sm flex items-center gap-1 hover:underline"
+              href="/discover"
+            >
+              View All <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-[520px]">
+            {/* Featured */}
+            <a
+              href={`/movie/${featuredMovie.tmdb_id || featuredMovie.id || 1}`}
+              className="col-span-12 md:col-span-8 group relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] flex flex-col justify-end transition-all duration-500 hover:border-[var(--border-accent)] min-h-[360px] md:min-h-0"
+            >
+              <img
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-50 group-hover:opacity-70"
+                src={featuredMovie.poster_url}
+                alt={featuredMovie.title}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/30 to-transparent" />
+              <div className="relative z-10 p-8 md:p-10">
+                <span className="bg-[var(--accent-warm)]/15 backdrop-blur-md text-[var(--accent-warm)] px-3 py-1 rounded-lg text-xs font-semibold mb-4 inline-block border border-[var(--accent-warm)]/25">
+                  Featured Pick
+                </span>
+                <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-3 group-hover:text-[var(--accent-warm)] transition-colors">
+                  {featuredMovie.title}
+                </h3>
+                <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+                  <span>{featuredMovie.year}</span>
+                  <span>·</span>
+                  <span>
+                    Dir. {featuredMovie.director || "Unknown"}
+                  </span>
+                  <span>·</span>
+                  <div className="flex items-center text-[var(--rating-gold)]">
+                    <Star className="h-3.5 w-3.5 mr-1 fill-current" />
+                    {featuredMovie.rating?.toFixed(1) || "9.1"}
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Side Items */}
+            <div className="col-span-12 md:col-span-4 flex flex-col gap-4">
+              {sideMovies.map((m, i) => (
+                <div
+                  key={i}
+                  className="flex-1 group relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] flex flex-col justify-end transition-all duration-500 hover:border-[var(--border-accent)] cursor-pointer min-h-[200px]"
+                >
+                  <img
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-40 group-hover:opacity-60"
+                    src={m.poster_url}
+                    alt={m.title}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/40 to-transparent" />
+                  <div className="relative z-10 p-6">
+                    <span className="bg-[var(--accent-rose)]/10 backdrop-blur-md text-[var(--accent-rose)] px-2.5 py-0.5 rounded-md text-[10px] font-semibold mb-2 inline-block border border-[var(--accent-rose)]/20">
+                      {m.region || "World Cinema"}
+                    </span>
+                    <h3 className="text-xl font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-rose)] transition-colors">
+                      {m.title}
+                    </h3>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="premium-card overflow-hidden rounded-3xl p-4 md:p-8">
+        </section>
+
+        {/* Category Rows */}
+        <section className="space-y-14">
+          <MovieRow
+            title="Trending Now"
+            movies={trendingAll}
+            seeAllHref="/discover"
+          />
+          <MovieRow
+            title="Indian Cinema"
+            movies={indianMovies}
+            seeAllHref="/cinema?region=indian"
+          />
+          <MovieRow
+            title="Korean Masterpieces"
+            movies={koreanMovies}
+            seeAllHref="/cinema?region=korean"
+          />
+        </section>
+
+        {/* Director Spotlights */}
+        <section className="py-10 rounded-2xl p-6 md:p-8 border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 relative overflow-hidden">
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+              Director Spotlights
+            </h2>
+            <p className="text-[var(--text-secondary)] text-sm">
+              Visionary filmmakers shaping global cinema.
+            </p>
+          </div>
+          <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar scroll-smooth">
+            {[
+              {
+                name: "Elena Moretti",
+                titles: "7 films available",
+                image:
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuADfvvBxPHCPOCL0hnlsk2prVK8lSBx39TvKnzimK8IUYnZqb7a8j9_yf8Op10ahXeiV23ShApoc3TkZr7ERx8CJAZgKvCGP3lFcjtt-obEx5sTZ3m4QN0efPZknPo-LREQ5xM-sYTw7UlQXiZo2xxVh4x_EgzU-nIkq92P-dYwR1-Dg0wsRN3_-YZ709hWbvfkM7oWWsUYRRWyHibu4imqPLKie85cAmMcCADm4Cxa4nGwjTAVkxFIggatDOXEsgH9NECAxBGAiJQ",
+              },
+              {
+                name: "Marcus Thorne",
+                titles: "12 films available",
+                image:
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuA6ddDWqx5M9m3NNuthHth3CN-iT2EM7BjEFqbbkxe9-Yfc-IRPx5dxFeuko_FwQB5-JiL-iahloH77rLdLqc6bcZFrH3hclWkbyIX4zKeJnVob4gJ5_HKFjCIKC3KCyY7xpXWNoYk79cL0srorY8zgA65nPbL4C1BHhS-qbFH3JRlJz_lt2npYYAxfg58cBZIVo9VfV6UcUmEFmzO0B6wbfhfv9xKu3fZl3ZRrkz4MIdAONghru1Yru4JbE5-HKPy68q9ih0rY0l0",
+              },
+              {
+                name: "Yumi Akasaka",
+                titles: "5 films available",
+                image:
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuDOc1nuV_jIPKYiqWeC81yXedc6OUNxlKm19lT-WF9pdRpWPDbzMgTahvL2emGXwBLgqzlLhaWLJCHbOib066k1espfMzVVf4W0dZldoeQ537hoVgqmUMWAJ-AgGNAULLdy4aq42d4fb6yw-dbu2WHIcEZEksnUHxuPZNKs9ln7J3WgV49CzKrFBFa92Di_I8wfYcf0G8w3NCO0t9bhlRq-Cz_1Qfg2C1_NqqwMBp7WSLrGzAKQzc30_zxjrvZfOsFKmX8AEzYU6E8",
+              },
+            ].map((dir, idx) => (
+              <div key={idx} className="flex-none w-[300px] group cursor-pointer">
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-[var(--border-subtle)] mb-5 transition-all duration-500 group-hover:shadow-xl group-hover:border-[var(--border-accent)]">
+                  <img
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
+                    src={dir.image}
+                    alt={dir.name}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] to-transparent opacity-60" />
+                </div>
+                <h4 className="text-xl font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-warm)] transition-colors">
+                  {dir.name}
+                </h4>
+                <p className="text-[var(--text-tertiary)] text-xs mt-1">
+                  {dir.titles}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Global Cinema Map */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-warm)]/10 text-[var(--accent-warm)] border border-[var(--accent-warm)]/15">
+              <Globe className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent-warm)]">
+                Global Coverage
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+                Cinema World Map
+              </h2>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-2xl p-4 md:p-8 border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 backdrop-blur-sm">
             <CinemaWorldMap />
           </div>
         </section>

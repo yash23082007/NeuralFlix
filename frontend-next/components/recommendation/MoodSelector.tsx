@@ -33,7 +33,7 @@ export function MoodSelector() {
     const fetchMoodMovies = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/movies/mood/${selectedMood}`);
+        const res = await fetch(`${API_BASE}/api/v1/movies/mood/${selectedMood}`);
         if (res.ok) {
           const data = await res.json();
           setMoodMovies(data.results || []);

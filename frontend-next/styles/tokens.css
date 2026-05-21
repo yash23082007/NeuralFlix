@@ -1,41 +1,72 @@
+/* ─── NeuralFlix Design Tokens ─── */
+/* Editorial Cinema-Forward Design System */
+
 :root {
-  --neural-crimson:     #E50914;
-  --neural-crimson-dim: #B20710;
-  --neural-gold:        #F5C518;
-  --neural-electric:    #00D4FF;
-  --neural-purple:      #7B2FFF;
-  --neural-cyan:        #06D6A0;
+  /* Surface Palette — Warm Charcoal Scale */
+  --surface-primary:   #0E0E10;
+  --surface-elevated:  #161618;
+  --surface-overlay:   #1C1C1F;
+  --surface-muted:     #222225;
+  --surface-hover:     #28282C;
+  --surface-active:    #303035;
 
-  --bg-void:     #000000;
-  --bg-deep:     #08080A;
-  --bg-surface:  #111115;
-  --bg-elevated: #1A1A20;
-  --bg-overlay:  rgba(0,0,0,0.85);
-  --bg-card:     #18181D;
+  /* Text Palette — Warm Cream Scale */
+  --text-primary:      #F5F0EB;
+  --text-secondary:    #9B9BA3;
+  --text-tertiary:     #6B6B73;
+  --text-disabled:     #44444B;
 
-  --text-primary:   #FFFFFF;
-  --text-secondary: #A0A0B0;
-  --text-muted:     #666673;
-  --text-inverse:   #000000;
+  /* Accent Palette */
+  --accent-warm:       #E8A849;
+  --accent-warm-dim:   #C48A30;
+  --accent-rose:       #D4637A;
+  --accent-rose-dim:   #B04D62;
+  --accent-sage:       #6B9B7D;
+  --accent-sage-dim:   #548266;
+  --accent-blue:       #5B8DEF;
+  --accent-blue-dim:   #4A73C8;
 
-  --font-display: 'Clash Display', 'Inter', sans-serif;
-  --font-body:    'Inter', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
+  /* Rating System */
+  --rating-gold:       #F5C518;
+  --rating-tomato:     #FA320A;
+  --rating-metacritic: #66CC33;
 
+  /* Borders */
+  --border-subtle:     rgba(255, 255, 255, 0.06);
+  --border-default:    rgba(255, 255, 255, 0.10);
+  --border-strong:     rgba(255, 255, 255, 0.16);
+  --border-accent:     rgba(232, 168, 73, 0.30);
+
+  /* Shadows */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.30);
+  --shadow-md:   0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.40);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.50);
+  --shadow-glow: 0 0 24px rgba(232, 168, 73, 0.12);
+  --shadow-poster: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04);
+
+  /* Radii */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  /* Spacing Scale */
   --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
   --space-4: 16px;  --space-5: 20px;  --space-6: 24px;
   --space-8: 32px;  --space-10: 40px; --space-12: 48px;
   --space-16: 64px; --space-20: 80px; --space-24: 96px;
 
-  --radius-sm: 6px;  --radius-md: 10px;
-  --radius-lg: 16px; --radius-xl: 24px; --radius-full: 9999px;
-
-  --shadow-card:  0 4px 24px rgba(0,0,0,0.6);
-  --shadow-glow:  0 0 40px rgba(229,9,20,0.3);
-  --shadow-ai:    0 0 40px rgba(0,212,255,0.2);
-  --shadow-elevated: 0 8px 40px rgba(0,0,0,0.5);
-
-  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
-  --duration-fast: 150ms;  --duration-base: 250ms;  --duration-slow: 500ms;
+  /* Motion */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:  150ms;
+  --duration-base:  250ms;
+  --duration-slow:  400ms;
+  --duration-slower: 600ms;
 }

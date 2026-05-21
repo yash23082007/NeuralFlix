@@ -141,3 +141,30 @@ async def get_user_recommendations(
         "movie_id": str(user_id),
         "recommendations": final_recs,
     }
+
+
+@router.get("/{movie_id}")
+async def get_movie_recommendations(
+    movie_id: int,
+    top_k: int = Query(10, ge=1, le=50),
+):
+    """
+    Get hybrid or content-based recommendations for a specific movie.
+    Used for the 'Similar Movies' or 'Recommendations' section.
+    """
+    try:
+        from utils.recommendation_engine import hybrid_recommendation
+        recs = await hybrid_recommendation(movie_id=str(movie_id), limit=top_k)
+        return {
+            "movie_id": str(movie_id),
+            "recommendations": recs
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate recommendations for movie {movie_id}: {e}")
+        from utils.recommendation_engine import get_popularity_baseline
+        fallback = await get_popularity_baseline(limit=top_k)
+        return {
+            "movie_id": str(movie_id),
+            "recommendations": fallback
+        }
+

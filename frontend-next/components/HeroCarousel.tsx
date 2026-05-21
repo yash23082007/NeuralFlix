@@ -1,16 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play, Star, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Star } from "lucide-react";
 import { Movie } from "../lib/api";
-
-const PremiumCinemaScene = dynamic(() => import("./PremiumCinemaScene"), {
-  ssr: false,
-  loading: () => null,
-});
 
 export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   const [current, setCurrent] = useState(0);
@@ -28,7 +22,7 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
 
   useEffect(() => {
     if (!items.length) return;
-    const t = setInterval(next, 6500);
+    const t = setInterval(next, 7000);
     return () => clearInterval(t);
   }, [next, items.length]);
 
@@ -37,64 +31,72 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   const movie = items[current];
 
   return (
-    <section className="relative min-h-[86vh] overflow-hidden border-b border-border bg-background">
+    <section className="relative min-h-[85vh] overflow-hidden bg-[var(--surface-primary)]">
+      {/* Background Image */}
       <div className="absolute inset-0">
         <Image
           src={movie.backdrop_url || movie.poster_url || ""}
           alt={movie.title}
           fill
-          className="object-cover object-center opacity-80 saturate-[1.08] transition-transform duration-[8s] ease-out"
+          className="object-cover object-center opacity-50 transition-all duration-[1.2s] ease-out"
           priority
         />
-        <div className="hero-light-veil absolute inset-0" />
-        <div className="film-grain absolute inset-0 opacity-50" />
+        {/* Gradient Veils */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--surface-primary)]/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--surface-primary)]/40 to-transparent h-32" />
       </div>
 
-      <PremiumCinemaScene />
-
-      <div className="relative z-10 mx-auto flex min-h-[86vh] max-w-7xl items-end px-4 pb-16 pt-28 md:px-8 lg:pb-20">
-        <div className="w-full max-w-3xl space-y-6 animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white/75 px-4 py-1.5 text-xs font-semibold uppercase text-text-secondary shadow-card backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5 text-accent" />
-            AI powered recommendations
-          </div>
-
+      {/* Content */}
+      <div className="relative z-10 mx-auto flex min-h-[85vh] max-w-7xl items-end px-5 pb-20 pt-32 md:px-8 lg:pb-24">
+        <div className="w-full max-w-2xl space-y-6 animate-fade-in-up">
+          {/* Meta Badges */}
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {movie.rating != null && movie.rating > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-imdb-gold px-2 py-1 text-xs font-bold text-black">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--rating-gold)] px-2.5 py-1 text-xs font-bold text-black">
                 <Star className="h-3.5 w-3.5 fill-current" />
                 {movie.rating.toFixed(1)}
               </span>
             )}
-            {movie.year && <span className="font-semibold text-text-secondary">{movie.year}</span>}
+            {movie.year && (
+              <span className="font-medium text-[var(--text-secondary)]">
+                {movie.year}
+              </span>
+            )}
             {movie.genres?.slice(0, 3).map((g) => (
-              <span key={g} className="rounded-full border border-border bg-white/70 px-3 py-1 text-xs font-semibold text-text-secondary backdrop-blur-sm">
+              <span
+                key={g}
+                className="rounded-full border border-[var(--border-default)] bg-[var(--surface-elevated)]/60 px-3 py-1 text-xs font-medium text-[var(--text-secondary)] backdrop-blur-sm"
+              >
                 {g}
               </span>
             ))}
           </div>
 
-          <h1 className="text-5xl font-bold leading-tight text-text-primary md:text-7xl lg:text-8xl">
+          {/* Title */}
+          <h1 className="text-4xl font-bold leading-tight text-[var(--text-primary)] md:text-6xl lg:text-7xl tracking-tight">
             {movie.title}
           </h1>
 
+          {/* Overview */}
           {movie.overview && (
-            <p className="line-clamp-3 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
+            <p className="line-clamp-3 max-w-xl text-base leading-relaxed text-[var(--text-secondary)] md:text-lg">
               {movie.overview}
             </p>
           )}
 
+          {/* CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <Link
               href={`/movie/${movie.tmdb_id || movie._id}?type=${movie.media_type || "movie"}`}
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-accent px-6 py-3.5 text-sm font-semibold text-white shadow-glow transition-all hover:brightness-95 active:scale-[0.98]"
+              className="group inline-flex items-center gap-2.5 rounded-xl bg-[var(--accent-warm)] px-7 py-3.5 text-sm font-semibold text-black shadow-glow transition-all hover:brightness-110 active:scale-[0.98]"
             >
-              <Play className="h-4 w-4 fill-white transition-transform group-hover:scale-110" />
+              <Play className="h-4 w-4 fill-current transition-transform group-hover:scale-110" />
               View Details
             </Link>
             <Link
               href="/discover"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white/75 px-6 py-3.5 text-sm font-semibold text-text-primary shadow-card backdrop-blur-md transition-all hover:bg-white"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/50 px-7 py-3.5 text-sm font-medium text-[var(--text-primary)] backdrop-blur-md transition-all hover:bg-[var(--surface-hover)]"
             >
               Browse Catalog
             </Link>
@@ -102,30 +104,32 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
         </div>
       </div>
 
+      {/* Navigation Arrows */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-border bg-white/80 p-3 text-text-primary shadow-card backdrop-blur-md transition-all hover:bg-white hover:scale-105 md:left-8"
+        className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/70 p-3 text-[var(--text-primary)] backdrop-blur-md transition-all hover:bg-[var(--surface-hover)] hover:scale-105 md:left-8"
         aria-label="Previous"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-border bg-white/80 p-3 text-text-primary shadow-card backdrop-blur-md transition-all hover:bg-white hover:scale-105 md:right-8"
+        className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/70 p-3 text-[var(--text-primary)] backdrop-blur-md transition-all hover:bg-[var(--surface-hover)] hover:scale-105 md:right-8"
         aria-label="Next"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+      {/* Indicator Dots */}
+      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-2.5">
         {items.map((item, index) => (
           <button
             key={item.tmdb_id || item._id || index}
             onClick={() => setCurrent(index)}
             className={`rounded-full transition-all duration-300 ${
               index === current
-                ? "w-10 h-1.5 bg-accent shadow-glow"
-                : "w-2 h-1.5 bg-slate-400/50 hover:bg-slate-500"
+                ? "w-8 h-1.5 bg-[var(--accent-warm)] shadow-glow"
+                : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
             }`}
             aria-label={`Slide ${index + 1}`}
           />

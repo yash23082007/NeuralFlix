@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
+import { Eye, EyeOff, LogIn, Film } from "lucide-react";
 import { setToken, setUser } from "../../lib/auth";
 import GoogleLogin from "../../components/GoogleLogin";
 import GithubLogin from "../../components/GithubLogin";
@@ -30,11 +30,14 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/github`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/github`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        }
+      );
 
       if (!res.ok) {
         const data = await res.json();
@@ -57,11 +60,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.detail || "Login failed");
@@ -78,44 +84,58 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 pt-20">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)] px-4 pt-20">
       <div className="relative w-full max-w-md">
-        {/* Background glow */}
-        <div className="absolute -inset-10 rounded-3xl bg-gradient-to-br from-accent/5 to-neural-purple/5 blur-3xl" />
+        {/* Ambient glow */}
+        <div className="absolute -inset-16 rounded-3xl bg-gradient-to-br from-[var(--accent-warm)]/5 to-[var(--accent-rose)]/5 blur-3xl pointer-events-none" />
 
-        <div className="premium-card relative rounded-2xl p-8">
+        <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-8 shadow-xl">
           <div className="mb-8 flex flex-col items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl premium-gradient shadow-sm">
-              <Sparkles className="h-6 w-6 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] shadow-sm">
+              <Film className="h-6 w-6 text-black" />
             </div>
             <div className="text-center">
-              <h1 className="text-xl font-bold tracking-tight text-text-primary">Welcome back</h1>
-              <p className="mt-1 text-sm text-text-muted">Sign in to your NeuralFlix account</p>
+              <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+                Welcome back
+              </h1>
+              <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+                Sign in to your NeuralFlix account
+              </p>
             </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             {error && (
-              <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent">
+              <div className="rounded-xl bg-[var(--accent-rose)]/10 border border-[var(--accent-rose)]/20 px-4 py-3 text-sm text-[var(--accent-rose)]">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-text-secondary">Email</label>
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-[var(--text-secondary)]"
+              >
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/30"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
                 placeholder="you@example.com"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-text-secondary">Password</label>
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-[var(--text-secondary)]"
+              >
+                Password
+              </label>
               <div className="relative">
                 <input
                   id="password"
@@ -124,15 +144,19 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 pr-11 text-sm text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/30"
+                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -140,10 +164,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neural-crimson-dim disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-xl bg-[var(--accent-warm)] py-3 text-sm font-semibold text-black shadow-sm transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
               ) : (
                 <LogIn className="h-4 w-4" />
               )}
@@ -152,9 +176,11 @@ export default function LoginPage() {
           </form>
 
           <div className="my-6 flex items-center gap-4">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Or</span>
-            <div className="h-px flex-1 bg-border" />
+            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+            <span className="text-xs font-medium text-[var(--text-disabled)] uppercase tracking-wider">
+              Or
+            </span>
+            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
           </div>
 
           <div className="space-y-3 mb-4">
@@ -162,9 +188,12 @@ export default function LoginPage() {
             <GithubLogin />
           </div>
 
-          <p className="mt-6 text-center text-sm text-text-muted">
+          <p className="mt-6 text-center text-sm text-[var(--text-tertiary)]">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="font-medium text-accent hover:text-neural-crimson-dim transition-colors">
+            <Link
+              href="/register"
+              className="font-medium text-[var(--accent-warm)] hover:text-[var(--accent-warm-dim)] transition-colors"
+            >
               Create one
             </Link>
           </p>

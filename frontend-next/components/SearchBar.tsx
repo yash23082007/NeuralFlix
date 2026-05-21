@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search, X, ArrowRight, TrendingUp, Clock } from 'lucide-react'
+import { Search, X, ArrowRight, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface SearchSuggestion {
   tmdb_id: number
@@ -46,7 +48,7 @@ export default function SearchBar() {
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/v1/movies/search?q=${encodeURIComponent(q)}&limit=6`)
+      const res = await fetch(`${API_BASE}/api/v1/search/movies?query=${encodeURIComponent(q)}&limit=6`)
       if (!res.ok) throw new Error('Search failed')
       const data = await res.json()
       setSuggestions(data.results || [])
@@ -90,15 +92,15 @@ export default function SearchBar() {
     <div ref={wrapperRef} className="relative w-full max-w-lg">
       <form onSubmit={handleSubmit}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onFocus={() => setIsOpen(true)}
-            placeholder="Search movies..."
-            className="w-full pl-10 pr-10 py-2.5 bg-[var(--bg-secondary)] border border-transparent rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all"
+            placeholder="Search films..."
+            className="w-full pl-10 pr-10 py-2.5 bg-[var(--surface-elevated)] border border-[var(--border-default)] rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-warm)] focus:ring-2 focus:ring-[var(--accent-warm)]/20 transition-all"
           />
           {query && (
             <button
@@ -106,43 +108,43 @@ export default function SearchBar() {
               onClick={clearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
-              <X className="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--text-primary)]" />
+              <X className="w-4 h-4 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" />
             </button>
           )}
         </div>
       </form>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
+        <div className="absolute top-full mt-2 w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] overflow-hidden z-50 shadow-xl">
           {loading && (
             <div className="p-4 text-center">
-              <div className="w-5 h-5 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-5 h-5 border-2 border-[var(--accent-warm)] border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
           )}
 
           {!loading && suggestions.length > 0 && (
             <div>
-              <p className="px-4 pt-3 pb-1 text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Suggestions</p>
+              <p className="px-4 pt-3 pb-1 text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider font-medium">Suggestions</p>
               {suggestions.map((m) => (
                 <button
                   key={m.tmdb_id}
                   onClick={() => handleSelect(m)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--surface-hover)] transition-colors text-left"
                 >
                   {m.poster_url ? (
                     <img src={m.poster_url} alt="" className="w-8 h-12 rounded object-cover" />
                   ) : (
-                    <div className="w-8 h-12 rounded bg-[var(--bg-secondary)] flex items-center justify-center">
-                      <Search className="w-4 h-4 text-[var(--text-muted)]" />
+                    <div className="w-8 h-12 rounded bg-[var(--surface-muted)] flex items-center justify-center">
+                      <Search className="w-4 h-4 text-[var(--text-tertiary)]" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-[var(--text-primary)] truncate">{m.title}</p>
-                    <p className="text-xs text-[var(--text-muted)]">
+                    <p className="text-xs text-[var(--text-tertiary)]">
                       {m.year && `${m.year} · `}{m.rating && `${m.rating.toFixed(1)}/10`}
                     </p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                  <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] shrink-0" />
                 </button>
               ))}
             </div>
@@ -150,7 +152,7 @@ export default function SearchBar() {
 
           {!loading && !query && recentSearches.length > 0 && (
             <div>
-              <p className="px-4 pt-3 pb-1 text-[10px] text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
+              <p className="px-4 pt-3 pb-1 text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider font-medium flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Recent
               </p>
               {recentSearches.map((s) => (
@@ -160,9 +162,9 @@ export default function SearchBar() {
                     setQuery(s)
                     searchAPI(s)
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--surface-hover)] transition-colors text-left"
                 >
-                  <Clock className="w-4 h-4 text-[var(--text-muted)]" />
+                  <Clock className="w-4 h-4 text-[var(--text-tertiary)]" />
                   <span className="text-sm text-[var(--text-primary)]">{s}</span>
                 </button>
               ))}
@@ -170,7 +172,7 @@ export default function SearchBar() {
           )}
 
           {!loading && query && suggestions.length === 0 && query.length >= 2 && (
-            <div className="p-4 text-center text-sm text-[var(--text-muted)]">
+            <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">
               No results for &ldquo;{query}&rdquo;
             </div>
           )}

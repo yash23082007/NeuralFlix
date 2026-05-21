@@ -80,6 +80,21 @@ async def get_user_taste_profile(user_id: int):
     taste_profile = build_taste_profile(watch_history)
     return {"user_id": user_id, "profile": taste_profile}
 
+@router.get("/{user_id}/history")
+async def get_user_watch_history(user_id: int):
+    """Return user's watch history with enriched movie metadata."""
+    if _has_pg:
+        try:
+            watch_history = await _fetch_watch_history_pg(user_id)
+            if watch_history:
+                return {"user_id": user_id, "history": watch_history}
+        except Exception:
+            pass
+
+    watch_history = await _fetch_watch_history_inmem(user_id)
+    return {"user_id": user_id, "history": watch_history}
+
+
 @router.post("/onboard")
 async def onboard_user(data: dict):
     """

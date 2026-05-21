@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "../styles/globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,42 +8,48 @@ import { CommandPalette } from "../components/CommandPalette";
 import Providers from "../components/Providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "NeuralFlix ML | Movie Recommendation System",
-    template: "%s | NeuralFlix ML",
+    default: "NeuralFlix — Cinema Discovery & ML Recommendations",
+    template: "%s — NeuralFlix",
   },
   description:
-    "An advanced machine learning web app for movie discovery, hybrid recommendations, and global cinema exploration.",
+    "Discover films from every corner of the world with ML-driven recommendations, multi-source ratings, and global cinema exploration.",
   keywords: [
-    "machine learning",
     "movie recommendations",
-    "recommender system",
+    "cinema discovery",
+    "film ratings",
+    "world cinema",
     "collaborative filtering",
     "content based filtering",
-    "world cinema",
+    "streaming guide",
     "NeuralFlix",
   ],
   openGraph: {
-    title: "NeuralFlix ML",
-    description: "Hybrid ML recommendations for global cinema.",
+    title: "NeuralFlix",
+    description: "Global cinema discovery with ML-driven recommendations.",
     type: "website",
-    siteName: "NeuralFlix ML",
+    siteName: "NeuralFlix",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NeuralFlix ML",
-    description: "Hybrid ML recommendations for global cinema.",
+    title: "NeuralFlix",
+    description: "Global cinema discovery with ML-driven recommendations.",
   },
   robots: {
     index: true,
     follow: true,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  ),
 };
 
 export default function RootLayout({
@@ -52,19 +58,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${playfair.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${playfair.variable}`}
+    >
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#F7F9FC" />
+        <meta name="theme-color" content="#0E0E10" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "NeuralFlix ML",
-              url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-              description: "Machine learning movie recommendation platform",
+              name: "NeuralFlix",
+              url:
+                process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+              description:
+                "Intelligent cinema discovery powered by machine learning",
               potentialAction: {
                 "@type": "SearchAction",
                 target: {
@@ -80,7 +92,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

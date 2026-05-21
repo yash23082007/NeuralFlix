@@ -105,7 +105,7 @@ const REGION_MAP: Record<
 
 async function getMoviesByRegion(region: string, page = 1) {
   try {
-    const res = await fetch(`${API_BASE}/api/movies/region/${region}?page=${page}`, {
+    const res = await fetch(`${API_BASE}/api/v1/movies/region/${region}?page=${page}`, {
       next: { revalidate: 600 },
     });
     if (!res.ok) return null;

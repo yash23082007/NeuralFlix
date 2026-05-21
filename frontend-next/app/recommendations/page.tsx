@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { SlidersHorizontal, Sparkles, RefreshCw } from 'lucide-react'
-import NeuralMatchScore from '@/components/NeuralMatchScore'
+import { SlidersHorizontal, Sparkles, RefreshCw, Cpu, Activity, ListFilter } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import TasteDNA from '@/components/TasteDNA'
+import MovieCard from '@/components/MovieCard'
 
 interface Movie {
   tmdb_id: number
@@ -12,14 +13,18 @@ interface Movie {
   poster_url?: string
   genres?: string[]
   rating?: number
-  match_score?: number
+  rec_score?: number
+  popularity_score?: number
   year?: number
+  language?: string
+  cinema_region?: string
 }
 
 const GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thriller', 'Animation', 'Documentary']
 const MOODS = ['Exciting', 'Chill', 'Thoughtful', 'Funny', 'Intense', 'Romantic']
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-export default function RecommendationsPage() {
+function RecommendationsContent() {
   const searchParams = useSearchParams()
   const [recommendations, setRecommendations] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +42,7 @@ export default function RecommendationsPage() {
   useEffect(() => {
     async function fetchTasteProfile() {
       try {
-        const res = await fetch('/api/recommendations/user/' + userId + '?top_k=1')
+        const res = await fetch(`${API}/api/v1/recommendations/user/${userId}?top_k=1`)
         if (res.ok) {
           const data = await res.json()
           if (data.profile) setTasteProfile(data.profile)
@@ -56,12 +61,12 @@ export default function RecommendationsPage() {
       if (selectedMood) params.set('mood', selectedMood)
       params.set('sort', sortBy)
 
-      const recsRes = await fetch('/api/recommendations/user/' + userId + '?' + params)
+      const recsRes = await fetch(`${API}/api/v1/recommendations/user/${userId}?` + params)
       if (recsRes.ok) {
         const recsData = await recsRes.json()
         const movies = (recsData.recommendations || []).map((m: any) => ({
           ...m,
-          match_score: m.score ? Math.round(m.score * 100) : 85,
+          rec_score: m.score != null ? m.score : 0.85,
         }))
         if (append) {
           setRecommendations((prev) => [...prev, ...movies])
@@ -74,7 +79,7 @@ export default function RecommendationsPage() {
     setLoading(false)
   }, [userId, selectedGenres, selectedMood, sortBy])
 
-  useEffect(() => { fetchRecommendations(1) }, [fetchRecommendations])
+  useEffect(() => { setPage(1); fetchRecommendations(1) }, [selectedGenres, selectedMood, sortBy, fetchRecommendations])
 
   useEffect(() => {
     if (!sentinelRef.current) return
@@ -99,14 +104,15 @@ export default function RecommendationsPage() {
     let ws: WebSocket | null = null
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      ws = new WebSocket(protocol + '//' + window.location.host + '/ws/recommendations/' + userId)
+      const wsUrl = `${protocol}//${API.replace(/^https?:\/\//, '')}/ws/recommendations/${userId}`
+      ws = new WebSocket(wsUrl)
       ws.onopen = () => setStreaming(true)
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
           if (msg.type === 'recommendations_update' && msg.data) {
             setRecommendations(msg.data.slice(0, 20).map((m: any) => ({
-              ...m, match_score: m.score ? Math.round(m.score * 100) : 85,
+              ...m, rec_score: m.score != null ? m.score : 0.85,
             })))
           }
         } catch { /* ignore */ }
@@ -122,120 +128,209 @@ export default function RecommendationsPage() {
     )
   }
 
+  // Framer Motion helper
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+    <main className="min-h-screen bg-[#08080a] text-[#e5e2e3] relative overflow-hidden font-sans selection:bg-[#00dce5]/20 selection:text-[#00dce5] pt-28 pb-24 page-enter">
+      
+      {/* Dynamic Film Grain backdrop */}
+      <div className="absolute inset-0 z-10 pointer-events-none opacity-[0.03] bg-film-grain" />
+
+      {/* Cybernetic telemetry blueprint grid */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+        <div 
+          className="absolute inset-0" 
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(0,220,229,0.05) 1px, transparent 1px)",
+            backgroundSize: "36px 36px"
+          }}
+        />
+        <div className="absolute top-1/4 left-1/4 h-[700px] w-[700px] rounded-full bg-radial from-[#00dce5]/8 to-transparent blur-3xl animate-pulse" style={{ animationDuration: "10s" }} />
+      </div>
+
+      <div className="relative z-20 max-w-7xl mx-auto px-6 sm:px-12 md:px-24">
+        
+        {/* Hub Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10 border-b border-white/5 pb-6">
           <div>
-            <h1 className="text-3xl font-semibold text-[var(--text-primary)] display-font flex items-center gap-3">
-              <Sparkles className="w-7 h-7 text-[var(--accent-primary)]" />
-              Your Recommendations
-            </h1>
-            <p className="text-[var(--text-secondary)] mt-1">Curated by our hybrid neural engine</p>
-          </div>
-          {streaming && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-xs text-green-600 font-medium">Live</span>
+            <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-[#00dce5] font-black uppercase">
+              <Cpu className="h-3.5 w-3.5 animate-pulse" />
+              NEURAL CURATION ARCHIVES
             </div>
-          )}
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1 flex items-center gap-3">
+              <Sparkles className="w-8 h-8 text-[#00dce5]" />
+              Personalized Recommendations
+            </h1>
+            <p className="text-xs text-[#b9caca] mt-1">
+              High-fidelity match coordinates calculated by our hybrid neural engine matrix.
+            </p>
+          </div>
+          
+          <AnimatePresence>
+            {streaming && (
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#00dce5]/10 border border-[#00dce5]/20 rounded-full"
+              >
+                <span className="w-2 h-2 bg-[#00dce5] rounded-full animate-ping" />
+                <span className="text-[9px] font-mono text-[#00dce5] font-bold uppercase tracking-wider">LIVE TELEMETRY</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-medium text-[var(--text-primary)]">Filters</span>
+        {/* Taste DNA Section */}
+        <section className="mb-10">
+          <TasteDNA profile={tasteProfile} loading={profileLoading} />
+        </section>
+
+        {/* Re-skinned Filter Panel (Bento Style) */}
+        <div className="bg-[#0c0c10]/50 border border-white/5 rounded-3xl p-6 backdrop-blur-md mb-10 relative">
+          <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-[#00dce5]/40" />
+          <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-3">
+            <ListFilter className="w-4 h-4 text-[#00dce5]" />
+            <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white">
+              Tuning Filters console
+            </span>
           </div>
-          <div className="space-y-4">
+
+          <div className="space-y-6">
             <div>
-              <p className="text-xs text-gray-400 mb-2">Genres</p>
+              <p className="text-[9px] font-mono uppercase text-[#70707f] tracking-widest mb-3">GENRE COORDINATES</p>
               <div className="flex flex-wrap gap-2">
-                {GENRES.map((genre) => (
-                  <button key={genre} onClick={() => toggleGenre(genre)}
-                    className={'px-3 py-1.5 text-xs rounded-full border transition-all ' + (selectedGenres.includes(genre) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-transparent text-gray-600 border-gray-200 hover:border-indigo-400')}>
-                    {genre}
-                  </button>
-                ))}
+                {GENRES.map((genre) => {
+                  const active = selectedGenres.includes(genre)
+                  return (
+                    <button 
+                      key={genre} 
+                      onClick={() => toggleGenre(genre)}
+                      className={`px-3 py-1.5 text-xs rounded-xl border font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                        active 
+                          ? 'bg-[#00dce5] text-[#002021] border-[#00dce5] font-bold shadow-[0_0_15px_rgba(0,220,229,0.3)]' 
+                          : 'bg-transparent text-[#b9caca] border-white/5 hover:border-[#00dce5]/30'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  )
+                })}
               </div>
             </div>
-            <div className="flex flex-wrap gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div>
-                <p className="text-xs text-gray-400 mb-2">Mood</p>
+                <p className="text-[9px] font-mono uppercase text-[#70707f] tracking-widest mb-3">EMOTIONAL BIAS</p>
                 <div className="flex flex-wrap gap-2">
-                  {MOODS.map((mood) => (
-                    <button key={mood} onClick={() => setSelectedMood(selectedMood === mood ? null : mood)}
-                      className={'px-3 py-1.5 text-xs rounded-full border transition-all ' + (selectedMood === mood ? 'bg-violet-600 text-white border-violet-600' : 'bg-transparent text-gray-600 border-gray-200')}>
-                      {mood}
-                    </button>
-                  ))}
+                  {MOODS.map((mood) => {
+                    const active = selectedMood === mood
+                    return (
+                      <button 
+                        key={mood} 
+                        onClick={() => setSelectedMood(active ? null : mood)}
+                        className={`px-3 py-1.5 text-xs rounded-xl border font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                          active 
+                            ? 'bg-[#fface8] text-black border-[#fface8] font-bold shadow-[0_0_15px_rgba(255,172,232,0.3)]' 
+                            : 'bg-transparent text-[#b9caca] border-white/5 hover:border-[#fface8]/30'
+                        }`}
+                      >
+                        {mood}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
+
               <div>
-                <p className="text-xs text-gray-400 mb-2">Sort By</p>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-1.5 text-xs rounded-full border border-gray-200 bg-transparent text-gray-600">
-                  <option value="score">Match Score</option>
-                  <option value="popularity">Popularity</option>
-                  <option value="year">Release Year</option>
+                <p className="text-[9px] font-mono uppercase text-[#70707f] tracking-widest mb-3">RERANK ALGORITHM</p>
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="w-full max-w-xs px-4 py-2 text-xs rounded-xl border border-white/5 bg-[#08080a] text-white font-mono uppercase tracking-wider focus:outline-none focus:border-[#00dce5] transition-colors"
+                >
+                  <option value="score">Neural Match Score</option>
+                  <option value="popularity">Popularity Index</option>
+                  <option value="year">Temporal Archiving</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] display-font mb-4">Your Taste DNA</h2>
-          <TasteDNA profile={tasteProfile} loading={profileLoading} />
-        </div>
-
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-[var(--text-primary)] flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              Top Picks for You
+        {/* Dynamic Recommends Grid */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-6">
+            <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+              <Activity className="w-5 h-5 text-[#00dce5]" />
+              Top Curation Outputs
             </h2>
-            <button onClick={() => { setPage(1); fetchRecommendations(1) }}
-              className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-violet-600 transition-colors">
-              <RefreshCw className="w-3 h-3" /> Refresh
+            <button 
+              onClick={() => { setPage(1); fetchRecommendations(1) }}
+              className="flex items-center gap-1.5 text-xs font-mono tracking-widest text-[#00dce5] hover:text-[#fface8] transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> RE-CALCULATE
             </button>
           </div>
+
           {loading && recommendations.length === 0 ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center py-24">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#00dce5]/10 border-t-[#00dce5] shadow-[0_0_20px_rgba(0,220,229,0.3)]" />
+                <p className="text-xs font-mono tracking-widest text-[#70707f] uppercase animate-pulse">Running matrices...</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+            >
               {recommendations.slice(0, 20).map((movie) => (
-                <div key={movie.tmdb_id} className="relative group cursor-pointer"
-                  onClick={() => { window.location.href = '/movie/' + movie.tmdb_id }}>
-                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 relative">
-                    {movie.poster_url ? (
-                      <img src={movie.poster_url} alt={movie.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">{movie.title?.[0]}</div>
-                    )}
-                    <div className="absolute top-2 right-2">
-                      <NeuralMatchScore score={movie.match_score || 85} size="sm" />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{movie.title}</p>
-                    <p className="text-xs text-gray-400">{movie.year && movie.year}</p>
-                  </div>
-                </div>
+                <motion.div key={movie.tmdb_id} variants={itemVariants}>
+                  <MovieCard movie={movie} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
+
           <div ref={sentinelRef} className="h-4" />
+          
           {loading && recommendations.length > 0 && (
-            <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-2 border-[#00dce5] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </section>
       </div>
-    </div>
+    </main>
+  )
+}
+
+export default function RecommendationsPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#08080a] pt-28 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#00dce5] border-t-transparent" />
+          <p className="text-sm text-text-muted">Loading...</p>
+        </div>
+      </main>
+    }>
+      <RecommendationsContent />
+    </Suspense>
   )
 }

@@ -93,3 +93,9 @@ class AsyncTaskResponse(BaseModel):
 class GenericResponse(BaseModel):
     message: str
     error_id: Optional[str] = None
+
+class TrackingEventSchema(BaseModel):
+    user_id: str
+    item_id: str
+    event_type: str = "watch"
+    metadata: Optional[Dict[str, Any]] = None

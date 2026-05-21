@@ -14,12 +14,14 @@ DATABASE_URL = os.getenv(
 
 engine = None
 AsyncSessionLocal = None
+_init_attempted = False
 
 
 async def init_db():
-    global engine, AsyncSessionLocal
-    if engine is not None:
+    global engine, AsyncSessionLocal, _init_attempted
+    if _init_attempted:
         return
+    _init_attempted = True
 
     try:
         from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession

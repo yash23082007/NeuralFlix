@@ -20,7 +20,7 @@ function ParticleCloud({ count = 1000 }) {
     return p;
   }, [count]);
 
-  const ref = useRef<any>();
+  const ref = useRef<any>(null);
 
   useFrame((state, delta) => {
     if (ref.current) {

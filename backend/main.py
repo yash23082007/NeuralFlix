@@ -81,7 +81,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ─── Legacy Route Registration ───────────────────────────
 try:
-    from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data
+    from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data, users
     HAS_ROUTES = True
 except ImportError as exc:
     log.warning("legacy_routes_not_loaded", error=str(exc))
@@ -153,6 +153,9 @@ if HAS_ROUTES:
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
     app.include_router(tracking.router, prefix="/api/v1/tracking", tags=["Tracking"])
     app.include_router(genres.router, prefix="/api/v1/genres", tags=["Genres"])
+    
+    # User Profiles & Onboarding
+    app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
     
     # External Integrations
     app.include_router(imdb.router, prefix="/api/v1/imdb", tags=["IMDb"])

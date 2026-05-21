@@ -1,45 +1,42 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
+import { useEffect } from "react";
 import Link from "next/link";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 
-export default function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="relative flex flex-col items-center gap-8 text-center max-w-md">
-        <div className="relative">
-          <div className="h-20 w-20 rounded-2xl bg-accent/10 flex items-center justify-center">
-            <AlertTriangle className="h-10 w-10 text-accent" />
-          </div>
-          <div className="absolute -inset-3 rounded-2xl bg-accent/5 blur-2xl" />
-        </div>
-
-        <div className="space-y-3">
-          <h1 className="text-3xl font-bold tracking-tight text-text-primary">System Malfunction</h1>
-          <p className="text-sm text-text-muted leading-relaxed max-w-sm">
-            The recommendation engine encountered an unexpected error. Our team has been notified.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neural-crimson-dim"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry Connection
-          </button>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-text-secondary transition-all hover:bg-bg-elevated hover:text-text-primary"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Return Home
-          </Link>
-        </div>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[var(--surface-primary)] px-6">
+      <AlertTriangle className="h-12 w-12 text-[var(--accent-rose)]" />
+      <h2 className="text-2xl font-bold text-[var(--text-primary)]">Something went wrong</h2>
+      <p className="max-w-md text-center text-sm text-[var(--text-secondary)]">
+        An unexpected error occurred. Please try again or return to the homepage.
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={reset}
+          className="rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110"
+        >
+          Try Again
+        </button>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition-all hover:bg-[var(--surface-hover)]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Home
+        </Link>
       </div>
-    </main>
+    </div>
   );
 }

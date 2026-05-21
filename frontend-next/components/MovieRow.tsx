@@ -17,7 +17,10 @@ export default function MovieRow({ title, movies, seeAllHref }: MovieRowProps) {
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: direction === "left" ? -600 : 600, behavior: "smooth" });
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -600 : 600,
+      behavior: "smooth",
+    });
   };
 
   if (!movies || movies.length === 0) return null;
@@ -26,14 +29,16 @@ export default function MovieRow({ title, movies, seeAllHref }: MovieRowProps) {
     <section className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-5 w-1 rounded-full bg-gradient-to-b from-accent to-neural-purple" />
-          <h2 className="text-lg font-bold tracking-tight text-text-primary">{title}</h2>
+          <div className="h-5 w-[3px] rounded-full bg-gradient-to-b from-[var(--accent-warm)] to-[var(--accent-rose)]" />
+          <h2 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
+            {title}
+          </h2>
         </div>
         <div className="flex items-center gap-3">
           {seeAllHref && (
             <Link
               href={seeAllHref}
-              className="group flex items-center gap-1.5 text-xs font-semibold text-text-muted transition-colors hover:text-accent"
+              className="group flex items-center gap-1.5 text-xs font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent-warm)]"
             >
               See All
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -42,14 +47,14 @@ export default function MovieRow({ title, movies, seeAllHref }: MovieRowProps) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => scroll("left")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-all hover:bg-bg-elevated hover:text-text-primary"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-tertiary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               aria-label="Scroll left"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-all hover:bg-bg-elevated hover:text-text-primary"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-tertiary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               aria-label="Scroll right"
             >
               <ChevronRight className="h-4 w-4" />
@@ -60,7 +65,11 @@ export default function MovieRow({ title, movies, seeAllHref }: MovieRowProps) {
 
       <div ref={scrollRef} className="scroll-row movie-row-snap">
         {movies.map((movie, i) => (
-          <div key={movie.tmdb_id || movie._id || i} className="animate-fade-in-up" style={{ animationDelay: `${(i % 6) * 60}ms` }}>
+          <div
+            key={movie.tmdb_id || movie._id || i}
+            className="animate-fade-in-up"
+            style={{ animationDelay: `${(i % 6) * 60}ms` }}
+          >
             <MovieCard movie={movie} />
           </div>
         ))}
