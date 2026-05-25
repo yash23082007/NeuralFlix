@@ -7,7 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 logger = logging.getLogger("TMDB_SERVICE")
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")
-TMDB_BASE_URL = "https://api.themoviedb.org/3"
+TMDB_BASE_URL = "https://api.tmdb.org/3"
 
 class TMDBService:
     def __init__(self):

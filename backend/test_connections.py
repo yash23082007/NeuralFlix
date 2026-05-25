@@ -2,8 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from database import get_db, SessionLocal, DatabaseManager
-client = DatabaseManager.get_mongo_client()
-db = get_db()
+from database import SessionLocal, DatabaseManager
 from sqlalchemy import text
 
 # Load environment variables
@@ -12,6 +11,7 @@ load_dotenv()
 def test_mongodb():
     print("Testing MongoDB Connection...")
     try:
+        client = DatabaseManager.get_mongo_client()
         # The ismaster command is cheap and does not require auth.
         client.admin.command('ismaster')
         print("✅ MongoDB: Connected successfully.")
@@ -43,7 +43,7 @@ def test_tmdb():
         print("❌ TMDB API: Missing API keys in .env")
         return
         
-    url = "https://api.themoviedb.org/3/authentication"
+    url = "https://api.tmdb.org/3/authentication"
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {access_token}" if access_token else ""
@@ -53,7 +53,7 @@ def test_tmdb():
         if access_token:
             response = requests.get(url, headers=headers)
         else:
-            response = requests.get(f"https://api.themoviedb.org/3/movie/popular?api_key={api_key}&language=en-US&page=1")
+            response = requests.get(f"https://api.tmdb.org/3/movie/popular?api_key={api_key}&language=en-US&page=1")
             
         if response.status_code == 200:
             print("✅ TMDB API: Connected successfully. Authentication valid.")

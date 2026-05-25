@@ -145,7 +145,7 @@ async def get_user_recommendations(
 
 @router.get("/{movie_id}")
 async def get_movie_recommendations(
-    movie_id: int,
+    movie_id: str,
     top_k: int = Query(10, ge=1, le=50),
 ):
     """

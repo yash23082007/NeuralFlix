@@ -53,7 +53,7 @@ def _build_tfidf_matrix():
 
     all_movies = list(movies_collection.find({}, {
         "_id": 1, "genres": 1, "title": 1, "poster_url": 1,
-        "overview": 1, "tagline": 1, "tmdb_id": 1, "rating": 1,
+        "overview": 1, "tagline": 1, "tmdb_id": 1, "imdb_id": 1, "rating": 1,
         "year": 1, "popularity_score": 1, "language": 1, "cinema_region": 1,
         "backdrop_url": 1, "platforms": 1, "media_type": 1,
     }))
@@ -83,6 +83,8 @@ def _build_tfidf_matrix():
             id_map[str(movie["_id"])] = idx
         if movie.get("tmdb_id") is not None:
             id_map[str(movie["tmdb_id"])] = idx
+        if movie.get("imdb_id") is not None:
+            id_map[str(movie["imdb_id"])] = idx
 
     _tfidf_cache = (all_movies, vectors, id_map)
     _tfidf_cache_time = now

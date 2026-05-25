@@ -35,3 +35,7 @@ backend/data/
 backend/scripts/exports/
 backend/scripts/*checkpoint*.json
 backend/scripts/*.json.gz
+
+# Local scratch and temporary files
+backend/scratch/
+

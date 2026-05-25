@@ -9,7 +9,7 @@ import httpx
 load_dotenv()
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
-BASE_URL = "https://api.themoviedb.org/3"
+BASE_URL = "https://api.tmdb.org/3"
 IMAGE_BASE = "https://image.tmdb.org/t/p"
 
 # ─── In-memory cache with TTL ────────────────────────

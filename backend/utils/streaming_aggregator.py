@@ -19,7 +19,7 @@ load_dotenv()
 logger = logging.getLogger("STREAMING_AGGREGATOR")
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
-TMDB_BASE = "https://api.themoviedb.org/3"
+TMDB_BASE = "https://api.tmdb.org/3"
 TMDB_IMG = "https://image.tmdb.org/t/p"
 
 WATCHMODE_API_KEY = os.getenv("WATCHMODE_API_KEY")
