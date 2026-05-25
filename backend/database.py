@@ -6,6 +6,7 @@ from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from motor.motor_asyncio import AsyncIOMotorClient
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -255,11 +256,12 @@ SAMPLE_MOVIES: List[Dict[str, Any]] = [
 
 
 class _InMemoryCursor:
-    __slots__ = ("_docs",)
+    __slots__ = ("_docs", "_iter")
     def __init__(self, docs: Iterable[Dict[str, Any]]):
         self._docs = list(docs)
+        self._iter = None
 
-    def sort(self, key: str, direction: int):
+    def sort(self, key: str, direction: int = 1):
         reverse = direction < 0
         self._docs.sort(key=lambda item: item.get(key) or 0, reverse=reverse)
         return self
@@ -277,6 +279,21 @@ class _InMemoryCursor:
 
     def __len__(self):
         return len(self._docs)
+
+    async def to_list(self, length: Optional[int] = None):
+        if length is not None:
+            return self._docs[:length]
+        return self._docs
+
+    def __aiter__(self):
+        self._iter = iter(self._docs)
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._iter)
+        except StopIteration:
+            raise StopAsyncIteration
 
 
 def _field_matches(value: Any, condition: Any) -> bool:
@@ -360,7 +377,7 @@ class _InMemoryCollection:
             docs = [_project(d, projection) for d in docs]
         return _InMemoryCursor(docs)
 
-    def find_one(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None):
+    async def find_one(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None):
         if query and "_id" in query and not isinstance(query["_id"], dict):
             doc = self._by_id.get(str(query["_id"]))
             if doc:
@@ -374,15 +391,70 @@ class _InMemoryCollection:
                 return _project(doc, projection)
         return None
 
-    def insert_one(self, doc: Dict[str, Any]):
+    async def insert_one(self, doc: Dict[str, Any]):
         stored = copy.deepcopy(doc)
         stored.setdefault("_id", stored.get("id") or str(len(self._docs) + 1))
         self._docs.append(stored)
         self._index_doc(stored)
         return type("InsertOneResult", (), {"inserted_id": stored["_id"]})()
 
-    def count_documents(self, query: Optional[Dict[str, Any]] = None):
+    async def insert_many(self, documents: List[Dict[str, Any]], ordered: bool = False):
+        inserted_ids = []
+        for doc in documents:
+            stored = copy.deepcopy(doc)
+            stored.setdefault("_id", stored.get("id") or str(len(self._docs) + 1))
+            self._docs.append(stored)
+            self._index_doc(stored)
+            inserted_ids.append(stored["_id"])
+        return type("InsertManyResult", (), {"inserted_ids": inserted_ids})()
+
+    async def delete_many(self, query: Dict[str, Any]):
+        initial_len = len(self._docs)
+        self._docs = [doc for doc in self._docs if not _matches(doc, query)]
+        self._by_id = {}
+        self._by_tmdb_id = {}
+        for doc in self._docs:
+            self._index_doc(doc)
+        deleted_count = initial_len - len(self._docs)
+        return type("DeleteResult", (), {"deleted_count": deleted_count})()
+
+    async def update_one(self, query: Dict[str, Any], update: Dict[str, Any], upsert: bool = False):
+        doc = await self.find_one(query)
+        if doc:
+            set_fields = update.get("$set", {})
+            for k, v in set_fields.items():
+                doc[k] = copy.deepcopy(v)
+            self._index_doc(doc)
+            return type("UpdateResult", (), {"modified_count": 1, "matched_count": 1})()
+        elif upsert:
+            new_doc = copy.deepcopy(query)
+            set_fields = update.get("$set", {})
+            for k, v in set_fields.items():
+                new_doc[k] = copy.deepcopy(v)
+            await self.insert_one(new_doc)
+            return type("UpdateResult", (), {"modified_count": 0, "matched_count": 0, "upserted_id": new_doc.get("_id")})()
+        return type("UpdateResult", (), {"modified_count": 0, "matched_count": 0})()
+
+    async def count_documents(self, query: Optional[Dict[str, Any]] = None):
         return len([doc for doc in self._docs if _matches(doc, query)])
+
+    def aggregate(self, pipeline: List[Dict[str, Any]]):
+        docs = copy.deepcopy(self._docs)
+        unwound = []
+        for doc in docs:
+            genres = doc.get("genres", []) or []
+            if isinstance(genres, list):
+                for g in genres:
+                    unwound.append({"_id": g})
+            else:
+                unwound.append({"_id": genres})
+        unique_genres = set()
+        for doc in unwound:
+            if doc.get("_id"):
+                unique_genres.add(doc["_id"])
+        sorted_genres = sorted(list(unique_genres))
+        result_docs = [{"_id": g} for g in sorted_genres]
+        return _InMemoryCursor(result_docs)
 
 
 class _InMemoryDatabase:
@@ -400,22 +472,17 @@ _fallback_db = _InMemoryDatabase()
 
 
 class DatabaseManager:
-    _mongo_client: Optional[MongoClient] = None
+    _mongo_client: Optional[AsyncIOMotorClient] = None
     _mongo_failed = False
     _use_fallback_catalog = False
     _pg_engine = None
     _pg_session_factory = None
 
     @classmethod
-    @retry(
-        stop=stop_after_attempt(MONGO_CONNECT_ATTEMPTS),
-        wait=wait_exponential(multiplier=1, min=1, max=2),
-    )
-    def get_mongo_client(cls) -> MongoClient:
+    def get_mongo_client(cls) -> AsyncIOMotorClient:
         if cls._mongo_client is None:
-            cls._mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
-            cls._mongo_client.admin.command("ping")
-            logger.info("MongoDB connection established")
+            cls._mongo_client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+            logger.info("Async MongoDB connection established")
         return cls._mongo_client
 
     @classmethod
@@ -425,18 +492,8 @@ class DatabaseManager:
         try:
             client = cls.get_mongo_client()
             db = client.neuralflix
-            if DEMO_MODE == "auto" and not ALLOW_EMPTY_MONGO:
-                try:
-                    if db.movies.count_documents({}) == 0:
-                        cls._use_fallback_catalog = True
-                        logger.warning("MongoDB is empty; using bundled demo catalog")
-                        return _fallback_db
-                except Exception as exc:
-                    cls._mongo_failed = True
-                    logger.warning("MongoDB check failed; using bundled demo catalog: %s", exc)
-                    return _fallback_db
             return db
-        except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as exc:
+        except Exception as exc:
             cls._mongo_failed = True
             logger.warning("MongoDB unavailable; using bundled demo catalog: %s", exc)
             return _fallback_db
@@ -448,8 +505,8 @@ class DatabaseManager:
                 # Optimized for sub-200ms targets with connection pooling (SQLAlchemy 2.0)
                 cls._pg_engine = create_async_engine(
                     ASYNC_DATABASE_URL,
-                    pool_size=20,
-                    max_overflow=10,
+                    pool_size=10,
+                    max_overflow=20,
                     pool_pre_ping=True,
                     pool_recycle=3600,
                 )
@@ -533,24 +590,31 @@ if DATABASE_URL:
         logger.warning("Sync PG session not available: %s", exc)
 
 
-def init_db():
+async def init_db():
     db = get_db()
     # Skip indexing for fallback catalog
     if hasattr(db, "movies") and hasattr(db.movies, "create_index"):
         try:
             movies_col = db.movies
-            movies_col.create_index([("title", "text"), ("overview", "text")])
-            movies_col.create_index([("genres", 1)])
-            movies_col.create_index([("rating", -1)])
-            movies_col.create_index([("popularity_score", -1)])
-            movies_col.create_index([("language", 1)])
-            movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
-            movies_col.create_index([("year", -1)])
-            movies_col.create_index([("language", 1), ("rating", -1)])
-            movies_col.create_index([("year", -1), ("popularity_score", -1)])
-            movies_col.create_index([("status", 1)])
-            movies_col.create_index([("imdb_id", 1)], sparse=True)
-            movies_col.create_index([("cinema_region", 1)])
+            await movies_col.create_index([("title", "text"), ("overview", "text")], language_override="none")
+            await movies_col.create_index([("genres", 1)])
+            await movies_col.create_index([("rating", -1)])
+            await movies_col.create_index([("popularity_score", -1)])
+            await movies_col.create_index([("language", 1)])
+            await movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
+            await movies_col.create_index([("year", -1)])
+            await movies_col.create_index([("language", 1), ("rating", -1)])
+            await movies_col.create_index([("year", -1), ("popularity_score", -1)])
+            await movies_col.create_index([("status", 1)])
+            await movies_col.create_index([("imdb_id", 1)], sparse=True)
+            await movies_col.create_index([("cinema_region", 1)])
+            
+            # Also add indexes on watch_history
+            watch_history_col = db.watch_history
+            if hasattr(watch_history_col, "create_index"):
+                await watch_history_col.create_index("user_id")
+                await watch_history_col.create_index([("user_id", 1), ("movie_id", 1)])
+                
             logger.info("Database indexes initialized")
         except Exception as e:
             logger.warning(f"Index creation failed: {e}")

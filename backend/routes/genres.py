@@ -4,13 +4,14 @@ from database import movies_collection
 router = APIRouter()
 
 @router.get("/")
-def get_genres():
+async def get_genres():
     """Return all unique genres from the movies collection."""
     pipeline = [
         {"$unwind": "$genres"},
         {"$group": {"_id": "$genres"}},
         {"$sort": {"_id": 1}}
     ]
-    result = list(movies_collection.aggregate(pipeline))
+    cursor = movies_collection.aggregate(pipeline)
+    result = await cursor.to_list(length=None)
     genres = [doc["_id"] for doc in result if doc["_id"]]
     return {"genres": genres}

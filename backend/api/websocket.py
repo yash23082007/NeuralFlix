@@ -48,8 +48,20 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+async def send_keepalive(user_id: int):
+    try:
+        while True:
+            await asyncio.sleep(25)
+            await manager.send_personal_message(user_id, {"type": "ping"})
+    except asyncio.CancelledError:
+        pass
+    except Exception as e:
+        logger.error(f"Keepalive error for user {user_id}: {e}")
+
+
 async def handle_websocket(websocket: WebSocket, user_id: int):
     await manager.connect(user_id, websocket)
+    keepalive_task = asyncio.create_task(send_keepalive(user_id))
     try:
         while True:
             data = await websocket.receive_json()
@@ -84,3 +96,9 @@ async def handle_websocket(websocket: WebSocket, user_id: int):
     except Exception as e:
         logger.error(f"WebSocket error for user {user_id}: {e}")
         await manager.disconnect(user_id)
+    finally:
+        keepalive_task.cancel()
+        try:
+            await keepalive_task
+        except asyncio.CancelledError:
+            pass

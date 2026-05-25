@@ -293,7 +293,7 @@ async def enrich_movie(movie: dict) -> dict:
             up_query["tmdb_id"] = movie["tmdb_id"]
 
         if up_query:
-            movies_collection.update_one(up_query, {"$set": movie}, upsert=True)
+            await movies_collection.update_one(up_query, {"$set": movie}, upsert=True)
     except Exception as e:
         logger.error(f"Error saving enriched movie: {e}")
 
@@ -321,7 +321,7 @@ async def get_trending_movies(
             pass
 
     from database import movies_collection
-    movies = list(movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
+    movies = await movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
@@ -349,9 +349,9 @@ async def search_movies(
     from database import movies_collection
     import re
     pattern = re.compile(re.escape(q), re.IGNORECASE)
-    movies = list(movies_collection.find(
+    movies = await movies_collection.find(
         {"$or": [{"title": pattern}, {"overview": pattern}]}, {"_id": 0}
-    ).limit(limit))
+    ).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
@@ -371,13 +371,13 @@ async def get_now_playing(page: int = 1, limit: int = 20):
 @router.get("/anime")
 async def get_anime(page: int = 1, limit: int = 20):
     from database import movies_collection
-    movies = list(movies_collection.find({"genres": "Animation"}, {"_id": 0}).limit(limit))
+    movies = await movies_collection.find({"genres": "Animation"}, {"_id": 0}).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 @router.get("/series")
 async def get_series(page: int = 1, limit: int = 20):
     from database import movies_collection
-    movies = list(movies_collection.find({"media_type": "tv"}, {"_id": 0}).limit(limit))
+    movies = await movies_collection.find({"media_type": "tv"}, {"_id": 0}).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 # Region Language Map
@@ -413,7 +413,7 @@ async def get_by_region(region: str, page: int = 1, limit: int = 20):
     if langs:
         or_filters.append({"language": {"$in": langs}})
         
-    movies = list(movies_collection.find({"$or": or_filters}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
+    movies = await movies_collection.find({"$or": or_filters}, {"_id": 0}).sort("popularity_score", -1).limit(limit).to_list(length=None)
     
     # 2. Call TMDB discover if results are low (<10)
     if len(movies) < 10:
@@ -427,7 +427,7 @@ async def get_by_region(region: str, page: int = 1, limit: int = 20):
                     norm = _normalize_tmdb_helper(m, genre_map, region.lower())
                     try:
                         # Upsert to MongoDB so we build the local database
-                        movies_collection.update_one(
+                        await movies_collection.update_one(
                             {"tmdb_id": norm["tmdb_id"]},
                             {"$set": norm},
                             upsert=True
@@ -473,7 +473,7 @@ async def get_by_genre(genre: str, page: int = 1, limit: int = 20):
         
     # Case-insensitive regex match
     pattern = {"$regex": f"^{genre_clean}$", "$options": "i"}
-    movies = list(movies_collection.find({"genres": pattern}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
+    movies = await movies_collection.find({"genres": pattern}, {"_id": 0}).sort("popularity_score", -1).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 @router.get("/{movie_id}")
@@ -512,7 +512,7 @@ async def get_movie(request: Request, movie_id: str):
     if movie_id.startswith("tt"):
         or_filters.append({"imdb_id": movie_id})
 
-    movie = movies_collection.find_one({"$or": or_filters})
+    movie = await movies_collection.find_one({"$or": or_filters})
     
     # If not found locally, try to fetch from TMDB or OMDb
     if not movie:

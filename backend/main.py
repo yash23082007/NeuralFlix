@@ -1,5 +1,6 @@
 import os
 import time
+import asyncio
 import uuid
 from contextlib import asynccontextmanager
 
@@ -18,12 +19,56 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("NeuralFlix ML Engine starting up")
+    
+    # 1. Establish Redis connection
     from cache.redis_client import get_redis
     app.state.redis = await get_redis()
     log.info("Redis connection established")
+    
+    # 2. Initialize Database and Indexes
+    from database import init_db
+    try:
+        await init_db()
+    except Exception as e:
+        log.warning("failed_to_initialize_db_indexes", error=str(e))
+        
+    # 3. Load ContentBasedEngine TF-IDF matrix
+    from ml.content_based import content_engine
+    try:
+        await asyncio.to_thread(content_engine.load)
+        log.info("Content similarity index loaded")
+    except Exception as e:
+        log.warning("failed_to_load_content_index", error=str(e))
+        
+    # 4. Load NCF pre-trained weights if they exist
+    import torch
+    from ml.hybrid_recommender import ncf_model
+    if ncf_model is not None:
+        weights_path = "models/ncf_weights.pt"
+        if os.path.exists(weights_path):
+            try:
+                ncf_model.load_state_dict(torch.load(weights_path, map_location="cpu"))
+                log.info("Pre-trained NCF weights loaded successfully")
+            except Exception as e:
+                log.warning("failed_to_load_ncf_weights", error=str(e))
+        else:
+            log.warning("ncf_weights_not_found_using_random_initialization")
+            
     yield
+    
+    # 5. Shutdown: Close Redis
     if app.state.redis:
         await app.state.redis.close()
+        
+    # 6. Shutdown: Close TMDB SHARED_CLIENT
+    try:
+        from utils.tmdb_api import SHARED_CLIENT
+        if SHARED_CLIENT and not SHARED_CLIENT.is_closed:
+            await SHARED_CLIENT.aclose()
+            log.info("TMDB HTTPX Shared Client closed")
+    except Exception as e:
+        log.warning("failed_to_close_tmdb_client", error=str(e))
+        
     log.info("NeuralFlix ML Engine shutting down")
 
 
@@ -65,6 +110,18 @@ async def production_observability_middleware(request: Request, call_next):
     return response
 
 
+@app.middleware("http")
+async def legacy_redirect(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/v1/") and not path.startswith("/api/v2/"):
+        new_path = path.replace("/api/", "/api/v1/")
+        query_string = request.url.query
+        redirect_url = f"{new_path}?{query_string}" if query_string else new_path
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=redirect_url)
+    return await call_next(request)
+
+
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",
@@ -79,13 +136,9 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# ─── Legacy Route Registration ───────────────────────────
-try:
-    from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data, users
-    HAS_ROUTES = True
-except ImportError as exc:
-    log.warning("legacy_routes_not_loaded", error=str(exc))
-    HAS_ROUTES = False
+# ─── Route Registration ──────────────────────────────────
+from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data, users
+HAS_ROUTES = True
 
 try:
     from routers.recommendations import router as feedback_router

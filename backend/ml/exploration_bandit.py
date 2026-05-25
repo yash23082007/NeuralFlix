@@ -23,7 +23,7 @@ class ThompsonSamplingBandit:
         explore_candidates: List[dict],
         top_k: int = 20,
     ) -> List[dict]:
-        decision = self.decode(user_id="user")
+        decision = self.decide(user_id="user")
         if decision == "explore" and explore_candidates:
             n_explore = max(1, int(top_k * self.epsilon))
             explore_picks = random.sample(

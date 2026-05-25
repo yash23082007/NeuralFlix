@@ -44,13 +44,14 @@ async def _fetch_watch_history_pg(user_id: int) -> List[dict]:
 
 async def _fetch_watch_history_inmem(user_id: int) -> List[dict]:
     from database import watch_history_collection, movies_collection
-    events = list(watch_history_collection.find({"user_id": str(user_id)}))
+    cursor = watch_history_collection.find({"user_id": str(user_id)})
+    events = await cursor.to_list(length=None)
     if not events:
         return []
     movie_ids = [e.get("movie_id") for e in events if e.get("movie_id")]
     watch_history = []
     for mid in movie_ids:
-        m = movies_collection.find_one({"tmdb_id": int(mid) if str(mid).isdigit() else mid}, {"_id": 0})
+        m = await movies_collection.find_one({"tmdb_id": int(mid) if str(mid).isdigit() else mid}, {"_id": 0})
         if m:
             watch_history.append({
                 "title": m.get("title", ""),
@@ -108,7 +109,7 @@ async def onboard_user(data: dict):
     # In a real app, we would store these in the user document and trigger a cold-start model update.
     # For the demo, we'll just log it and return success.
     from database import users_collection
-    users_collection.update_one(
+    await users_collection.update_one(
         {"id": str(user_id)},
         {"$set": {"onboarded": True, "pref_genres": liked_genres}}
     )

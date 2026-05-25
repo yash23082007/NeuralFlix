@@ -51,7 +51,7 @@ class MovieService:
             query_filter["genres"] = {"$regex": genre, "$options": "i"}
         skip = (page - 1) * limit
         movies_col = get_movies_collection()
-        movies = list(movies_col.find(query_filter, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit))
+        movies = await movies_col.find(query_filter, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=None)
         if _should_fetch_external(len(movies)):
             genre_map = await _get_genre_map()
             tmdb_data = await fetch_popular_movies(page=page)
@@ -62,7 +62,7 @@ class MovieService:
     @classmethod
     async def get_trending(cls) -> Dict[str, Any]:
         movies_col = get_movies_collection()
-        movies = list(movies_col.find({}, {"_id": 0}).sort("popularity_score", -1).limit(20))
+        movies = await movies_col.find({}, {"_id": 0}).sort("popularity_score", -1).limit(20).to_list(length=None)
         if _should_fetch_external(len(movies)):
             genre_map = await _get_genre_map()
             tmdb_data = await tmdb_trending("movie", "week")
@@ -73,7 +73,7 @@ class MovieService:
     @classmethod
     async def get_indian_movies(cls, page: int = 1) -> Dict[str, Any]:
         movies_col = get_movies_collection()
-        movies = list(movies_col.find({"language": {"$in": ["hi", "ta", "te", "ml", "kn"]}}, {"_id": 0}).sort("popularity_score", -1).limit(20))
+        movies = await movies_col.find({"language": {"$in": ["hi", "ta", "te", "ml", "kn"]}}, {"_id": 0}).sort("popularity_score", -1).limit(20).to_list(length=None)
         if _should_fetch_external(len(movies)):
             genre_map = await _get_genre_map()
             tmdb_data = await tmdb_fetch_indian(page=page)
@@ -85,7 +85,7 @@ class MovieService:
     async def get_movie_details(cls, movie_id: str, media_type: str = "movie") -> Optional[Dict[str, Any]]:
         movies_col = get_movies_collection()
         query = {"$or": [{"_id": movie_id}, {"tmdb_id": int(movie_id) if movie_id.isdigit() else -1}]}
-        details = movies_col.find_one(query, {"_id": 0})
+        details = await movies_col.find_one(query, {"_id": 0})
         if details:
             if "media_type" not in details:
                 details["media_type"] = media_type

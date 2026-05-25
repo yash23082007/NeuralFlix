@@ -8,8 +8,8 @@ router = APIRouter()
 
 
 @router.get("/overview")
-def ml_overview():
-    movies = list(movies_collection.find({}, {"_id": 0}).limit(500))
+async def ml_overview():
+    movies = await movies_collection.find({}, {"_id": 0}).limit(500).to_list(length=None)
     genres = Counter()
     regions = Counter()
     ratings = []

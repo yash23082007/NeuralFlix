@@ -42,7 +42,7 @@ function RecommendationsContent() {
   useEffect(() => {
     async function fetchTasteProfile() {
       try {
-        const res = await fetch(`${API}/api/v1/recommendations/user/${userId}?top_k=1`)
+        const res = await fetch(`${API}/api/v1/users/${userId}/profile`)
         if (res.ok) {
           const data = await res.json()
           if (data.profile) setTasteProfile(data.profile)

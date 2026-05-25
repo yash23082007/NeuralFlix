@@ -12,7 +12,13 @@ async def get_redis():
     if _redis_client is None:
         try:
             import redis.asyncio as aioredis
-            _redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+            # Set connection timeouts to prevent hanging when Redis is unreachable
+            _redis_client = aioredis.from_url(
+                REDIS_URL,
+                decode_responses=True,
+                socket_connect_timeout=0.5,
+                socket_timeout=0.5
+            )
         except Exception:
             return None
     return _redis_client

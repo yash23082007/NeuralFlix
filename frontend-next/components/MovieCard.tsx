@@ -37,8 +37,8 @@ export function MovieCard({ movie }: { movie: Movie }) {
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    x.set(event.clientX / rect.width - 0.5 - rect.left / rect.width);
-    y.set(event.clientY / rect.height - 0.5 - rect.top / rect.height);
+    x.set((event.clientX - rect.left) / rect.width - 0.5);
+    y.set((event.clientY - rect.top) / rect.height - 0.5);
   };
 
   const handleMouseLeave = () => {
@@ -59,7 +59,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
         {movie.poster_url && !imgError ? (
           <Image
             src={movie.poster_url}
-            alt={movie.title}
+            alt={`${movie.title} (${movie.year || "N/A"}) - Rating: ${movie.rating ? movie.rating.toFixed(1) : "N/A"}`}
             fill
             className="object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-[0.35]"
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 220px"
@@ -96,13 +96,13 @@ export function MovieCard({ movie }: { movie: Movie }) {
           }`}
         >
           <div className="flex gap-3" style={{ transform: "translateZ(40px)" }}>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
+            <button aria-label="Add to Watchlist" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
               <Plus className="h-4 w-4" />
             </button>
-            <button className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-warm)] text-black shadow-glow transition-all hover:scale-110">
+            <button aria-label="Play Trailer" className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-warm)] text-black shadow-glow transition-all hover:scale-110">
               <Play className="ml-0.5 h-5 w-5 fill-current" />
             </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
+            <button aria-label="Mark as Favorite" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
               <Heart className="h-4 w-4" />
             </button>
           </div>

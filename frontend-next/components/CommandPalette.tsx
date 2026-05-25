@@ -44,7 +44,7 @@ export function CommandPalette() {
       }
     };
 
-    const timeout = setTimeout(fetchResults, 250);
+    const timeout = setTimeout(fetchResults, 300);
     return () => clearTimeout(timeout);
   }, [query]);
 
@@ -68,7 +68,7 @@ export function CommandPalette() {
           />
         </div>
 
-        <Command.List className="max-h-[60vh] overflow-y-auto p-2">
+        <Command.List className="max-h-[60vh] overflow-y-auto p-2" aria-live="polite">
           <Command.Empty className="p-6 text-center text-sm text-[var(--text-tertiary)]">
             {query
               ? "No films found matching your search."

@@ -86,10 +86,26 @@ class NCFModel(nn.Module):
     
     def predict_for_user(self, user_id: int, item_candidates: List[int]) -> List[Tuple[int, float]]:
         self.eval()
-        with torch.no_grad():
-            u_tensor = torch.tensor([user_id] * len(item_candidates))
-            i_tensor = torch.tensor(item_candidates)
-            scores = self.forward(u_tensor, i_tensor).numpy()
-            
+        num_users = self.user_gmf_emb.num_embeddings
+        num_items = self.item_gmf_emb.num_embeddings
+        
+        safe_user_id = max(0, min(user_id, num_users - 1))
+        
+        # Filter indices of item candidates that are within bounds
+        valid_indices = [i for i, item in enumerate(item_candidates) if 0 <= item < num_items]
+        
+        scores = [0.0] * len(item_candidates)
+        if valid_indices:
+            valid_items = [item_candidates[i] for i in valid_indices]
+            with torch.no_grad():
+                u_tensor = torch.tensor([safe_user_id] * len(valid_items))
+                i_tensor = torch.tensor(valid_items)
+                pred_scores = self.forward(u_tensor, i_tensor)
+                if pred_scores.dim() == 0:
+                    pred_scores = pred_scores.unsqueeze(0)
+                pred_scores = pred_scores.numpy()
+            for idx, score in zip(valid_indices, pred_scores):
+                scores[idx] = float(score)
+                
         scored = list(zip(item_candidates, scores))
         return sorted(scored, key=lambda x: x[1], reverse=True)

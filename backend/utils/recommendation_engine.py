@@ -1,126 +1,53 @@
 import asyncio
-from collections import Counter
 import json
 import logging
 import math
 import os
-import re
-import time
 from typing import Dict, List, Optional
-import redis
 
 from database import movies_collection, watch_history_collection, SessionLocal
 
 logger = logging.getLogger("API_MONITOR")
 
-REDIS_URL = None if os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() == "true" else os.getenv("REDIS_URL")
-redis_client = None
-if REDIS_URL:
+async def get_redis_client():
     try:
-        redis_client = redis.Redis.from_url(
-            REDIS_URL,
-            decode_responses=True,
-            socket_connect_timeout=0.15,
-            socket_timeout=0.15,
-            retry_on_timeout=False,
-        )
+        from cache.redis_client import get_redis
+        return await get_redis()
     except Exception:
-        redis_client = None
-
-# ─── TF-IDF Cache ─────────────────────────────────────
-_tfidf_cache = {}
-_tfidf_cache_time = 0
-_TFIDF_TTL = 300
-
-def _tokenize_movie(movie: dict) -> List[str]:
-    genres = " ".join(movie.get("genres", []) or [])
-    text = " ".join([
-        str(movie.get("title", "")),
-        str(movie.get("overview", "")),
-        str(movie.get("tagline", "")),
-        genres,
-        str(movie.get("cinema_region", "")),
-        str(movie.get("language", "")),
-    ])
-    return re.findall(r"[a-z0-9]+", text.lower())
-
-
-def _build_tfidf_matrix():
-    global _tfidf_cache, _tfidf_cache_time
-    now = time.time()
-    if _tfidf_cache and now - _tfidf_cache_time < _TFIDF_TTL:
-        return _tfidf_cache
-
-    all_movies = list(movies_collection.find({}, {
-        "_id": 1, "genres": 1, "title": 1, "poster_url": 1,
-        "overview": 1, "tagline": 1, "tmdb_id": 1, "imdb_id": 1, "rating": 1,
-        "year": 1, "popularity_score": 1, "language": 1, "cinema_region": 1,
-        "backdrop_url": 1, "platforms": 1, "media_type": 1,
-    }))
-    if not all_movies:
-        _tfidf_cache = ([], [], {})
-        return _tfidf_cache
-
-    token_counts = [Counter(_tokenize_movie(movie)) for movie in all_movies]
-    document_frequency = Counter()
-    for counts in token_counts:
-        document_frequency.update(counts.keys())
-
-    total_docs = len(all_movies)
-    vectors: List[Dict[str, float]] = []
-    for counts in token_counts:
-        vector = {}
-        for token, count in counts.items():
-            tf = 1.0 + math.log(count)
-            idf = 1.0 + math.log((total_docs + 1) / (document_frequency[token] + 1))
-            vector[token] = tf * idf
-        norm = math.sqrt(sum(value * value for value in vector.values())) or 1.0
-        vectors.append({token: value / norm for token, value in vector.items()})
-
-    id_map = {}
-    for idx, movie in enumerate(all_movies):
-        if movie.get("_id") is not None:
-            id_map[str(movie["_id"])] = idx
-        if movie.get("tmdb_id") is not None:
-            id_map[str(movie["tmdb_id"])] = idx
-        if movie.get("imdb_id") is not None:
-            id_map[str(movie["imdb_id"])] = idx
-
-    _tfidf_cache = (all_movies, vectors, id_map)
-    _tfidf_cache_time = now
-    return _tfidf_cache
+        return None
 
 
 async def get_popularity_baseline(limit: int = 10) -> List[dict]:
-    def _fetch():
-        return list(movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit))
-    return await asyncio.to_thread(_fetch)
+    cursor = movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).limit(limit)
+    return await cursor.to_list(length=None)
 
 
 async def get_content_based_recommendations(movie_id: str, limit: int = 10) -> List[dict]:
-    def _local_tfidf():
-        movies, vectors, id_map = _build_tfidf_matrix()
-        if not movies or movie_id not in id_map:
-            return []
-        target_idx = id_map[movie_id]
-        target_vector = vectors[target_idx]
-        scores = []
-        for idx, vector in enumerate(vectors):
-            if idx == target_idx:
-                continue
-            score = sum(weight * vector.get(token, 0.0) for token, weight in target_vector.items())
-            scores.append((idx, score))
-
-        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        results = []
-        for idx, score in sorted_scores[:limit]:
-            d = dict(movies[idx])
-            d["rec_score"] = round(float(score), 4)
-            d.pop("_id", None)
+    from ml.content_based import content_engine
+    
+    try:
+        tmdb_id = int(movie_id) if str(movie_id).isdigit() else movie_id
+    except ValueError:
+        tmdb_id = movie_id
+        
+    similar_ids = content_engine.get_similar(tmdb_id, top_k=limit)
+    if not similar_ids:
+        return []
+        
+    # Fetch from database
+    cursor = movies_collection.find({"tmdb_id": {"$in": similar_ids}}, {"_id": 0})
+    movies = await cursor.to_list(length=None)
+    
+    # Sort them in the order of similar_ids
+    movie_map = {m.get("tmdb_id"): m for m in movies}
+    results = []
+    for idx, sid in enumerate(similar_ids):
+        m = movie_map.get(sid)
+        if m:
+            d = dict(m)
+            d["rec_score"] = round(1.0 / (idx + 1), 4)
             results.append(d)
-        return results
-
-    return await asyncio.to_thread(_local_tfidf)
+    return results
 
 
 async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dict]:
@@ -152,7 +79,11 @@ async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dic
 
 
 async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> List[dict]:
-    def _cf_logic():
+    # 1. Fetch from MongoDB watch history asynchronously
+    history_docs = await watch_history_collection.find({}).to_list(length=None)
+    
+    # 2. Run dataframe & surprise logic on a separate thread to avoid blocking FastAPI
+    def _cf_logic(history_docs):
         from sqlalchemy import text
         import pandas as pd
 
@@ -165,7 +96,6 @@ async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> Li
             except Exception:
                 pass
 
-        history_docs = list(watch_history_collection.find({}))
         if not history_docs and not user_interactions:
             return []
 
@@ -205,11 +135,14 @@ async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> Li
             item_scores = similar_items.groupby('item')['rating'].sum().sort_values(ascending=False)
             recommended_ids = item_scores.head(limit).index.tolist()
 
-        if not recommended_ids:
-            return []
-        return list(movies_collection.find({"_id": {"$in": recommended_ids}}, {"_id": 0}))
+        return recommended_ids
 
-    return await asyncio.to_thread(_cf_logic)
+    recommended_ids = await asyncio.to_thread(_cf_logic, history_docs)
+    if not recommended_ids:
+        return []
+        
+    cursor = movies_collection.find({"_id": {"$in": [str(rid) for rid in recommended_ids]}}, {"_id": 0})
+    return await cursor.to_list(length=None)
 
 
 class RecommenderOS:
@@ -222,8 +155,6 @@ class RecommenderOS:
             tasks.append(get_content_based_recommendations(movie_id, limit=limit // 2))
             tasks.append(get_neural_recommendations(movie_id, limit=limit // 2))
         tasks.append(get_popularity_baseline(limit=limit // 3))
-
-        # Trakt trending as additional signal (community-sourced "what's hot now")
         tasks.append(cls._get_trakt_signal(limit=limit // 4))
 
         results = await asyncio.gather(*tasks)
@@ -249,18 +180,15 @@ class RecommenderOS:
             if not trakt_trending:
                 return []
 
-            # Enrich with local DB data or return minimal stubs
             result = []
             for item in trakt_trending:
                 tmdb_id = item.get("tmdb_id")
                 if tmdb_id:
-                    # Try to find in local catalog first
-                    local = movies_collection.find_one({"tmdb_id": tmdb_id}, {"_id": 0})
+                    local = await movies_collection.find_one({"tmdb_id": tmdb_id}, {"_id": 0})
                     if local:
                         local["trakt_watchers"] = item.get("trakt_watchers", 0)
                         result.append(local)
                     else:
-                        # Create a stub from Trakt data
                         result.append({
                             "tmdb_id": tmdb_id,
                             "title": item.get("title", ""),
@@ -285,7 +213,6 @@ class RecommenderOS:
             year = item.get("year")
             if year:
                 score += max(0, (year - 1980) / 45) * 0.2
-            # Trakt community signal: boost titles being watched right now
             trakt_watchers = item.get("trakt_watchers", 0)
             if trakt_watchers > 0:
                 score += math.log1p(trakt_watchers) * 0.15
@@ -320,9 +247,10 @@ class RecommenderOS:
 
 async def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit: int = 10, media_type: str = "movie") -> List[dict]:
     cache_key = f"recs:v6:u-{user_id}:m-{movie_id}"
+    redis_client = await get_redis_client()
     if redis_client:
         try:
-            cached = redis_client.get(cache_key)
+            cached = await redis_client.get(cache_key)
             if cached:
                 return json.loads(cached)
         except Exception:
@@ -337,7 +265,7 @@ async def hybrid_recommendation(movie_id: str = None, user_id: str = None, limit
 
     if redis_client:
         try:
-            redis_client.setex(cache_key, 300, json.dumps(final, default=str))
+            await redis_client.setex(cache_key, 300, json.dumps(final, default=str))
         except Exception:
             pass
 

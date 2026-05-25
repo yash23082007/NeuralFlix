@@ -39,6 +39,7 @@ class ContentBasedEngine:
         
         soups = self._create_soup(movies)
         self.movie_ids = [m.get("tmdb_id") for m in movies]
+        self.id_to_index = {movie_id: i for i, movie_id in enumerate(self.movie_ids)}
         
         self.tfidf = TfidfVectorizer(
             max_features=10000,
@@ -48,12 +49,13 @@ class ContentBasedEngine:
         )
         
         tfidf_matrix = self.tfidf.fit_transform(soups)
+        self.tfidf_matrix = tfidf_matrix
         self.cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
         
         # Save models
         os.makedirs("models", exist_ok=True)
         with open(CONTENT_MATRIX_PATH, "wb") as f:
-            pickle.dump((self.cosine_sim, self.movie_ids), f)
+            pickle.dump((self.cosine_sim, self.movie_ids, tfidf_matrix), f)
         with open(TFIDF_MODEL_PATH, "wb") as f:
             pickle.dump(self.tfidf, f)
             
@@ -66,7 +68,13 @@ class ContentBasedEngine:
             return
         try:
             with open(CONTENT_MATRIX_PATH, "rb") as f:
-                self.cosine_sim, self.movie_ids = pickle.load(f)
+                loaded = pickle.load(f)
+                if len(loaded) == 3:
+                    self.cosine_sim, self.movie_ids, self.tfidf_matrix = loaded
+                else:
+                    self.cosine_sim, self.movie_ids = loaded
+                    self.tfidf_matrix = None
+            self.id_to_index = {movie_id: i for i, movie_id in enumerate(self.movie_ids)}
             with open(TFIDF_MODEL_PATH, "rb") as f:
                 self.tfidf = pickle.load(f)
             self._loaded = True
@@ -76,10 +84,10 @@ class ContentBasedEngine:
     def get_similar(self, tmdb_id: int, top_k: int = 50) -> List[int]:
         """Find similar movies by TMDB ID using the similarity matrix."""
         self.load()
-        if not self._loaded or tmdb_id not in self.movie_ids:
+        if not self._loaded or not hasattr(self, 'id_to_index') or tmdb_id not in self.id_to_index:
             return []
         
-        idx = self.movie_ids.index(tmdb_id)
+        idx = self.id_to_index[tmdb_id]
         # Get pairwise similarity scores for all movies with that movie
         sim_scores = list(enumerate(self.cosine_sim[idx]))
         # Sort by similarity
@@ -92,13 +100,21 @@ class ContentBasedEngine:
     def search_by_text(self, query: str, top_k: int = 20) -> List[Dict]:
         """Search for movies using raw text query against the TF-IDF index."""
         self.load()
-        if not self._loaded or not self.tfidf:
+        if not self._loaded or not self.tfidf or not hasattr(self, 'tfidf_matrix') or self.tfidf_matrix is None:
             return []
             
         query_vec = self.tfidf.transform([query.lower()])
-        sim_scores = cosine_similarity(query_vec, self.tfidf.transform(self._create_soup([{} for _ in self.movie_ids]))).flatten()
-        # Wait, the above is inefficient. Better to transform all once.
-        # This is just a placeholder for the logic.
-        return []
+        sim_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
+        sorted_indices = np.argsort(sim_scores)[::-1]
+        
+        results = []
+        for idx in sorted_indices[:top_k]:
+            if sim_scores[idx] <= 0:
+                continue
+            results.append({
+                "tmdb_id": self.movie_ids[idx],
+                "score": float(sim_scores[idx])
+            })
+        return results
 
 content_engine = ContentBasedEngine()

@@ -1,38 +1,38 @@
 import os
+import asyncio
 import requests
 from dotenv import load_dotenv
 from database import get_db, SessionLocal, DatabaseManager
-from database import SessionLocal, DatabaseManager
 from sqlalchemy import text
 
 # Load environment variables
 load_dotenv()
 
-def test_mongodb():
+async def test_mongodb():
     print("Testing MongoDB Connection...")
     try:
         client = DatabaseManager.get_mongo_client()
-        # The ismaster command is cheap and does not require auth.
-        client.admin.command('ismaster')
-        print("✅ MongoDB: Connected successfully.")
+        # Use await command for async motor client
+        await client.admin.command('ismaster')
+        print("[OK] MongoDB: Connected successfully.")
     except Exception as e:
-        print(f"❌ MongoDB: Connection failed. Error: {e}")
+        print(f"[ERROR] MongoDB: Connection failed. Error: {e}")
 
 def test_postgresql():
     print("\nTesting PostgreSQL (Supabase) Connection...")
     if not SessionLocal:
-        print("❌ PostgreSQL: SessionLocal is None (DATABASE_URL might be missing).")
+        print("[ERROR] PostgreSQL: SessionLocal is None (DATABASE_URL might be missing).")
         return
         
     try:
         with SessionLocal() as session:
             result = session.execute(text("SELECT 1")).fetchone()
             if result and result[0] == 1:
-                print("✅ PostgreSQL (Supabase): Connected successfully.")
+                print("[OK] PostgreSQL (Supabase): Connected successfully.")
             else:
-                print("❌ PostgreSQL (Supabase): Connection returned unexpected result.")
+                print("[ERROR] PostgreSQL (Supabase): Connection returned unexpected result.")
     except Exception as e:
-        print(f"❌ PostgreSQL (Supabase): Connection failed. Error: {e}")
+        print(f"[ERROR] PostgreSQL (Supabase): Connection failed. Error: {e}")
 
 def test_tmdb():
     print("\nTesting TMDB API Connection...")
@@ -40,7 +40,7 @@ def test_tmdb():
     access_token = os.getenv("TMDB_READ_ACCESS_TOKEN")
     
     if not api_key and not access_token:
-        print("❌ TMDB API: Missing API keys in .env")
+        print("[ERROR] TMDB API: Missing API keys in .env")
         return
         
     url = "https://api.tmdb.org/3/authentication"
@@ -56,15 +56,19 @@ def test_tmdb():
             response = requests.get(f"https://api.tmdb.org/3/movie/popular?api_key={api_key}&language=en-US&page=1")
             
         if response.status_code == 200:
-            print("✅ TMDB API: Connected successfully. Authentication valid.")
+            print("[OK] TMDB API: Connected successfully. Authentication valid.")
         else:
-            print(f"❌ TMDB API: Failed. Status Code: {response.status_code}, Response: {response.text}")
+            print(f"[ERROR] TMDB API: Failed. Status Code: {response.status_code}, Response: {response.text}")
     except Exception as e:
-        print(f"❌ TMDB API: Connection failed. Error: {e}")
+        print(f"[ERROR] TMDB API: Connection failed. Error: {e}")
 
-if __name__ == "__main__":
+async def main():
     print("--- Running Backend Connection Diagnostics ---")
-    test_mongodb()
+    await test_mongodb()
     test_postgresql()
     test_tmdb()
     print("--------------------------------------------")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
