@@ -90,11 +90,18 @@ GLOBAL_REGIONS = {
     "arabic":     {"language": "ar"},
 }
 
+TMDB_READ_ACCESS_TOKEN = os.getenv("TMDB_READ_ACCESS_TOKEN")
+
 def _get_headers():
-    return {"accept": "application/json"}
+    headers = {"accept": "application/json"}
+    if TMDB_READ_ACCESS_TOKEN:
+        headers["Authorization"] = f"Bearer {TMDB_READ_ACCESS_TOKEN}"
+    return headers
 
 def _get_params(extra=None):
-    p = {"api_key": TMDB_API_KEY}
+    p = {}
+    if not TMDB_READ_ACCESS_TOKEN and TMDB_API_KEY:
+        p["api_key"] = TMDB_API_KEY
     if extra:
         p.update(extra)
     return p

@@ -20,7 +20,7 @@ function getMovieHref(movie: Movie) {
   return `/movie/${movie.tmdb_id || movie._id}?type=${movie.media_type || "movie"}`;
 }
 
-export function MovieCard({ movie }: { movie: Movie }) {
+export function MovieCard({ movie, priority = false }: { movie: Movie; priority?: boolean }) {
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
@@ -61,6 +61,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
             src={movie.poster_url}
             alt={`${movie.title} (${movie.year || "N/A"}) - Rating: ${movie.rating ? movie.rating.toFixed(1) : "N/A"}`}
             fill
+            priority={priority}
             className="object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-[0.35]"
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 220px"
             onError={() => setImgError(true)}

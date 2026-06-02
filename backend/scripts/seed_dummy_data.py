@@ -1,13 +1,14 @@
 import sys
 import os
+import asyncio
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import movies_collection, init_db
 
-def seed_dummy_movies():
+async def seed_dummy_movies():
     print("Initializing Database...")
-    init_db()
+    await init_db()
 
     dummy_movies = [
         {
@@ -65,11 +66,11 @@ def seed_dummy_movies():
     ]
 
     print("Clearing collection...")
-    movies_collection.delete_many({})
+    await movies_collection.delete_many({})
 
     print("Inserting mock movies...")
-    movies_collection.insert_many(dummy_movies)
+    await movies_collection.insert_many(dummy_movies)
     print(f"Successfully inserted {len(dummy_movies)} mock movies!")
 
 if __name__ == "__main__":
-    seed_dummy_movies()
+    asyncio.run(seed_dummy_movies())

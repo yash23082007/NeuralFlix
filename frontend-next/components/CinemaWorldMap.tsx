@@ -10,11 +10,11 @@ import { getByRegion, Movie } from "../lib/api";
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 const CINEMA_DATA: Record<string, { region: string; count: number; topMovie: string; color: string; hover: string; title: string }> = {
-  IND: { region: "indian", title: "Indian Cinema", count: 12450, topMovie: "RRR", color: "var(--accent-india)", hover: "#ff8c61" },
-  KOR: { region: "korean", title: "Korean Cinema", count: 2840, topMovie: "Parasite", color: "var(--accent-korea)", hover: "#74a8e6" },
-  JPN: { region: "japanese", title: "Japanese Cinema", count: 4200, topMovie: "Spirited Away", color: "var(--accent-japan)", hover: "#d65345" },
-  FRA: { region: "french", title: "French Cinema", count: 3100, topMovie: "Amelie", color: "var(--accent-france)", hover: "#8a7ceb" },
-  USA: { region: "hollywood", title: "Hollywood", count: 45000, topMovie: "The Godfather", color: "var(--accent-hollywood)", hover: "#ecc26c" },
+  IND: { region: "indian", title: "Indian Cinema", count: 12450, topMovie: "RRR", color: "var(--color-accent-india)", hover: "#ff8c61" },
+  KOR: { region: "korean", title: "Korean Cinema", count: 2840, topMovie: "Parasite", color: "var(--color-accent-korea)", hover: "#74a8e6" },
+  JPN: { region: "japanese", title: "Japanese Cinema", count: 4200, topMovie: "Spirited Away", color: "var(--color-accent-japan)", hover: "#d65345" },
+  FRA: { region: "french", title: "French Cinema", count: 3100, topMovie: "Amelie", color: "var(--color-accent-france)", hover: "#8a7ceb" },
+  USA: { region: "hollywood", title: "Hollywood", count: 45000, topMovie: "The Godfather", color: "var(--color-accent-hollywood)", hover: "#ecc26c" },
   ESP: { region: "spanish", title: "Spanish Cinema", count: 1800, topMovie: "Pan's Labyrinth", color: "#e67e22", hover: "#f39c12" },
   IRN: { region: "iranian", title: "Iranian Cinema", count: 450, topMovie: "A Separation", color: "#27ae60", hover: "#2ecc71" },
   NGA: { region: "nollywood", title: "Nollywood", count: 2100, topMovie: "The Black Book", color: "#f1c40f", hover: "#f39c12" },

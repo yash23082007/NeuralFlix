@@ -79,8 +79,18 @@ async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dic
 
 
 async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> List[dict]:
-    # 1. Fetch from MongoDB watch history asynchronously
-    history_docs = await watch_history_collection.find({}).to_list(length=None)
+    # 1. Fetch from MongoDB watch history asynchronously (optimized query sizing)
+    user_history = await watch_history_collection.find(
+        {"user_id": user_id},
+        {"user_id": 1, "movie_id": 1, "rating": 1}
+    ).limit(200).to_list(length=None)
+    
+    recent_history = await watch_history_collection.find(
+        {"user_id": {"$ne": user_id}},
+        {"user_id": 1, "movie_id": 1, "rating": 1}
+    ).sort("_id", -1).limit(2000).to_list(length=None)
+    
+    history_docs = user_history + recent_history
     
     # 2. Run dataframe & surprise logic on a separate thread to avoid blocking FastAPI
     def _cf_logic(history_docs):

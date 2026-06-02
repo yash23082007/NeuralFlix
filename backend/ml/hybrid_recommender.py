@@ -29,9 +29,9 @@ class HybridRecommender:
         Returns a list of (movie_id, score) tuples.
         """
         # Weights (tunable via configuration or A/B testing)
-        W_CONTENT = 0.20
-        W_NCF = 0.40
-        W_SEQ = 0.40
+        W_CONTENT = 0.70
+        W_NCF = 0.15
+        W_SEQ = 0.15
 
         scores: Dict[int, float] = {}
         

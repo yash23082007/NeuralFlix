@@ -10,12 +10,15 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/neuralflix}
+      - MONGO_TIMEOUT_MS=5000
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - redis
       - db
+      - mongo
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -30,9 +33,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/neuralflix}
+      - MONGO_TIMEOUT_MS=5000
     depends_on:
       - redis
       - db
+      - mongo
     restart: unless-stopped
 
   beat:
@@ -62,6 +68,15 @@ services:
     command: redis-server --appendonly yes
     restart: unless-stopped
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    restart: unless-stopped
+    command: mongod --wiredTigerCacheSizeGB 1.5
+
   db:
     image: postgres:15-alpine
     environment:
@@ -89,6 +104,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
 volumes:
+  mongodata:
   redis_data:
   pgdata:
   grafana_data:

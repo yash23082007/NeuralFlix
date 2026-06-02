@@ -7,8 +7,10 @@ import {
   Film,
   Compass,
 } from "lucide-react";
+import { Suspense } from "react";
 import CinemaWorldMap from "../components/CinemaWorldMap";
 import MovieRow from "../components/MovieRow";
+import RowSkeleton from "../components/RowSkeleton";
 import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
 import {
   getAnime,
@@ -16,42 +18,14 @@ import {
   getByMood,
   getByRegion,
   getMlOverview,
-  getNowPlaying,
-  getTopRated,
-  getTrending,
   getTrendingAll,
 } from "../lib/api";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [
-    trending,
-    topRated,
-    nowPlaying,
-    trendingAll,
-    indianMovies,
-    koreanMovies,
-    japaneseMovies,
-    frenchMovies,
-    anime,
-    awardWinners,
-    hiddenGems,
-    actionMovies,
-    mlOverview,
-  ] = await Promise.all([
-    getTrending(),
-    getTopRated(),
-    getNowPlaying(),
+  const [trendingAll, mlOverview] = await Promise.all([
     getTrendingAll(),
-    getByRegion("indian"),
-    getByRegion("korean"),
-    getByRegion("japanese"),
-    getByRegion("french"),
-    getAnime(),
-    getByMood("award_winners"),
-    getByMood("hidden_gems"),
-    getByGenre("action"),
     getMlOverview(),
   ]);
 
@@ -185,7 +159,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Main Content ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-12 py-20 space-y-24">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 py-20 space-y-24">
         {/* Personalized Recommendations */}
         <section className="space-y-8">
           <div className="flex items-end justify-between">
@@ -292,23 +266,27 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Category Rows */}
+        {/* Category Rows (Loaded progressively via React Suspense) */}
         <section className="space-y-14">
-          <MovieRow
-            title="Trending Now"
-            movies={trendingAll}
-            seeAllHref="/discover"
-          />
-          <MovieRow
-            title="Indian Cinema"
-            movies={indianMovies}
-            seeAllHref="/cinema?region=indian"
-          />
-          <MovieRow
-            title="Korean Masterpieces"
-            movies={koreanMovies}
-            seeAllHref="/cinema?region=korean"
-          />
+          <Suspense fallback={<RowSkeleton label="Trending Now" />}>
+            <TrendingRowComponent />
+          </Suspense>
+          
+          <Suspense fallback={<RowSkeleton label="Indian Cinema" />}>
+            <RegionRowComponent region="indian" title="Indian Cinema" seeAllHref="/cinema?region=indian" />
+          </Suspense>
+          
+          <Suspense fallback={<RowSkeleton label="Korean Masterpieces" />}>
+            <RegionRowComponent region="korean" title="Korean Masterpieces" seeAllHref="/cinema?region=korean" />
+          </Suspense>
+
+          <Suspense fallback={<RowSkeleton label="Japanese Cinema Spotlight" />}>
+            <RegionRowComponent region="japanese" title="Japanese Cinema Spotlight" seeAllHref="/cinema?region=japanese" />
+          </Suspense>
+
+          <Suspense fallback={<RowSkeleton label="Anime Spotlight" />}>
+            <AnimeRowComponent />
+          </Suspense>
         </section>
 
         {/* Director Spotlights */}
@@ -383,5 +361,48 @@ export default async function HomePage() {
         </section>
       </div>
     </main>
+  );
+}
+
+// ─── Progressive Loading Components ───
+
+async function TrendingRowComponent() {
+  const movies = await getTrendingAll();
+  return (
+    <MovieRow
+      title="Trending Now"
+      movies={movies}
+      seeAllHref="/discover"
+    />
+  );
+}
+
+async function RegionRowComponent({
+  region,
+  title,
+  seeAllHref,
+}: {
+  region: string;
+  title: string;
+  seeAllHref: string;
+}) {
+  const movies = await getByRegion(region);
+  return (
+    <MovieRow
+      title={title}
+      movies={movies}
+      seeAllHref={seeAllHref}
+    />
+  );
+}
+
+async function AnimeRowComponent() {
+  const movies = await getAnime();
+  return (
+    <MovieRow
+      title="Anime Spotlight"
+      movies={movies}
+      seeAllHref="/cinema?region=japanese"
+    />
   );
 }

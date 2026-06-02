@@ -326,7 +326,9 @@ async def get_trending_movies(
 
 
 @router.get("/search")
+@cache_response(expire=60)
 async def search_movies(
+    request: Request,
     q: str = Query(..., min_length=2),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -347,11 +349,10 @@ async def search_movies(
             pass
 
     from database import movies_collection
-    import re
-    pattern = re.compile(re.escape(q), re.IGNORECASE)
     movies = await movies_collection.find(
-        {"$or": [{"title": pattern}, {"overview": pattern}]}, {"_id": 0}
-    ).limit(limit).to_list(length=None)
+        {"$text": {"$search": q}},
+        {"score": {"$meta": "textScore"}, "_id": 0}
+    ).sort([("score", {"$meta": "textScore"})]).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
 
@@ -360,25 +361,42 @@ async def search_movies(
 async def get_trending_all(request: Request):
     return await get_trending_movies(request=request, limit=40)
 
+
 @router.get("/toprated")
-async def get_top_rated(page: int = 1, limit: int = 20):
-    return await get_trending_movies(page=page, limit=limit)
+@cache_response(expire=3600)
+async def get_top_rated(request: Request, page: int = 1, limit: int = 20):
+    from database import movies_collection
+    movies = await movies_collection.find({}, {"_id": 0}).sort("rating", -1).limit(limit).to_list(length=None)
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
 
 @router.get("/nowplaying")
-async def get_now_playing(page: int = 1, limit: int = 20):
-    return await get_trending_movies(page=page, limit=limit)
+@cache_response(expire=1800)
+async def get_now_playing(request: Request, page: int = 1, limit: int = 20):
+    from database import movies_collection
+    import datetime
+    cutoff = datetime.datetime.now().year - 1
+    movies = await movies_collection.find(
+        {"year": {"$gte": cutoff}}, {"_id": 0}
+    ).sort("popularity_score", -1).limit(limit).to_list(length=None)
+    return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
 
 @router.get("/anime")
-async def get_anime(page: int = 1, limit: int = 20):
+@cache_response(expire=7200)
+async def get_anime(request: Request, page: int = 1, limit: int = 20):
     from database import movies_collection
-    movies = await movies_collection.find({"genres": "Animation"}, {"_id": 0}).limit(limit).to_list(length=None)
+    movies = await movies_collection.find({"genres": "Animation"}, {"_id": 0}).sort("popularity_score", -1).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
 
+
 @router.get("/series")
-async def get_series(page: int = 1, limit: int = 20):
+@cache_response(expire=7200)
+async def get_series(request: Request, page: int = 1, limit: int = 20):
     from database import movies_collection
-    movies = await movies_collection.find({"media_type": "tv"}, {"_id": 0}).limit(limit).to_list(length=None)
+    movies = await movies_collection.find({"media_type": "tv"}, {"_id": 0}).sort("popularity_score", -1).limit(limit).to_list(length=None)
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
+
 
 # Region Language Map
 REGION_LANG_MAP = {
@@ -400,11 +418,15 @@ REGION_LANG_MAP = {
     "turkish": ["tr"],
     "russian": ["ru"],
     "arabic": ["ar"],
-    "hollywood": ["en"]
+    "hollywood": ["en"],
+    "indian": ["hi", "te", "ta", "ml", "kn", "bn", "mr", "pa"],
+    "nollywood": ["en"]
 }
 
+
 @router.get("/region/{region}")
-async def get_by_region(region: str, page: int = 1, limit: int = 20):
+@cache_response(expire=3600)
+async def get_by_region(request: Request, region: str, page: int = 1, limit: int = 20):
     from database import movies_collection
     
     # 1. Query MongoDB by region and language
@@ -448,8 +470,10 @@ async def get_by_region(region: str, page: int = 1, limit: int = 20):
             
     return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies[:limit]]}
 
+
 @router.get("/mood/{mood}")
-async def get_by_mood(mood: str, page: int = 1, limit: int = 20):
+@cache_response(expire=3600)
+async def get_by_mood(request: Request, mood: str, page: int = 1, limit: int = 20):
     # Mood mapping using TMDB discover or popular fallback
     try:
         from utils.tmdb_api import fetch_by_mood, fetch_genre_list
@@ -460,10 +484,12 @@ async def get_by_mood(mood: str, page: int = 1, limit: int = 20):
             return {"page": page, "total": len(movies), "results": [serialize_movie(m) for m in movies]}
     except Exception:
         pass
-    return await get_trending_movies(page=page, limit=limit)
+    return await get_trending_movies(request=request, page=page, limit=limit)
+
 
 @router.get("/genre/{genre}")
-async def get_by_genre(genre: str, page: int = 1, limit: int = 20):
+@cache_response(expire=3600)
+async def get_by_genre(request: Request, genre: str, page: int = 1, limit: int = 20):
     from database import movies_collection
     
     # Map genre abbreviations/slugs to database names

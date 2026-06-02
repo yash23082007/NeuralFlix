@@ -1,38 +1,24 @@
-import copy
-import logging
 import os
-from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
-
+import logging
+import json
+import asyncio
+from typing import Any, AsyncGenerator, Dict, List, Optional
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
-from motor.motor_asyncio import AsyncIOMotorClient
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy import create_engine
+
+from sqlalchemy import create_engine, select, func, or_, and_, desc, asc, String
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import sessionmaker as sync_sessionmaker
-from tenacity import retry, stop_after_attempt, wait_exponential
+from sqlalchemy.sql import text
+
+from db.models import Movie, User, WatchEvent, Rating
 
 load_dotenv()
-
 logger = logging.getLogger("DB_FACTORY")
 
 # Environment Configuration
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-ASYNC_DATABASE_URL = (
-    DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-    if DATABASE_URL else ""
-)
-MONGO_TIMEOUT_MS = int(os.getenv("MONGO_TIMEOUT_MS", "1000"))
-MONGO_CONNECT_ATTEMPTS = int(os.getenv("MONGO_CONNECT_ATTEMPTS", "1"))
-DEMO_MODE = os.getenv("NEURALFLIX_DEMO_MODE", "true").lower()
-ALLOW_EMPTY_MONGO = os.getenv("NEURALFLIX_ALLOW_EMPTY_MONGO", "false").lower() == "true"
 
-# ─── Legacy Fallback Catalog ──────────────────────────────────────────
+# ─── Fallback Catalog ──────────────────────────────────────────
 SAMPLE_MOVIES: List[Dict[str, Any]] = [
     {
         "_id": "872585", "tmdb_id": 872585, "title": "Oppenheimer",
@@ -254,367 +240,467 @@ SAMPLE_MOVIES: List[Dict[str, Any]] = [
     },
 ]
 
+# Database Engine Init
+async_engine = None
+async_session_factory = None
+sync_engine = None
+sync_session_factory = None
+_init_lock = asyncio.Lock()
 
-class _InMemoryCursor:
-    __slots__ = ("_docs", "_iter")
-    def __init__(self, docs: Iterable[Dict[str, Any]]):
-        self._docs = list(docs)
-        self._iter = None
+def init_engines():
+    global async_engine, async_session_factory, sync_engine, sync_session_factory
+    if async_engine is not None:
+        return
 
-    def sort(self, key: str, direction: int = 1):
-        reverse = direction < 0
-        self._docs.sort(key=lambda item: item.get(key) or 0, reverse=reverse)
+    # Check connection parameter
+    use_postgres = False
+    if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+        try:
+            # Sync connection check with 3s timeout
+            temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})
+            with temp_engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            use_postgres = True
+            logger.info("Database: Postgres active connection verified.")
+        except Exception as e:
+            logger.warning(f"Database: Postgres connection failed ({e}). Falling back to local SQLite.")
+
+    if use_postgres:
+        pg_url = DATABASE_URL
+        async_pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
+        sync_engine = create_engine(pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+        async_engine = create_async_engine(async_pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+    else:
+        sqlite_url = "sqlite:///./neuralflix.db"
+        async_sqlite_url = "sqlite+aiosqlite:///./neuralflix.db"
+        sync_engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+        async_engine = create_async_engine(async_sqlite_url, connect_args={"check_same_thread": False})
+        logger.info(f"Database: Using local SQLite file database at: {sqlite_url}")
+
+    sync_session_factory = sync_sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
+    async_session_factory = async_sessionmaker(bind=async_engine, expire_on_commit=False)
+
+
+# Query builder to convert MongoDB dict filters to SQLAlchemy filters
+def build_sqlalchemy_filters(model, mongo_query):
+    filters = []
+    if not mongo_query:
+        return filters
+
+    # Copy to avoid side-effects
+    query_copy = dict(mongo_query)
+
+    if "$or" in query_copy:
+        or_filters = []
+        for sub_query in query_copy["$or"]:
+            sub_filters = build_sqlalchemy_filters(model, sub_query)
+            if sub_filters:
+                or_filters.append(and_(*sub_filters))
+        if or_filters:
+            filters.append(or_(*or_filters))
+        del query_copy["$or"]
+
+    if "$text" in query_copy:
+        search_query = query_copy["$text"].get("$search", "")
+        filters.append(or_(
+            model.title.ilike(f"%{search_query}%") if hasattr(model, 'title') else False,
+            model.overview.ilike(f"%{search_query}%") if hasattr(model, 'overview') else False,
+            model.director.ilike(f"%{search_query}%") if hasattr(model, 'director') else False,
+        ))
+        del query_copy["$text"]
+
+    for key, value in query_copy.items():
+        sql_key = key
+        if key in ("_id", "id"):
+            sql_key = "id"
+
+        if not hasattr(model, sql_key):
+            if sql_key == "id" and hasattr(model, "tmdb_id"):
+                sql_key = "tmdb_id"
+            else:
+                continue
+
+        col = getattr(model, sql_key)
+        col_type_name = str(col.type).lower()
+
+        if isinstance(value, dict):
+            if "$in" in value:
+                val_list = value["$in"]
+                if "int" in col_type_name or "num" in col_type_name:
+                    cleaned_val_list = []
+                    for v in val_list:
+                        if isinstance(v, (int, float)):
+                            cleaned_val_list.append(int(v))
+                        elif isinstance(v, str) and v.isdigit():
+                            cleaned_val_list.append(int(v))
+                    val_list = cleaned_val_list
+                else:
+                    val_list = [str(v) for v in val_list]
+                
+                if val_list:
+                    filters.append(col.in_(val_list))
+            elif "$regex" in value:
+                regex_str = value["$regex"]
+                filters.append(col.ilike(f"%{regex_str}%"))
+            elif "$gte" in value:
+                filters.append(col >= value["$gte"])
+            elif "$lte" in value:
+                filters.append(col <= value["$lte"])
+            elif "$ne" in value:
+                filters.append(col != value["$ne"])
+        else:
+            if "array" in col_type_name or "json" in col_type_name:
+                filters.append(col.cast(String).ilike(f"%{value}%"))
+            else:
+                if "int" in col_type_name and isinstance(value, str) and value.isdigit():
+                    value = int(value)
+                filters.append(col == value)
+
+    return filters
+
+
+class SQLCursorAdapter:
+    def __init__(self, query_exec_fn):
+        self.query_exec_fn = query_exec_fn
+        self._sort_key = None
+        self._sort_direction = 1
+        self._skip = 0
+        self._limit = None
+
+    def sort(self, key, direction=1):
+        if isinstance(key, list) and len(key) > 0:
+            self._sort_key = key[0][0]
+            self._sort_direction = key[0][1]
+        else:
+            self._sort_key = key
+            self._sort_direction = direction
         return self
 
-    def skip(self, count: int):
-        self._docs = self._docs[count:]
+    def skip(self, count):
+        self._skip = count
         return self
 
-    def limit(self, count: int):
-        self._docs = self._docs[:count]
+    def limit(self, count):
+        self._limit = count
         return self
 
-    def __iter__(self):
-        return iter(self._docs)
-
-    def __len__(self):
-        return len(self._docs)
-
-    async def to_list(self, length: Optional[int] = None):
-        if length is not None:
-            return self._docs[:length]
-        return self._docs
+    async def to_list(self, length=None):
+        return await self.query_exec_fn(
+            sort_key=self._sort_key,
+            sort_direction=self._sort_direction,
+            skip=self._skip,
+            limit=self._limit or length
+        )
 
     def __aiter__(self):
-        self._iter = iter(self._docs)
+        self._iter = None
         return self
 
     async def __anext__(self):
+        if self._iter is None:
+            docs = await self.to_list()
+            self._iter = iter(docs)
         try:
             return next(self._iter)
         except StopIteration:
             raise StopAsyncIteration
 
 
-def _field_matches(value: Any, condition: Any) -> bool:
-    if isinstance(condition, dict):
-        if "$in" in condition:
-            options = condition["$in"]
-            if isinstance(value, list):
-                return any(item in options for item in value)
-            return value in options
-        if "$regex" in condition:
-            needle = str(condition["$regex"]).lower()
-            if isinstance(value, list):
-                return any(needle in str(item).lower() for item in value)
-            return needle in str(value or "").lower()
-        if "$gte" in condition and not (value is not None and value >= condition["$gte"]):
-            return False
-        if "$lte" in condition and not (value is not None and value <= condition["$lte"]):
-            return False
-        return True
-    if isinstance(value, list):
-        return condition in value
-    return value == condition
+class SQLCollectionAdapter:
+    def __init__(self, model_class):
+        self.model_class = model_class
 
+    def _serialize_to_dict(self, obj):
+        if not obj:
+            return None
+        d = {}
+        for col in obj.__table__.columns:
+            val = getattr(obj, col.name)
+            d[col.name] = val
+        if "id" in d:
+            d["_id"] = str(d["id"])
+        return d
 
-def _matches(doc: Dict[str, Any], query: Optional[Dict[str, Any]]) -> bool:
-    if not query:
-        return True
-    if "$or" in query:
-        return any(_matches(doc, sub) for sub in query["$or"])
-    if "$text" in query:
-        needle = str(query["$text"].get("$search", "")).lower()
-        haystack = " ".join([
-            str(doc.get("title", "")), str(doc.get("overview", "")),
-            " ".join(doc.get("genres", [])), str(doc.get("cinema_region", "")),
-        ]).lower()
-        return needle in haystack
-    for key, condition in query.items():
-        if key.startswith("$"):
-            continue
-        if not _field_matches(doc.get(key), condition):
-            return False
-    return True
+    def _deserialize_to_model(self, doc):
+        data = {}
+        for col in self.model_class.__table__.columns:
+            if col.name in doc:
+                data[col.name] = doc[col.name]
+            elif col.name == "id" and "_id" in doc:
+                col_type_name = str(col.type).lower()
+                if "str" in col_type_name or "varchar" in col_type_name:
+                    data["id"] = str(doc["_id"])
+                else:
+                    val = doc["_id"]
+                    if isinstance(val, int):
+                        data["id"] = val
+                    elif isinstance(val, str) and val.isdigit():
+                        data["id"] = int(val)
 
+        # SQL constraint safety harness for seeders and mock data
+        if self.model_class.__name__ == "User":
+            if not data.get("email"):
+                user_id = data.get("id") or doc.get("_id") or "unknown"
+                data["email"] = f"{user_id}@neuralflix.ai"
+            if not data.get("hashed_password"):
+                data["hashed_password"] = "no-password-seeded"
 
-def _project(doc: Dict[str, Any], projection: Optional[Dict[str, int]] = None):
-    if not projection:
-        return copy.deepcopy(doc)
+        return self.model_class(**data)
 
-    include_keys = {key for key, value in projection.items() if value}
-    exclude_keys = {key for key, value in projection.items() if not value}
+    async def find_one(self, query=None, projection=None):
+        init_engines()
+        filters = build_sqlalchemy_filters(self.model_class, query or {})
+        async with async_session_factory() as session:
+            stmt = select(self.model_class)
+            if filters:
+                stmt = stmt.where(*filters)
+            result = await session.execute(stmt)
+            obj = result.scalars().first()
+            return self._serialize_to_dict(obj)
 
-    if include_keys:
-        projected = {key: copy.deepcopy(doc[key]) for key in include_keys if key in doc}
-        if "_id" in doc and "_id" not in exclude_keys and "_id" not in projected:
-            projected["_id"] = copy.deepcopy(doc["_id"])
-        return projected
+    def find(self, query=None, projection=None):
+        async def _query_exec(sort_key=None, sort_direction=1, skip=0, limit=None):
+            init_engines()
+            filters = build_sqlalchemy_filters(self.model_class, query or {})
+            async with async_session_factory() as session:
+                stmt = select(self.model_class)
+                if filters:
+                    stmt = stmt.where(*filters)
 
-    return {key: copy.deepcopy(value) for key, value in doc.items() if key not in exclude_keys}
+                if sort_key:
+                    if sort_key == "_id":
+                        sort_key = "id"
+                    if hasattr(self.model_class, sort_key):
+                        col = getattr(self.model_class, sort_key)
+                        stmt = stmt.order_by(desc(col) if sort_direction < 0 else asc(col))
 
+                if skip:
+                    stmt = stmt.offset(skip)
+                if limit:
+                    stmt = stmt.limit(limit)
 
-class _InMemoryCollection:
-    def __init__(self, name: str, docs: Optional[List[Dict[str, Any]]] = None):
-        self.name = name
-        self._docs = copy.deepcopy(docs or [])
-        self._by_id = {}
-        self._by_tmdb_id = {}
-        for doc in self._docs:
-            self._index_doc(doc)
+                result = await session.execute(stmt)
+                objs = result.scalars().all()
+                return [self._serialize_to_dict(o) for o in objs]
 
-    def _index_doc(self, doc):
-        if doc.get("_id"):
-            self._by_id[str(doc["_id"])] = doc
-        if doc.get("tmdb_id") is not None:
-            self._by_tmdb_id[int(doc["tmdb_id"])] = doc
+        return SQLCursorAdapter(_query_exec)
 
-    def find(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None):
-        docs = self._docs
-        if query:
-            docs = [d for d in docs if _matches(d, query)]
-        if projection:
-            docs = [_project(d, projection) for d in docs]
-        return _InMemoryCursor(docs)
+    async def insert_one(self, doc):
+        init_engines()
+        obj = self._deserialize_to_model(doc)
+        async with async_session_factory() as session:
+            session.add(obj)
+            await session.commit()
+            await session.refresh(obj)
+            inserted_id = getattr(obj, "id", None)
+            return type("InsertOneResult", (), {"inserted_id": str(inserted_id)})()
 
-    async def find_one(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None):
-        if query and "_id" in query and not isinstance(query["_id"], dict):
-            doc = self._by_id.get(str(query["_id"]))
-            if doc:
-                return _project(doc, projection)
-        if query and "tmdb_id" in query and not isinstance(query["tmdb_id"], dict):
-            doc = self._by_tmdb_id.get(int(query["tmdb_id"]))
-            if doc:
-                return _project(doc, projection)
-        for doc in self._docs:
-            if _matches(doc, query):
-                return _project(doc, projection)
-        return None
+    async def insert_many(self, documents, ordered=False):
+        init_engines()
+        objs = [self._deserialize_to_model(doc) for doc in documents]
+        async with async_session_factory() as session:
+            session.add_all(objs)
+            await session.commit()
+            inserted_ids = [str(getattr(obj, "id", None)) for obj in objs]
+            return type("InsertManyResult", (), {"inserted_ids": inserted_ids})()
 
-    async def insert_one(self, doc: Dict[str, Any]):
-        stored = copy.deepcopy(doc)
-        stored.setdefault("_id", stored.get("id") or str(len(self._docs) + 1))
-        self._docs.append(stored)
-        self._index_doc(stored)
-        return type("InsertOneResult", (), {"inserted_id": stored["_id"]})()
+    async def delete_many(self, query):
+        init_engines()
+        filters = build_sqlalchemy_filters(self.model_class, query or {})
+        async with async_session_factory() as session:
+            stmt = select(self.model_class)
+            if filters:
+                stmt = stmt.where(*filters)
+            result = await session.execute(stmt)
+            objs = result.scalars().all()
+            deleted_count = len(objs)
+            for obj in objs:
+                await session.delete(obj)
+            await session.commit()
+            return type("DeleteResult", (), {"deleted_count": deleted_count})()
 
-    async def insert_many(self, documents: List[Dict[str, Any]], ordered: bool = False):
-        inserted_ids = []
-        for doc in documents:
-            stored = copy.deepcopy(doc)
-            stored.setdefault("_id", stored.get("id") or str(len(self._docs) + 1))
-            self._docs.append(stored)
-            self._index_doc(stored)
-            inserted_ids.append(stored["_id"])
-        return type("InsertManyResult", (), {"inserted_ids": inserted_ids})()
+    async def update_one(self, query, update, upsert=False):
+        init_engines()
+        filters = build_sqlalchemy_filters(self.model_class, query or {})
+        async with async_session_factory() as session:
+            stmt = select(self.model_class)
+            if filters:
+                stmt = stmt.where(*filters)
+            result = await session.execute(stmt)
+            obj = result.scalars().first()
 
-    async def delete_many(self, query: Dict[str, Any]):
-        initial_len = len(self._docs)
-        self._docs = [doc for doc in self._docs if not _matches(doc, query)]
-        self._by_id = {}
-        self._by_tmdb_id = {}
-        for doc in self._docs:
-            self._index_doc(doc)
-        deleted_count = initial_len - len(self._docs)
-        return type("DeleteResult", (), {"deleted_count": deleted_count})()
+            set_fields = update.get("$set", {}) if isinstance(update, dict) else update
 
-    async def update_one(self, query: Dict[str, Any], update: Dict[str, Any], upsert: bool = False):
-        doc = await self.find_one(query)
-        if doc:
-            set_fields = update.get("$set", {})
-            for k, v in set_fields.items():
-                doc[k] = copy.deepcopy(v)
-            self._index_doc(doc)
-            return type("UpdateResult", (), {"modified_count": 1, "matched_count": 1})()
-        elif upsert:
-            new_doc = copy.deepcopy(query)
-            set_fields = update.get("$set", {})
-            for k, v in set_fields.items():
-                new_doc[k] = copy.deepcopy(v)
-            await self.insert_one(new_doc)
-            return type("UpdateResult", (), {"modified_count": 0, "matched_count": 0, "upserted_id": new_doc.get("_id")})()
-        return type("UpdateResult", (), {"modified_count": 0, "matched_count": 0})()
+            if obj:
+                for k, v in set_fields.items():
+                    sql_k = k
+                    if k in ("_id", "id"):
+                        sql_k = "id"
+                    if hasattr(obj, sql_k):
+                        setattr(obj, sql_k, v)
+                await session.commit()
+                return type("UpdateResult", (), {"modified_count": 1, "matched_count": 1})()
+            elif upsert:
+                new_doc = {}
+                for k, v in query.items():
+                    if not k.startswith("$"):
+                        new_doc[k] = v
+                for k, v in set_fields.items():
+                    new_doc[k] = v
 
-    async def count_documents(self, query: Optional[Dict[str, Any]] = None):
-        return len([doc for doc in self._docs if _matches(doc, query)])
+                new_obj = self._deserialize_to_model(new_doc)
+                session.add(new_obj)
+                await session.commit()
+                await session.refresh(new_obj)
+                inserted_id = getattr(new_obj, "id", None)
+                return type("UpdateResult", (), {
+                    "modified_count": 0,
+                    "matched_count": 0,
+                    "upserted_id": str(inserted_id)
+                })()
 
-    def aggregate(self, pipeline: List[Dict[str, Any]]):
-        docs = copy.deepcopy(self._docs)
-        unwound = []
-        for doc in docs:
-            genres = doc.get("genres", []) or []
-            if isinstance(genres, list):
-                for g in genres:
-                    unwound.append({"_id": g})
-            else:
-                unwound.append({"_id": genres})
-        unique_genres = set()
-        for doc in unwound:
-            if doc.get("_id"):
-                unique_genres.add(doc["_id"])
-        sorted_genres = sorted(list(unique_genres))
-        result_docs = [{"_id": g} for g in sorted_genres]
-        return _InMemoryCursor(result_docs)
+            return type("UpdateResult", (), {"modified_count": 0, "matched_count": 0})()
 
+    async def count_documents(self, query=None):
+        init_engines()
+        filters = build_sqlalchemy_filters(self.model_class, query or {})
+        async with async_session_factory() as session:
+            stmt = select(func.count()).select_from(self.model_class)
+            if filters:
+                stmt = stmt.where(*filters)
+            result = await session.execute(stmt)
+            count = result.scalar() or 0
+            return count
 
-class _InMemoryDatabase:
-    def __init__(self):
-        self.movies = _InMemoryCollection("movies", SAMPLE_MOVIES)
-        self.users = _InMemoryCollection("users")
-        self.recommendations = _InMemoryCollection("recommendations")
-        self.watch_history = _InMemoryCollection("watch_history")
+    def aggregate(self, pipeline):
+        async def _query_exec(sort_key=None, sort_direction=1, skip=0, limit=None):
+            init_engines()
+            async with async_session_factory() as session:
+                stmt = select(self.model_class.genres)
+                result = await session.execute(stmt)
+                genres_lists = result.scalars().all()
+                unique_genres = set()
+                for genres in genres_lists:
+                    if not genres:
+                        continue
+                    if isinstance(genres, list):
+                        for g in genres:
+                            if g:
+                                unique_genres.add(g)
+                    elif isinstance(genres, str):
+                        try:
+                            lst = json.loads(genres)
+                            if isinstance(lst, list):
+                                for g in lst:
+                                    if g:
+                                        unique_genres.add(g)
+                            else:
+                                unique_genres.add(genres)
+                        except Exception:
+                            for g in genres.split(","):
+                                if g.strip():
+                                    unique_genres.add(g.strip())
+                sorted_genres = sorted(list(unique_genres))
+                return [{"_id": g} for g in sorted_genres]
 
-    def __getitem__(self, name: str):
-        return getattr(self, name)
+        return SQLCursorAdapter(_query_exec)
 
-
-_fallback_db = _InMemoryDatabase()
-
-
-class DatabaseManager:
-    _mongo_client: Optional[AsyncIOMotorClient] = None
-    _mongo_failed = False
-    _use_fallback_catalog = False
-    _pg_engine = None
-    _pg_session_factory = None
-
-    @classmethod
-    def get_mongo_client(cls) -> AsyncIOMotorClient:
-        if cls._mongo_client is None:
-            cls._mongo_client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
-            logger.info("Async MongoDB connection established")
-        return cls._mongo_client
-
-    @classmethod
-    def get_mongo_db(cls):
-        if DEMO_MODE == "true" or cls._mongo_failed or cls._use_fallback_catalog:
-            return _fallback_db
+    def drop(self):
+        # Seed and test scripts use drop() to clear collections.
+        # We can implement this via truncate or delete all rows.
+        init_engines()
+        sync_session = sync_session_factory()
         try:
-            client = cls.get_mongo_client()
-            db = client.neuralflix
-            return db
-        except Exception as exc:
-            cls._mongo_failed = True
-            logger.warning("MongoDB unavailable; using bundled demo catalog: %s", exc)
-            return _fallback_db
+            sync_session.query(self.model_class).delete()
+            sync_session.commit()
+        except Exception as e:
+            sync_session.rollback()
+            logger.warning(f"Error dropping database table for model {self.model_class.__name__}: {e}")
+        finally:
+            sync_session.close()
 
-    @classmethod
-    def get_pg_engine(cls):
-        if cls._pg_engine is None and ASYNC_DATABASE_URL:
-            try:
-                # Optimized for sub-200ms targets with connection pooling (SQLAlchemy 2.0)
-                cls._pg_engine = create_async_engine(
-                    ASYNC_DATABASE_URL,
-                    pool_size=10,
-                    max_overflow=20,
-                    pool_pre_ping=True,
-                    pool_recycle=3600,
-                )
-                cls._pg_session_factory = async_sessionmaker(
-                    bind=cls._pg_engine,
-                    autocommit=False,
-                    autoflush=False,
-                    expire_on_commit=False,
-                )
-                logger.info("PostgreSQL Async Engine initialized (SQLAlchemy 2.0)")
-            except Exception as exc:
-                logger.error("PostgreSQL initialization error: %s", exc)
-                cls._pg_engine = None
-        return cls._pg_engine
 
-    @classmethod
-    async def get_pg_session(cls) -> AsyncGenerator[Optional[AsyncSession], None]:
-        if cls._pg_session_factory is None:
-            cls.get_pg_engine()
-        if cls._pg_session_factory:
-            async with cls._pg_session_factory() as session:
-                try:
-                    yield session
-                except Exception:
-                    await session.rollback()
-                    raise
-                finally:
-                    await session.close()
-        else:
-            yield None
-
+# Instantiate Adapters
+movies_collection = SQLCollectionAdapter(Movie)
+users_collection = SQLCollectionAdapter(User)
+watch_history_collection = SQLCollectionAdapter(WatchEvent)
+recommendations_collection = SQLCollectionAdapter(Rating)  # Simple fallback map
 
 def get_db():
-    return DatabaseManager.get_mongo_db()
+    return None  # No longer returns Mongo DB object
 
-async def get_async_session():
-    async for session in DatabaseManager.get_pg_session():
-        yield session
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    init_engines()
+    async with async_session_factory() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 def get_movies_collection():
-    return get_db().movies
+    return movies_collection
 
 def get_users_collection():
-    return get_db().users
+    return users_collection
 
 def get_recommendations_collection():
-    return get_db().recommendations
+    return recommendations_collection
 
 def get_watch_history_collection():
-    return get_db().watch_history
+    return watch_history_collection
 
 
-class _LazyCollection:
-    def __init__(self, collection_name: str):
-        self._name = collection_name
-        self._col = None
-
-    def _get(self):
-        if self._col is None:
-            self._col = get_db()[self._name]
-        return self._col
-
-    def __getattr__(self, name):
-        return getattr(self._get(), name)
-
-
-movies_collection = _LazyCollection("movies")
-users_collection = _LazyCollection("users")
-recommendations_collection = _LazyCollection("recommendations")
-watch_history_collection = _LazyCollection("watch_history")
-
+# SessionLocal sync helper
 SessionLocal = None
-if DATABASE_URL:
-    try:
-        _sync_engine = create_engine(
-            DATABASE_URL, pool_size=5, max_overflow=5, pool_pre_ping=True,
-        )
-        SessionLocal = sync_sessionmaker(bind=_sync_engine, autocommit=False, autoflush=False)
-        logger.info("Sync PostgreSQL SessionLocal initialized")
-    except Exception as exc:
-        logger.warning("Sync PG session not available: %s", exc)
+
+def init_sync_session_local():
+    global SessionLocal
+    init_engines()
+    SessionLocal = sync_session_factory
+
+# Run init at import
+init_engines()
+init_sync_session_local()
+
+
+async def auto_seed_if_empty():
+    async with async_session_factory() as session:
+        count_stmt = select(func.count(Movie.id))
+        count_result = await session.execute(count_stmt)
+        count = count_result.scalar() or 0
+        if count == 0:
+            logger.info("Movies table is empty. Seeding fallback SAMPLE_MOVIES...")
+            db_movies = []
+            for m in SAMPLE_MOVIES:
+                db_movies.append(Movie(
+                    tmdb_id=m["tmdb_id"],
+                    title=m["title"],
+                    overview=m.get("overview", ""),
+                    tagline=m.get("tagline", ""),
+                    genres=m.get("genres", []),
+                    language=m.get("language", "en"),
+                    release_date=m.get("release_date"),
+                    runtime=m.get("runtime"),
+                    poster_url=m.get("poster_url"),
+                    backdrop_url=m.get("backdrop_url"),
+                    tmdb_rating=m.get("rating", 0.0),
+                    tmdb_votes=m.get("votes", 0),
+                    popularity_score=m.get("popularity_score", 0.0),
+                    platforms=m.get("platforms", []),
+                    director=m.get("director", "")
+                ))
+            session.add_all(db_movies)
+            await session.commit()
+            logger.info(f"Seeded {len(db_movies)} movies successfully.")
 
 
 async def init_db():
-    db = get_db()
-    # Skip indexing for fallback catalog
-    if hasattr(db, "movies") and hasattr(db.movies, "create_index"):
-        try:
-            movies_col = db.movies
-            await movies_col.create_index([("title", "text"), ("overview", "text")], language_override="none")
-            await movies_col.create_index([("genres", 1)])
-            await movies_col.create_index([("rating", -1)])
-            await movies_col.create_index([("popularity_score", -1)])
-            await movies_col.create_index([("language", 1)])
-            await movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True)
-            await movies_col.create_index([("year", -1)])
-            await movies_col.create_index([("language", 1), ("rating", -1)])
-            await movies_col.create_index([("year", -1), ("popularity_score", -1)])
-            await movies_col.create_index([("status", 1)])
-            await movies_col.create_index([("imdb_id", 1)], sparse=True)
-            await movies_col.create_index([("cinema_region", 1)])
-            
-            # Also add indexes on watch_history
-            watch_history_col = db.watch_history
-            if hasattr(watch_history_col, "create_index"):
-                await watch_history_col.create_index("user_id")
-                await watch_history_col.create_index([("user_id", 1), ("movie_id", 1)])
-                
-            logger.info("Database indexes initialized")
-        except Exception as e:
-            logger.warning(f"Index creation failed: {e}")
+    init_engines()
+    from db.models import Base
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("SQL database tables initialized.")
+    await auto_seed_if_empty()

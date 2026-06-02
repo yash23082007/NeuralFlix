@@ -36,6 +36,18 @@ backend/scripts/exports/
 backend/scripts/*checkpoint*.json
 backend/scripts/*.json.gz
 
+# ML Models & binary artifacts
+*.pkl
+*.h5
+*.pt
+*.bin
+
+# SQLite databases
+*.db
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
 # Local scratch and temporary files
 backend/scratch/
 

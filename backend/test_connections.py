@@ -2,37 +2,24 @@ import os
 import asyncio
 import requests
 from dotenv import load_dotenv
-from database import get_db, SessionLocal, DatabaseManager
 from sqlalchemy import text
 
 # Load environment variables
 load_dotenv()
 
-async def test_mongodb():
-    print("Testing MongoDB Connection...")
+async def test_sql_connection():
+    print("Testing SQL Database Connection...")
     try:
-        client = DatabaseManager.get_mongo_client()
-        # Use await command for async motor client
-        await client.admin.command('ismaster')
-        print("[OK] MongoDB: Connected successfully.")
-    except Exception as e:
-        print(f"[ERROR] MongoDB: Connection failed. Error: {e}")
-
-def test_postgresql():
-    print("\nTesting PostgreSQL (Supabase) Connection...")
-    if not SessionLocal:
-        print("[ERROR] PostgreSQL: SessionLocal is None (DATABASE_URL might be missing).")
-        return
-        
-    try:
-        with SessionLocal() as session:
-            result = session.execute(text("SELECT 1")).fetchone()
-            if result and result[0] == 1:
-                print("[OK] PostgreSQL (Supabase): Connected successfully.")
+        from database import async_engine, async_session_factory
+        async with async_session_factory() as session:
+            result = await session.execute(text("SELECT 1"))
+            val = result.scalar()
+            if val == 1:
+                print(f"[OK] SQL Database: Connected successfully (Dialect: {async_engine.dialect.name}).")
             else:
-                print("[ERROR] PostgreSQL (Supabase): Connection returned unexpected result.")
+                print("[ERROR] SQL Database: Connection returned unexpected result.")
     except Exception as e:
-        print(f"[ERROR] PostgreSQL (Supabase): Connection failed. Error: {e}")
+        print(f"[ERROR] SQL Database: Connection failed. Error: {e}")
 
 def test_tmdb():
     print("\nTesting TMDB API Connection...")
@@ -63,12 +50,10 @@ def test_tmdb():
         print(f"[ERROR] TMDB API: Connection failed. Error: {e}")
 
 async def main():
-    print("--- Running Backend Connection Diagnostics ---")
-    await test_mongodb()
-    test_postgresql()
+    print("--- Running Backend SQL Connection Diagnostics ---")
+    await test_sql_connection()
     test_tmdb()
-    print("--------------------------------------------")
+    print("---------------------------------------------")
 
 if __name__ == "__main__":
     asyncio.run(main())
-

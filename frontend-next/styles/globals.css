@@ -79,6 +79,8 @@
   min-height: 100vh;
   background: var(--surface-primary);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Subtle dot grid at very top */
