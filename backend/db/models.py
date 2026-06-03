@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.types import TypeDecorator
 from datetime import datetime
-import json
 
 try:
     from pgvector.sqlalchemy import Vector
@@ -12,15 +10,6 @@ except ImportError:
 
 Base = declarative_base()
 
-class SqliteCompatibleArray(TypeDecorator):
-    impl = JSON
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            return dialect.type_descriptor(ARRAY(String))
-        else:
-            return dialect.type_descriptor(JSON)
 
 class User(Base):
     __tablename__ = "users"
@@ -29,6 +18,11 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True)
     hashed_password = Column(String(255), nullable=False)
+    name = Column(String(255), default="")
+    is_admin = Column(Boolean, default=False)
+    auth_type = Column(String(50), default="local")
+    onboarded = Column(Boolean, default=False)
+    pref_genres = Column(ARRAY(String), default=[])
     created_at = Column(DateTime, default=datetime.utcnow)
     preferences_json = Column(JSON, default=dict)
 
@@ -47,7 +41,7 @@ class Movie(Base):
     title = Column(String(500), index=True, nullable=False)
     overview = Column(Text)
     tagline = Column(Text)
-    genres = Column(SqliteCompatibleArray)
+    genres = Column(ARRAY(String))
     language = Column(String(20))
     release_date = Column(String(50))
     runtime = Column(Integer)
@@ -58,7 +52,7 @@ class Movie(Base):
     tmdb_votes = Column(Integer, default=0)
     popularity_score = Column(Float, default=0.0)
 
-    # Added Big Three details
+    # Multi-source ratings
     imdb_rating = Column(Float)
     imdb_votes = Column(Integer)
     rt_rating = Column(String(20))
@@ -66,7 +60,7 @@ class Movie(Base):
     filmfare_wins = Column(Integer, default=0)
     oscar_wins = Column(Integer, default=0)
 
-    platforms = Column(SqliteCompatibleArray)
+    platforms = Column(ARRAY(String))
     ott_global = Column(JSON)
     cinema_region = Column(String(50), index=True)
     is_indian = Column(Boolean, default=False)
@@ -75,7 +69,7 @@ class Movie(Base):
     director = Column(String(255))
     cast_members = Column(JSON)
     trailer_key = Column(String(200))
-    keywords = Column(SqliteCompatibleArray)
+    keywords = Column(ARRAY(String))
     budget = Column(Integer)
     box_office = Column(String(100))
     awards = Column(Text)

@@ -15,8 +15,12 @@ from db.models import Movie, User, WatchEvent, Rating
 load_dotenv()
 logger = logging.getLogger("DB_FACTORY")
 
+from utils.wsl_resolver import resolve_wsl_url
+
 # Environment Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DATABASE_URL = resolve_wsl_url(os.getenv("DATABASE_URL", ""))
+if DATABASE_URL:
+    os.environ["DATABASE_URL"] = DATABASE_URL
 
 # ─── Fallback Catalog ──────────────────────────────────────────
 SAMPLE_MOVIES: List[Dict[str, Any]] = [
@@ -254,6 +258,7 @@ def init_engines():
 
     # Check connection parameter
     use_postgres = False
+    demo_mode = os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() == "true"
     if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
         try:
             # Sync connection check with 3s timeout
@@ -263,6 +268,9 @@ def init_engines():
             use_postgres = True
             logger.info("Database: Postgres active connection verified.")
         except Exception as e:
+            if not demo_mode:
+                logger.error(f"Database: Postgres connection failed ({e}) and NEURALFLIX_DEMO_MODE is false. Aborting.")
+                raise RuntimeError(f"Failed to connect to PostgreSQL: {e}")
             logger.warning(f"Database: Postgres connection failed ({e}). Falling back to local SQLite.")
 
     if use_postgres:
@@ -419,23 +427,52 @@ class SQLCollectionAdapter:
             d[col.name] = val
         if "id" in d:
             d["_id"] = str(d["id"])
+        # MongoDB/JSON key compatibility mapping
+        if "tmdb_rating" in d and d["tmdb_rating"] is not None:
+            d["rating"] = d["tmdb_rating"]
+        if "tmdb_votes" in d and d["tmdb_votes"] is not None:
+            d["votes"] = d["tmdb_votes"]
+        if "cast_members" in d and d["cast_members"] is not None:
+            d["cast"] = d["cast_members"]
         return d
 
     def _deserialize_to_model(self, doc):
         data = {}
         for col in self.model_class.__table__.columns:
+            val = None
+            col_type_name = str(col.type).lower()
+            
             if col.name in doc:
-                data[col.name] = doc[col.name]
+                val = doc[col.name]
             elif col.name == "id" and "_id" in doc:
-                col_type_name = str(col.type).lower()
-                if "str" in col_type_name or "varchar" in col_type_name:
-                    data["id"] = str(doc["_id"])
-                else:
-                    val = doc["_id"]
-                    if isinstance(val, int):
-                        data["id"] = val
-                    elif isinstance(val, str) and val.isdigit():
-                        data["id"] = int(val)
+                val = doc["_id"]
+            elif col.name == "tmdb_rating" and "rating" in doc:
+                val = doc["rating"]
+            elif col.name == "tmdb_votes" and "votes" in doc:
+                val = doc["votes"]
+            elif col.name == "cast_members" and "cast" in doc:
+                val = doc["cast"]
+            else:
+                continue
+
+            # Strict SQL type-casting for target column
+            if val is not None:
+                if "int" in col_type_name:
+                    if isinstance(val, str) and (val.isdigit() or (val.startswith("-") and val[1:].isdigit())):
+                        val = int(val)
+                    elif isinstance(val, float):
+                        val = int(val)
+                elif "float" in col_type_name or "numeric" in col_type_name:
+                    if isinstance(val, str):
+                        try:
+                            val = float(val)
+                        except ValueError:
+                            pass
+                elif "str" in col_type_name or "varchar" in col_type_name:
+                    if not isinstance(val, str):
+                        val = str(val)
+                        
+            data[col.name] = val
 
         # SQL constraint safety harness for seeders and mock data
         if self.model_class.__name__ == "User":
@@ -536,7 +573,34 @@ class SQLCollectionAdapter:
                     sql_k = k
                     if k in ("_id", "id"):
                         sql_k = "id"
+                    elif k == "rating":
+                        sql_k = "tmdb_rating"
+                    elif k == "votes":
+                        sql_k = "tmdb_votes"
+                    elif k == "cast":
+                        sql_k = "cast_members"
+                        
                     if hasattr(obj, sql_k):
+                        col = self.model_class.__table__.columns.get(sql_k)
+                        if col is not None and hasattr(col, "type"):
+                            col_type_name = str(col.type).lower()
+                            if v is not None:
+                                if "int" in col_type_name:
+                                    if isinstance(v, str) and (v.isdigit() or (v.startswith("-") and v[1:].isdigit())):
+                                        v = int(v)
+                                    elif isinstance(v, float):
+                                        v = int(v)
+                                elif "float" in col_type_name or "numeric" in col_type_name:
+                                    if isinstance(v, str):
+                                        try:
+                                            v = float(v)
+                                        except ValueError:
+                                            pass
+                                elif "str" in col_type_name or "varchar" in col_type_name:
+                                    if not isinstance(v, str):
+                                        v = str(v)
+                        if sql_k == "id" and getattr(obj, "id") == v:
+                            continue
                         setattr(obj, sql_k, v)
                 await session.commit()
                 return type("UpdateResult", (), {"modified_count": 1, "matched_count": 1})()

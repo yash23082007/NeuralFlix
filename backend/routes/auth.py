@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr
 from jose import jwt
 from datetime import datetime, timedelta
 import asyncio
-from passlib.context import CryptContext
+import bcrypt
 from database import users_collection
 import os
 import uuid
@@ -16,7 +16,6 @@ from google.auth.transport import requests as google_requests
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-in-prod")
 ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -39,10 +38,14 @@ class GithubLoginSchema(BaseModel):
     code: str
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 def create_token(data: dict, expires_minutes: int):
     to_encode = data.copy()
@@ -68,33 +71,25 @@ class UserSchema(BaseModel):
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(request: Request, body: RegisterSchema):
-    def _create():
-        if users_collection.find_one({"email": body.email}):
-            return None
-        user_doc = {
-            "id": str(uuid.uuid4()),
-            "email": body.email,
-            "name": body.name,
-            "hashed_password": get_password_hash(body.password),
-            "is_admin": False,
-            "created_at": datetime.utcnow()
-        }
-        users_collection.insert_one(user_doc)
-        return user_doc
-    
-    user = await asyncio.to_thread(_create)
-    if not user:
+    existing_user = await users_collection.find_one({"email": body.email})
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
-    return {"message": "User created successfully", "user_id": user["id"]}
+        
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "email": body.email,
+        "name": body.name,
+        "hashed_password": get_password_hash(body.password),
+        "is_admin": False,
+        "created_at": datetime.utcnow()
+    }
+    await users_collection.insert_one(user_doc)
+    return {"message": "User created successfully", "user_id": user_doc["id"]}
 
 @router.post("/login")
 @limiter.limit("10/minute")
 async def login(request: Request, response: Response, body: LoginSchema):
-    def _get_user():
-        return users_collection.find_one({"email": body.email})
-    
-    user = await asyncio.to_thread(_get_user)
+    user = await users_collection.find_one({"email": body.email})
     if not user or not verify_password(body.password, user.get("hashed_password", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -126,23 +121,20 @@ async def login(request: Request, response: Response, body: LoginSchema):
 async def init_admin():
     """Internal utility to ensure an admin account exists for the demo."""
     admin_email = "admin@neuralflix.ai"
-    def _seed():
-        if users_collection.find_one({"email": admin_email}):
-            return "Admin already exists"
+    existing = await users_collection.find_one({"email": admin_email})
+    if existing:
+        return {"message": "Admin already exists"}
         
-        user_doc = {
-            "id": "admin-id-001",
-            "email": admin_email,
-            "name": "NeuralFlix Admin",
-            "hashed_password": get_password_hash("Admin@2025!"),
-            "is_admin": True,
-            "created_at": datetime.utcnow()
-        }
-        users_collection.insert_one(user_doc)
-        return "Admin created: admin@neuralflix.ai / Admin@2025!"
-    
-    res = await asyncio.to_thread(_seed)
-    return {"message": res}
+    user_doc = {
+        "id": "admin-id-001",
+        "email": admin_email,
+        "name": "NeuralFlix Admin",
+        "hashed_password": get_password_hash("Admin@2025!"),
+        "is_admin": True,
+        "created_at": datetime.utcnow()
+    }
+    await users_collection.insert_one(user_doc)
+    return {"message": "Admin created: admin@neuralflix.ai / Admin@2025!"}
 
 @router.post("/google")
 async def google_login(request: Request, response: Response, body: GoogleLoginSchema):
@@ -153,22 +145,18 @@ async def google_login(request: Request, response: Response, body: GoogleLoginSc
     email = idinfo.get("email")
     name = idinfo.get("name", "")
     
-    def _get_or_create():
-        user = users_collection.find_one({"email": email})
-        if not user:
-            user = {
-                "id": str(uuid.uuid4()),
-                "email": email,
-                "name": name,
-                "hashed_password": "", # No password for Google users
-                "is_admin": False,
-                "created_at": datetime.utcnow(),
-                "auth_type": "google"
-            }
-            users_collection.insert_one(user)
-        return user
-    
-    user = await asyncio.to_thread(_get_or_create)
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        user = {
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "name": name,
+            "hashed_password": "", # No password for Google users
+            "is_admin": False,
+            "created_at": datetime.utcnow(),
+            "auth_type": "google"
+        }
+        await users_collection.insert_one(user)
     
     user_id = user["id"]
     access_token = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
@@ -236,22 +224,18 @@ async def github_login(request: Request, response: Response, body: GithubLoginSc
 
     name = user_info.get("name") or user_info.get("login", "")
     
-    def _get_or_create():
-        user = users_collection.find_one({"email": email})
-        if not user:
-            user = {
-                "id": str(uuid.uuid4()),
-                "email": email,
-                "name": name,
-                "hashed_password": "",
-                "is_admin": False,
-                "created_at": datetime.utcnow(),
-                "auth_type": "github"
-            }
-            users_collection.insert_one(user)
-        return user
-    
-    user = await asyncio.to_thread(_get_or_create)
+    user = await users_collection.find_one({"email": email})
+    if not user:
+        user = {
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "name": name,
+            "hashed_password": "",
+            "is_admin": False,
+            "created_at": datetime.utcnow(),
+            "auth_type": "github"
+        }
+        await users_collection.insert_one(user)
     
     user_id = user["id"]
     jwt_access_token = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)

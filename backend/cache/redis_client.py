@@ -3,7 +3,11 @@ import os
 from functools import wraps
 from typing import Any, Callable, Optional
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+from utils.wsl_resolver import resolve_wsl_url
+
+REDIS_URL = resolve_wsl_url(os.getenv("REDIS_URL", "redis://redis:6379/0"))
+if REDIS_URL:
+    os.environ["REDIS_URL"] = REDIS_URL
 _redis_client = None
 
 

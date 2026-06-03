@@ -506,6 +506,7 @@ async def get_by_genre(request: Request, genre: str, page: int = 1, limit: int =
 @cache_response(expire=86400)
 async def get_movie(request: Request, movie_id: str):
     """Fetch movie by ID (TMDB ID, IMDb ID, or MongoDB Hex ID)"""
+    movie = None
     if _has_pg:
         try:
             async for session in get_db():
@@ -514,31 +515,32 @@ async def get_movie(request: Request, movie_id: str):
                     (PostgresMovie.imdb_id == movie_id)
                 )
                 result = await session.execute(stmt)
-                movie = result.scalar_one_or_none()
-                if movie:
-                    return serialize_movie_detail(serialize_movie(movie))
+                postgres_movie = result.scalar_one_or_none()
+                if postgres_movie:
+                    from database import movies_collection
+                    movie = movies_collection._serialize_to_dict(postgres_movie)
+                    break
+        except Exception as e:
+            logger.error(f"Error fetching movie from Postgres: {e}")
+
+    if not movie:
+        from database import movies_collection
+        # Construct robust MongoDB search query
+        or_filters = [{"_id": movie_id}]
+        try:
+            if len(movie_id) == 24:
+                or_filters.append({"_id": ObjectId(movie_id)})
         except Exception:
             pass
+            
+        if movie_id.isdigit():
+            or_filters.append({"tmdb_id": int(movie_id)})
+            or_filters.append({"_id": int(movie_id)})
+            
+        if movie_id.startswith("tt"):
+            or_filters.append({"imdb_id": movie_id})
 
-    from database import movies_collection
-    
-    # Construct robust MongoDB search query
-    or_filters = [{"_id": movie_id}]
-    
-    try:
-        if len(movie_id) == 24:
-            or_filters.append({"_id": ObjectId(movie_id)})
-    except Exception:
-        pass
-        
-    if movie_id.isdigit():
-        or_filters.append({"tmdb_id": int(movie_id)})
-        or_filters.append({"_id": int(movie_id)})
-        
-    if movie_id.startswith("tt"):
-        or_filters.append({"imdb_id": movie_id})
-
-    movie = await movies_collection.find_one({"$or": or_filters})
+        movie = await movies_collection.find_one({"$or": or_filters})
     
     # If not found locally, try to fetch from TMDB or OMDb
     if not movie:

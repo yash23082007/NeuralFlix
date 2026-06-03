@@ -23,6 +23,7 @@ function getMovieHref(movie: Movie) {
 export function MovieCard({ movie, priority = false }: { movie: Movie; priority?: boolean }) {
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
   const score = movie.rec_score || movie.popularity_score;
   const scoreWidth = score != null && score <= 1 ? score * 100 : Math.min((score || 0) * 5, 100);
@@ -32,8 +33,8 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
   const y = useMotionValue(0);
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["6deg", "-6deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-6deg", "6deg"]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["5deg", "-5deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-5deg", "5deg"]);
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -54,17 +55,25 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
-        className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-poster transition-shadow duration-500 group-hover:shadow-xl"
+        className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-poster transition-all duration-500 group-hover:shadow-xl group-hover:border-[var(--border-default)]"
       >
+        {/* Shimmer until loaded */}
+        {!imgLoaded && movie.poster_url && !imgError && (
+          <div className="absolute inset-0 skeleton" />
+        )}
+
         {movie.poster_url && !imgError ? (
           <Image
             src={movie.poster_url}
             alt={`${movie.title} (${movie.year || "N/A"}) - Rating: ${movie.rating ? movie.rating.toFixed(1) : "N/A"}`}
             fill
             priority={priority}
-            className="object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-[0.35]"
+            className={`object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-[0.30] ${
+              imgLoaded ? "opacity-100" : "opacity-0"
+            }`}
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 220px"
             onError={() => setImgError(true)}
+            onLoad={() => setImgLoaded(true)}
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[var(--surface-muted)] to-[var(--surface-elevated)] px-3 text-center text-[var(--text-tertiary)]">
@@ -73,40 +82,69 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
           </div>
         )}
 
+        {/* Gradient overlay on hover */}
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 ${
+          isHovered ? "opacity-100" : "opacity-0"
+        }`} />
+
         {/* Rating Badge */}
         {movie.rating != null && movie.rating > 0 && (
-          <div className="absolute right-2.5 top-2.5 z-20 inline-flex items-center gap-1 rounded-md bg-[var(--rating-gold)] px-2 py-0.5 text-xs font-bold text-black shadow-sm">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="absolute right-2.5 top-2.5 z-20 inline-flex items-center gap-1 rounded-lg bg-[var(--rating-gold)] px-2 py-0.5 text-xs font-bold text-black shadow-md"
+          >
             <Star className="h-3 w-3 fill-current" />
             {movie.rating.toFixed(1)}
-          </div>
+          </motion.div>
         )}
 
         {/* Language Badge */}
         {langName && movie.language !== "en" && (
-          <div className="absolute left-2.5 top-2.5 z-20 rounded-md bg-black/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+          <div className="absolute left-2.5 top-2.5 z-20 rounded-lg bg-black/50 backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90 border border-white/10">
             {langName}
           </div>
         )}
 
         {/* Hover Actions */}
         <div
-          className={`absolute inset-0 z-30 flex items-center justify-center transition-all duration-400 ${
+          className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 transition-all duration-400 ${
             isHovered
               ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4"
+              : "opacity-0 translate-y-6"
           }`}
         >
           <div className="flex gap-3" style={{ transform: "translateZ(40px)" }}>
-            <button aria-label="Add to Watchlist" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Add to Watchlist"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20"
+            >
               <Plus className="h-4 w-4" />
-            </button>
-            <button aria-label="Play Trailer" className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-warm)] text-black shadow-glow transition-all hover:scale-110">
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Play Trailer"
+              className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-warm)] text-black shadow-glow transition-all"
+            >
               <Play className="ml-0.5 h-5 w-5 fill-current" />
-            </button>
-            <button aria-label="Mark as Favorite" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 hover:scale-110">
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Mark as Favorite"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20"
+            >
               <Heart className="h-4 w-4" />
-            </button>
+            </motion.button>
           </div>
+          {/* Title on hover */}
+          <p className="text-xs text-white/70 font-medium max-w-[80%] text-center truncate">
+            {movie.genres?.[0] && `${movie.genres[0]} · `}{movie.year || ""}
+          </p>
         </div>
       </motion.div>
 
@@ -131,7 +169,7 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${scoreWidth}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
                 className="h-full rounded-full bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)]"
               />
             </div>

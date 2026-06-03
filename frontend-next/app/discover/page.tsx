@@ -9,7 +9,9 @@ import {
   Globe2,
   SlidersHorizontal,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import MovieCard, { Movie } from "../../components/MovieCard";
+import ScrollReveal from "../../components/ScrollReveal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -88,121 +90,134 @@ export default function DiscoverPage() {
     <main className="min-h-screen bg-[var(--surface-primary)] pt-24 page-enter">
       <div className="mx-auto max-w-7xl px-5 pb-20 md:px-8">
         {/* Header */}
-        <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Compass className="h-4 w-4 text-[var(--accent-warm)]" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-warm)]">
-                  Explore
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl">
-                Discover Cinema
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-tertiary)]">
-                Browse films by genre, region, and rating across our global
-                recommendation catalog.
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              {[
-                { label: "Results", value: movies.length },
-                { label: "Regions", value: REGIONS.length },
-                { label: "Genres", value: GENRES.length },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-3"
-                >
-                  <div className="text-lg font-bold text-[var(--text-primary)]">
-                    {s.value}
-                  </div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-                    {s.label}
-                  </div>
+        <ScrollReveal>
+          <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/80 p-6 md:p-8 backdrop-blur-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Compass className="h-4 w-4 text-[var(--accent-warm)]" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-warm)]">
+                    Explore
+                  </span>
                 </div>
-              ))}
+                <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl">
+                  Discover Cinema
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-tertiary)]">
+                  Browse films by genre, region, and rating across our global
+                  recommendation catalog.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                {[
+                  { label: "Results", value: movies.length },
+                  { label: "Regions", value: REGIONS.length },
+                  { label: "Genres", value: GENRES.length },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-3"
+                  >
+                    <div className="text-lg font-bold text-[var(--text-primary)]">
+                      {s.value}
+                    </div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+                      {s.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </ScrollReveal>
 
         {/* Filter Toggle */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={() => setFiltersOpen((v) => !v)}
           className="mb-5 inline-flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]"
         >
           <SlidersHorizontal className="h-4 w-4" />
           {filtersOpen ? "Hide Filters" : "Show Filters"}
-        </button>
+        </motion.button>
 
         {/* Filters Panel */}
-        {filtersOpen && (
-          <section className="mb-8 space-y-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6 animate-slide-down">
-            <div>
-              <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                <Globe2 className="h-4 w-4" />
-                Region
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => updateFilter("region", "")}
-                  className={`genre-pill ${
-                    !filters.region
-                      ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
-                      : ""
-                  }`}
-                >
-                  All regions
-                </button>
-                {REGIONS.map((r) => (
-                  <button
-                    key={r.value}
-                    onClick={() => updateFilter("region", r.value)}
-                    className={`genre-pill ${
-                      filters.region === r.value
-                        ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
-                        : ""
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
+        <AnimatePresence>
+          {filtersOpen && (
+            <motion.section
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden mb-8"
+            >
+              <div className="space-y-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6">
+                <div>
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <Globe2 className="h-4 w-4" />
+                    Region
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => updateFilter("region", "")}
+                      className={`genre-pill ${
+                        !filters.region
+                          ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
+                          : ""
+                      }`}
+                    >
+                      All regions
+                    </button>
+                    {REGIONS.map((r) => (
+                      <button
+                        key={r.value}
+                        onClick={() => updateFilter("region", r.value)}
+                        className={`genre-pill ${
+                          filters.region === r.value
+                            ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
+                            : ""
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <Film className="h-4 w-4" />
+                    Genre
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => updateFilter("genre", "")}
+                      className={`genre-pill ${
+                        !filters.genre
+                          ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
+                          : ""
+                      }`}
+                    >
+                      All genres
+                    </button>
+                    {GENRES.map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => updateFilter("genre", g)}
+                        className={`genre-pill ${
+                          filters.genre === g
+                            ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
+                            : ""
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                <Film className="h-4 w-4" />
-                Genre
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => updateFilter("genre", "")}
-                  className={`genre-pill ${
-                    !filters.genre
-                      ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
-                      : ""
-                  }`}
-                >
-                  All genres
-                </button>
-                {GENRES.map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => updateFilter("genre", g)}
-                    className={`genre-pill ${
-                      filters.genre === g
-                        ? "!border-[var(--accent-warm)] !bg-[var(--accent-warm)] !text-black"
-                        : ""
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
+            </motion.section>
+          )}
+        </AnimatePresence>
 
         {/* Sort + Results Count */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -216,7 +231,7 @@ export default function DiscoverPage() {
                 onClick={() => updateFilter("sort", opt.value)}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all ${
                   filters.sort === opt.value
-                    ? "bg-[var(--accent-warm)] text-black shadow-sm"
+                    ? "bg-[var(--accent-warm)] text-black shadow-sm shadow-[var(--accent-warm-glow)]"
                     : "border border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                 }`}
               >
@@ -238,14 +253,27 @@ export default function DiscoverPage() {
             ))}
           </div>
         ) : movies.length > 0 ? (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.04 } },
+            }}
+            className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+          >
             {movies.map((movie) => (
-              <MovieCard
+              <motion.div
                 key={movie.tmdb_id || movie._id}
-                movie={movie}
-              />
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 },
+                }}
+              >
+                <MovieCard movie={movie} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] py-24 text-center">
             <Film className="mx-auto mb-4 h-10 w-10 text-[var(--text-tertiary)]" />
@@ -261,22 +289,24 @@ export default function DiscoverPage() {
         {/* Pagination */}
         {movies.length > 0 && (
           <div className="mt-12 flex items-center justify-center gap-4">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
               className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:text-[var(--text-primary)] disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" /> Previous
-            </button>
+            </motion.button>
             <span className="rounded-xl bg-[var(--accent-warm)] px-4 py-2.5 text-sm font-semibold text-black shadow-sm">
               Page {page}
             </span>
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setPage(page + 1)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:text-[var(--text-primary)]"
             >
               Next <ChevronRight className="h-4 w-4" />
-            </button>
+            </motion.button>
           </div>
         )}
       </div>

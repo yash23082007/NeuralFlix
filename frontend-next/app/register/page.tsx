@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, UserPlus, Film } from "lucide-react";
+import { motion } from "framer-motion";
 import GoogleLogin from "../../components/GoogleLogin";
 import GithubLogin from "../../components/GithubLogin";
 
@@ -53,15 +54,32 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)] px-4 pt-20">
-      <div className="relative w-full max-w-md">
-        <div className="absolute -inset-16 rounded-3xl bg-gradient-to-br from-[var(--accent-warm)]/5 to-[var(--accent-rose)]/5 blur-3xl pointer-events-none" />
+    <main className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)] px-4 pt-20 relative overflow-hidden">
+      {/* Background ambient orbs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] rounded-full bg-[var(--accent-warm)]/[0.03] blur-[100px] animate-orb-float" />
+        <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-[var(--accent-rose)]/[0.03] blur-[100px] animate-orb-float" style={{ animationDelay: "-12s" }} />
+      </div>
 
-        <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-8 shadow-xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-md"
+      >
+        {/* Ambient glow */}
+        <div className="absolute -inset-20 rounded-3xl bg-gradient-to-br from-[var(--accent-warm)]/[0.04] to-[var(--accent-rose)]/[0.04] blur-3xl pointer-events-none" />
+
+        <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/90 p-8 shadow-xl backdrop-blur-xl">
           <div className="mb-8 flex flex-col items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] shadow-sm">
-              <Film className="h-6 w-6 text-black" />
-            </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+              className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] shadow-glow"
+            >
+              <Film className="h-7 w-7 text-black" />
+            </motion.div>
             <div className="text-center">
               <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
                 Create account
@@ -74,59 +92,63 @@ export default function RegisterPage() {
 
           <form onSubmit={handleRegister} className="space-y-5">
             {error && (
-              <div className="rounded-xl bg-[var(--accent-rose)]/10 border border-[var(--accent-rose)]/20 px-4 py-3 text-sm text-[var(--accent-rose)]">
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl bg-[var(--accent-rose)]/10 border border-[var(--accent-rose)]/20 px-4 py-3 text-sm text-[var(--accent-rose)]"
+              >
                 {error}
-              </div>
+              </motion.div>
             )}
 
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-[var(--text-secondary)]">
+              <label htmlFor="register-name" className="text-sm font-medium text-[var(--text-secondary)]">
                 Name
               </label>
               <input
-                id="name"
+                id="register-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
                 placeholder="Your name"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-[var(--text-secondary)]">
+              <label htmlFor="register-email" className="text-sm font-medium text-[var(--text-secondary)]">
                 Email
               </label>
               <input
-                id="email"
+                id="register-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
                 placeholder="you@example.com"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-[var(--text-secondary)]">
+              <label htmlFor="register-password" className="text-sm font-medium text-[var(--text-secondary)]">
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="password"
+                  id="register-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
+                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -134,24 +156,25 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-[var(--text-secondary)]">
+              <label htmlFor="register-confirm" className="text-sm font-medium text-[var(--text-secondary)]">
                 Confirm Password
               </label>
               <input
-                id="confirmPassword"
+                id="register-confirm"
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none transition-all focus:border-[var(--accent-warm)] focus:ring-1 focus:ring-[var(--accent-warm)]/30"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
                 placeholder="••••••••"
               />
             </div>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[var(--accent-warm)] py-3 text-sm font-semibold text-black shadow-sm transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-xl bg-[var(--accent-warm)] py-3 text-sm font-semibold text-black shadow-glow transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
@@ -159,7 +182,7 @@ export default function RegisterPage() {
                 <UserPlus className="h-4 w-4" />
               )}
               {loading ? "Creating account..." : "Create Account"}
-            </button>
+            </motion.button>
           </form>
 
           <div className="my-6 flex items-center gap-4">
@@ -185,7 +208,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

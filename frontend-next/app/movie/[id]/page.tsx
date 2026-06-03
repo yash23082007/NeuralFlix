@@ -109,7 +109,10 @@ export default function MovieDetailPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-default)] border-t-[var(--accent-warm)]" />
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-2 border-[var(--border-default)]" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-[var(--accent-warm)] animate-spin" />
+          </div>
           <p className="text-sm text-[var(--text-tertiary)]">Loading film details...</p>
         </div>
       </div>
@@ -120,18 +123,24 @@ export default function MovieDetailPage() {
   if (!movie) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[var(--surface-primary)] px-6">
-        <Film className="h-14 w-14 text-[var(--text-tertiary)]" />
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">Film Not Found</h2>
-        <p className="max-w-md text-center text-sm text-[var(--text-secondary)]">
-          The requested film could not be found in our catalog. It may have been removed or the URL may be incorrect.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110"
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex flex-col items-center gap-4"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
+          <Film className="h-14 w-14 text-[var(--text-tertiary)]" />
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Film Not Found</h2>
+          <p className="max-w-md text-center text-sm text-[var(--text-secondary)]">
+            The requested film could not be found in our catalog.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </motion.div>
       </div>
     );
   }
@@ -148,7 +157,7 @@ export default function MovieDetailPage() {
             src={movie.backdrop_url}
             alt={movie.title}
             fill
-            className="object-cover opacity-35 brightness-75"
+            className="object-cover opacity-30 brightness-75"
             priority
           />
         ) : (
@@ -158,7 +167,12 @@ export default function MovieDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[var(--surface-primary)]/80 via-transparent to-transparent" />
 
         {/* Back Button */}
-        <div className="absolute left-5 sm:left-8 md:left-12 top-24 z-20">
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="absolute left-5 sm:left-8 md:left-12 top-24 z-20"
+        >
           <Link
             href="/"
             className="group inline-flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/50 px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] backdrop-blur-md transition-all hover:bg-[var(--surface-hover)]"
@@ -166,15 +180,15 @@ export default function MovieDetailPage() {
             <ChevronLeft className="h-4 w-4 text-[var(--accent-warm)] transition-transform group-hover:-translate-x-0.5" />
             Back
           </Link>
-        </div>
+        </motion.div>
       </div>
 
       {/* Content */}
       <div className="relative z-20 mx-auto max-w-7xl px-5 sm:px-8 md:px-12 -mt-56 md:-mt-72">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col lg:flex-row gap-10"
         >
           {/* Poster Column */}
@@ -200,48 +214,51 @@ export default function MovieDetailPage() {
             </motion.div>
 
             {/* Match Score */}
-            <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 text-center animate-pulse-glow"
+            >
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium mb-1">
                 ML Match Score
               </p>
               <p className="text-3xl font-bold text-[var(--accent-warm)]">{matchScore}%</p>
-            </div>
+            </motion.div>
 
             {/* Action Buttons */}
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setWatchlistActive(!watchlistActive)}
-                className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border py-3 text-xs transition-all active:scale-95 ${
-                  watchlistActive
-                    ? "border-[var(--accent-warm)]/30 bg-[var(--accent-warm)]/10 text-[var(--accent-warm)]"
-                    : "border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
-                }`}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Watchlist</span>
-              </button>
-              <button
-                onClick={() => setFavoriteActive(!favoriteActive)}
-                className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border py-3 text-xs transition-all active:scale-95 ${
-                  favoriteActive
-                    ? "border-[var(--accent-rose)]/30 bg-[var(--accent-rose)]/10 text-[var(--accent-rose)]"
-                    : "border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
-                }`}
-              >
-                <Heart className={`h-4 w-4 ${favoriteActive ? "fill-current" : ""}`} />
-                <span className="text-[10px] font-medium">Favorite</span>
-              </button>
-              <button className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] py-3 text-xs text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-hover)] active:scale-95">
-                <Share2 className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Share</span>
-              </button>
+              {[
+                { label: "Watchlist", icon: Plus, active: watchlistActive, toggle: () => setWatchlistActive(!watchlistActive), color: "accent-warm" },
+                { label: "Favorite", icon: Heart, active: favoriteActive, toggle: () => setFavoriteActive(!favoriteActive), color: "accent-rose" },
+                { label: "Share", icon: Share2, active: false, toggle: () => {}, color: "" },
+              ].map((action) => (
+                <motion.button
+                  key={action.label}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={action.toggle}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border py-3 text-xs transition-all ${
+                    action.active
+                      ? `border-[var(--${action.color})]/30 bg-[var(--${action.color})]/10 text-[var(--${action.color})]`
+                      : "border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                  }`}
+                >
+                  <action.icon className={`h-4 w-4 ${action.active && action.label === "Favorite" ? "fill-current" : ""}`} />
+                  <span className="text-[10px] font-medium">{action.label}</span>
+                </motion.button>
+              ))}
             </div>
           </div>
 
           {/* Details Column */}
           <div className="flex-1 pt-4 lg:pt-12">
             {/* Tags */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-wrap items-center gap-2 mb-4"
+            >
               {movie.language && (
                 <span className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
                   {langName}
@@ -252,7 +269,7 @@ export default function MovieDetailPage() {
                   TV Series
                 </span>
               )}
-            </div>
+            </motion.div>
 
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] leading-tight tracking-tight mb-3">
@@ -269,31 +286,46 @@ export default function MovieDetailPage() {
             {/* Meta Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
               {movie.year && (
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5 card-hover-lift"
+                >
                   <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">Year</span>
                   <div className="flex items-center gap-2 text-[var(--text-primary)] font-semibold mt-1">
                     <Calendar className="h-3.5 w-3.5 text-[var(--accent-warm)]" />
                     {movie.year}
                   </div>
-                </div>
+                </motion.div>
               )}
               {movie.runtime && (
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5 card-hover-lift"
+                >
                   <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">Runtime</span>
                   <div className="flex items-center gap-2 text-[var(--text-primary)] font-semibold mt-1">
                     <Clock className="h-3.5 w-3.5 text-[var(--accent-warm)]" />
                     {movie.runtime} min
                   </div>
-                </div>
+                </motion.div>
               )}
               {movie.director && (
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5 col-span-2 md:col-span-1">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5 col-span-2 md:col-span-1 card-hover-lift"
+                >
                   <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">Director</span>
                   <div className="flex items-center gap-2 text-[var(--text-primary)] font-semibold mt-1 truncate">
                     <Film className="h-3.5 w-3.5 text-[var(--accent-warm)] shrink-0" />
                     <span className="truncate">{movie.director}</span>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
 
@@ -301,12 +333,7 @@ export default function MovieDetailPage() {
             {movie.genres && movie.genres.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-8">
                 {movie.genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="genre-pill"
-                  >
-                    {genre}
-                  </span>
+                  <span key={genre} className="genre-pill">{genre}</span>
                 ))}
               </div>
             )}
@@ -340,7 +367,7 @@ export default function MovieDetailPage() {
                   {activeTab === tab.key && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute bottom-0 inset-x-0 h-[2px] bg-[var(--accent-warm)] rounded-full"
+                      className="absolute bottom-0 inset-x-0 h-[2px] bg-[var(--accent-warm)] rounded-full shadow-[0_0_8px_var(--accent-warm-glow)]"
                     />
                   )}
                 </button>
@@ -358,7 +385,6 @@ export default function MovieDetailPage() {
                   transition={{ duration: 0.25 }}
                   className="space-y-8"
                 >
-                  {/* Synopsis */}
                   <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6">
                     <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Synopsis</h3>
                     <p className="text-base leading-relaxed text-[var(--text-secondary)]">
@@ -366,7 +392,6 @@ export default function MovieDetailPage() {
                     </p>
                   </div>
 
-                  {/* Rating Bar */}
                   {movie.rating > 0 && (
                     <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6">
                       <div className="flex items-center justify-between mb-3">
@@ -386,14 +411,13 @@ export default function MovieDetailPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${(movie.rating / 10) * 100}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
+                          transition={{ duration: 1.2, ease: "easeOut" }}
                           className="h-full rounded-full bg-gradient-to-r from-[var(--accent-warm)] to-[var(--rating-gold)]"
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* Streaming */}
                   <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6">
                     <div className="flex items-center gap-2 mb-4">
                       <Tv className="h-4 w-4 text-[var(--accent-warm)]" />
@@ -422,7 +446,7 @@ export default function MovieDetailPage() {
                       key={member.name}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0, transition: { delay: i * 0.04 } }}
-                      className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 hover:border-[var(--border-accent)] transition-all"
+                      className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 hover:border-[var(--border-accent)] transition-all card-hover-lift"
                     >
                       {member.profile_url ? (
                         <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-[var(--border-subtle)] flex-shrink-0">
