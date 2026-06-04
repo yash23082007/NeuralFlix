@@ -7,8 +7,14 @@
 [![Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant-FF007F?style=for-the-badge&logo=qdrant&logoColor=white)](https://qdrant.tech/)
 [![Redis](https://img.shields.io/badge/Cache-Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![MongoDB](https://img.shields.io/badge/Metadata-MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Docker](https://img.shields.io/badge/Infrastructure-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+---
+
+## 🌐 Live Demo
+* **Frontend (Vercel):** [https://neural-flix.vercel.app/](https://neural-flix.vercel.app/)
+* **Backend API (Render):** [https://neuralflix.onrender.com](https://neuralflix.onrender.com)
+
+> **Note on Performance:** This application is currently deployed on Free Tier services (Vercel & Render). The machine learning recommendation engine has been highly optimized to run within a 512MB RAM constraint, computing similarity matrices entirely on-the-fly and limiting the active catalog to the top **10,000 global movies**.
 
 ---
 
