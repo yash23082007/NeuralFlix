@@ -864,7 +864,14 @@ async def auto_seed_if_empty():
 async def init_db():
     init_engines()
     from db.models import Base
+    from sqlalchemy import text
     async with async_engine.begin() as conn:
+        # Patch: fix missing 'id' column caused by pandas.to_sql(if_exists='replace')
+        try:
+            await conn.execute(text("ALTER TABLE movies ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;"))
+        except Exception as e:
+            logger.warning(f"Failed to patch movies table: {e}")
+            
         await conn.run_sync(Base.metadata.create_all)
     logger.info("SQL database tables initialized.")
     await auto_seed_if_empty()
