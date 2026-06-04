@@ -260,3 +260,41 @@ async def github_login(request: Request, response: Response, body: GithubLoginSc
             "is_admin": user.get("is_admin", False)
         }
     }
+
+
+@router.post("/refresh")
+async def refresh_token(request: Request):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    try:
+        payload = jwt.decode(refresh_token, JWT_SECRET, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user_id = payload.get("sub")
+        
+        user = await users_collection.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+            
+        new_access = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
+        return {"access_token": new_access, "token_type": "bearer"}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+
+@router.get("/me")
+async def get_current_user(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth_header[7:]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        user = await users_collection.find_one({"id": user_id}, {"hashed_password": 0, "_id": 0})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")

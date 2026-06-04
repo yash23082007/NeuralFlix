@@ -26,7 +26,7 @@ def cache_response(expire: int = 600):
                 return await func(*args, **kwargs)
 
             # Generate cache key based on URL and query params
-            cache_key = f"cache:{request.url.path}:{str(request.query_params)}"
+            cache_key = f"route:{request.url.path}:{request.url.query}"
             
             try:
                 cached_data = await cache.get(cache_key)

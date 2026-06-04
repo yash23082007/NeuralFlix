@@ -321,6 +321,12 @@ def build_sqlalchemy_filters(model, mongo_query):
         sql_key = key
         if key in ("_id", "id"):
             sql_key = "id"
+        elif key == "rating" and hasattr(model, "tmdb_rating"):
+            sql_key = "tmdb_rating"
+        elif key == "votes" and hasattr(model, "tmdb_votes"):
+            sql_key = "tmdb_votes"
+        elif key == "cast" and hasattr(model, "cast_members"):
+            sql_key = "cast_members"
 
         if not hasattr(model, sql_key):
             if sql_key == "id" and hasattr(model, "tmdb_id"):
@@ -507,6 +513,13 @@ class SQLCollectionAdapter:
                 if sort_key:
                     if sort_key == "_id":
                         sort_key = "id"
+                    elif sort_key == "rating" and hasattr(self.model_class, "tmdb_rating"):
+                        sort_key = "tmdb_rating"
+                    elif sort_key == "votes" and hasattr(self.model_class, "tmdb_votes"):
+                        sort_key = "tmdb_votes"
+                    elif sort_key == "cast" and hasattr(self.model_class, "cast_members"):
+                        sort_key = "cast_members"
+
                     if hasattr(self.model_class, sort_key):
                         col = getattr(self.model_class, sort_key)
                         stmt = stmt.order_by(desc(col) if sort_direction < 0 else asc(col))
@@ -515,6 +528,8 @@ class SQLCollectionAdapter:
                     stmt = stmt.offset(skip)
                 if limit:
                     stmt = stmt.limit(limit)
+                else:
+                    stmt = stmt.limit(1000)
 
                 result = await session.execute(stmt)
                 objs = result.scalars().all()

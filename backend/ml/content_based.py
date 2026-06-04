@@ -118,3 +118,48 @@ class ContentBasedEngine:
         return results
 
 content_engine = ContentBasedEngine()
+
+async def auto_build_if_missing():
+    """Build content index from database if pickle doesn't exist."""
+    if os.path.exists(CONTENT_MATRIX_PATH):
+        return
+    
+    logger.info("Content index missing — building from database...")
+    from database import async_session_factory
+    from db.models import Movie
+    from sqlalchemy import select
+    
+    try:
+        async with async_session_factory() as session:
+            stmt = select(
+                Movie.tmdb_id, 
+                Movie.title, 
+                Movie.overview, 
+                Movie.genres, 
+                Movie.director, 
+                Movie.cast_members, 
+                Movie.tagline
+            )\
+                .where(Movie.overview != None, Movie.overview != "")\
+                .order_by(Movie.popularity_score.desc())\
+                .limit(200000)
+                
+            result = await session.execute(stmt)
+            movies = []
+            for row in result.all():
+                movies.append({
+                    "tmdb_id": row[0],
+                    "title": row[1],
+                    "overview": row[2],
+                    "genres": row[3] or [],
+                    "director": row[4] or "",
+                    "cast": row[5] or [],
+                    "tagline": row[6] or ""
+                })
+                
+        if movies:
+            import asyncio
+            await asyncio.to_thread(content_engine.build_index, movies)
+            logger.info(f"Content index built for {len(movies)} movies")
+    except Exception as e:
+        logger.error(f"Failed to auto-build content index: {e}")

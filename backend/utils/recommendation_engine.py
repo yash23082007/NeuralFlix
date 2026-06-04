@@ -78,6 +78,24 @@ async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dic
     return await asyncio.to_thread(_fetch_neural)
 
 
+import time
+
+_SVD_MODEL = None
+_SVD_TRAINED_AT = 0
+SVD_TTL = 3600  # Retrain hourly
+
+def _get_svd_model(df):
+    global _SVD_MODEL, _SVD_TRAINED_AT
+    now = time.time()
+    if _SVD_MODEL is None or (now - _SVD_TRAINED_AT) > SVD_TTL:
+        from surprise import Dataset, Reader, SVD
+        reader = Reader(rating_scale=(1.0, 5.0))
+        data = Dataset.load_from_df(df[['user', 'item', 'rating']], reader)
+        _SVD_MODEL = SVD(n_factors=100, n_epochs=20)
+        _SVD_MODEL.fit(data.build_full_trainset())
+        _SVD_TRAINED_AT = now
+    return _SVD_MODEL
+
 async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> List[dict]:
     # 1. Fetch from MongoDB watch history asynchronously (optimized query sizing)
     user_history = await watch_history_collection.find(
@@ -126,12 +144,8 @@ async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> Li
 
         recommended_ids = []
         try:
-            from surprise import Dataset, Reader, SVD
             if len(df) > 10:
-                reader = Reader(rating_scale=(1.0, 5.0))
-                data = Dataset.load_from_df(df[['user', 'item', 'rating']], reader)
-                algo = SVD()
-                algo.fit(data.build_full_trainset())
+                algo = _get_svd_model(df)
                 all_items = df['item'].unique()
                 preds = [(item, algo.predict(user_id, item).est) for item in all_items if item not in watched_by_user]
                 preds.sort(key=lambda x: x[1], reverse=True)

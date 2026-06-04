@@ -21,6 +21,24 @@ interface TasteDNAProps {
 export default function TasteDNA({ profile, loading }: TasteDNAProps) {
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
 
+  const normalizeProfile = (raw: any): TasteProfile => {
+    const toTuples = (obj: any): [string, number][] => {
+      if (!obj) return [];
+      if (Array.isArray(obj)) return obj;
+      return Object.entries(obj).sort(([, a], [, b]) => (b as number) - (a as number)) as [string, number][];
+    };
+    return {
+      top_genres: toTuples(raw?.top_genres),
+      preferred_decades: toTuples(raw?.preferred_decades),
+      top_directors: toTuples(raw?.top_directors),
+      language_preferences: toTuples(raw?.language_preferences),
+      avg_runtime_preference: raw?.avg_runtime_preference,
+      rating_threshold: raw?.rating_threshold,
+    };
+  };
+
+  const normalizedProfile = profile ? normalizeProfile(profile) : null;
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-80 gap-4 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 backdrop-blur-sm relative overflow-hidden">
@@ -41,7 +59,7 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
     );
   }
 
-  if (!profile?.top_genres?.length) {
+  if (!normalizedProfile?.top_genres?.length) {
     return (
       <div className="flex flex-col items-center justify-center h-72 text-center border border-[var(--border-subtle)] rounded-3xl p-8 bg-[var(--surface-elevated)]/20 backdrop-blur-sm">
         <Compass className="h-12 w-12 text-[var(--text-tertiary)] mb-4 opacity-50 animate-bounce" />
@@ -55,7 +73,7 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
     );
   }
 
-  const genres = profile.top_genres.slice(0, 8);
+  const genres = normalizedProfile.top_genres.slice(0, 8);
   const n = genres.length;
   const maxCount = genres[0]?.[1] || 1;
 
@@ -265,37 +283,37 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
         {/* Monospace telemetry badges row */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-[var(--border-subtle)] pt-4">
           {/* Average Runtime */}
-          {profile.avg_runtime_preference && (
+          {normalizedProfile.avg_runtime_preference && (
             <div className="bg-[var(--surface-overlay)]/40 border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col gap-1">
               <span className="text-[8px] font-semibold uppercase text-[var(--text-tertiary)] tracking-wider flex items-center gap-1 font-sans">
                 <Hourglass className="h-2.5 w-2.5" /> RUNTIME PREF
               </span>
               <span className="text-xs font-bold text-[var(--text-primary)] mt-1 font-sans">
-                {profile.avg_runtime_preference} MIN
+                {normalizedProfile.avg_runtime_preference} MIN
               </span>
             </div>
           )}
 
           {/* Decades */}
-          {profile.preferred_decades && profile.preferred_decades.length > 0 && (
+          {normalizedProfile.preferred_decades && normalizedProfile.preferred_decades.length > 0 && (
             <div className="bg-[var(--surface-overlay)]/40 border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col gap-1">
               <span className="text-[8px] font-semibold uppercase text-[var(--text-tertiary)] tracking-wider flex items-center gap-1 font-sans">
                 <Calendar className="h-2.5 w-2.5" /> DOMINANT ERAS
               </span>
               <span className="text-xs font-bold text-[var(--text-primary)] mt-1 truncate font-sans">
-                {profile.preferred_decades.map(([d]) => `${d}s`).slice(0, 2).join(" / ")}
+                {normalizedProfile.preferred_decades.map(([d]) => `${d}s`).slice(0, 2).join(" / ")}
               </span>
             </div>
           )}
 
           {/* Directors */}
-          {profile.top_directors && profile.top_directors.length > 0 && (
+          {normalizedProfile.top_directors && normalizedProfile.top_directors.length > 0 && (
             <div className="bg-[var(--surface-overlay)]/40 border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col gap-1 col-span-2 sm:col-span-1">
               <span className="text-[8px] font-semibold uppercase text-[var(--text-tertiary)] tracking-wider flex items-center gap-1 font-sans">
                 <Award className="h-2.5 w-2.5" /> FAV AUTEURS
               </span>
               <span className="text-xs font-bold text-[var(--text-primary)] mt-1 truncate font-sans">
-                {profile.top_directors[0][0]}
+                {normalizedProfile.top_directors[0][0]}
               </span>
             </div>
           )}

@@ -62,10 +62,98 @@ async def _fetch_movies_from_db(tmdb_ids: List[int]) -> List[dict]:
     return await cursor.to_list(length=None)
 
 
+async def _get_candidate_pool(user_id: str, user_history: list, limit: int = 5000) -> list:
+    """
+    Stratified candidate sampling:
+    - 40% popularity-weighted (top films the user hasn't seen)
+    - 30% genre-matched to user taste
+    - 20% recent releases (last 2 years)
+    - 10% random exploration
+    """
+    from database import async_session_factory
+    from db.models import Movie, User
+    from sqlalchemy import select, func, or_, String
+    
+    watched_tmdb_ids = set(user_history)
+    
+    try:
+        async with async_session_factory() as session:
+            # Get user's preferred genres if any
+            pref_genres = []
+            user_stmt = select(User.pref_genres).where(User.id == f"usr{user_id}")
+            user_res = await session.execute(user_stmt)
+            pref_genres = user_res.scalar() or []
+            if not pref_genres:
+                user_stmt2 = select(User.pref_genres).where(User.id == str(user_id))
+                user_res2 = await session.execute(user_stmt2)
+                pref_genres = user_res2.scalar() or []
+            
+            # 1. Tier 1: Popular unwatched (40%)
+            t1_limit = int(limit * 0.4)
+            t1_stmt = select(Movie.tmdb_id).where(Movie.tmdb_id.notin_(watched_tmdb_ids) if watched_tmdb_ids else True)\
+                .order_by(Movie.popularity_score.desc()).limit(t1_limit)
+            t1_res = await session.execute(t1_stmt)
+            popular_ids = [r[0] for r in t1_res.all() if r[0] is not None]
+            
+            # 2. Tier 2: Genre-matched (30%)
+            t2_limit = int(limit * 0.3)
+            genre_ids = []
+            if pref_genres:
+                conditions = []
+                for genre in pref_genres:
+                    conditions.append(Movie.genres.cast(String).ilike(f"%{genre}%"))
+                if conditions:
+                    t2_stmt = select(Movie.tmdb_id).where(
+                        Movie.tmdb_id.notin_(watched_tmdb_ids) if watched_tmdb_ids else True,
+                        or_(*conditions)
+                    ).order_by(Movie.popularity_score.desc()).limit(t2_limit)
+                    t2_res = await session.execute(t2_stmt)
+                    genre_ids = [r[0] for r in t2_res.all() if r[0] is not None]
+            
+            # 3. Tier 3: Recent releases (20%)
+            import datetime
+            current_year = datetime.datetime.now().year
+            cutoff_date = f"{current_year - 2}-01-01"
+            t3_limit = int(limit * 0.2)
+            t3_stmt = select(Movie.tmdb_id).where(
+                Movie.tmdb_id.notin_(watched_tmdb_ids) if watched_tmdb_ids else True,
+                Movie.release_date >= cutoff_date
+            ).order_by(Movie.popularity_score.desc()).limit(t3_limit)
+            t3_res = await session.execute(t3_stmt)
+            recent_ids = [r[0] for r in t3_res.all() if r[0] is not None]
+            
+            # 4. Tier 4: Random exploration (10%)
+            t4_limit = int(limit * 0.1)
+            t4_stmt = select(Movie.tmdb_id).where(
+                Movie.tmdb_id.notin_(watched_tmdb_ids) if watched_tmdb_ids else True
+            ).order_by(func.random()).limit(t4_limit)
+            t4_res = await session.execute(t4_stmt)
+            random_ids = [r[0] for r in t4_res.all() if r[0] is not None]
+            
+            # Combine all and deduplicate while preserving order (popular first)
+            seen = set()
+            candidates = []
+            for cid in (popular_ids + genre_ids + recent_ids + random_ids):
+                if cid not in seen:
+                    seen.add(cid)
+                    candidates.append(cid)
+                    
+            return candidates[:limit]
+    except Exception as exc:
+        logger.error(f"Error in stratified candidate sampling: {exc}")
+        # Fallback to simple query
+        from database import movies_collection
+        try:
+            cursor = movies_collection.find({}, {"tmdb_id": 1, "_id": 0}).limit(limit)
+            candidate_docs = await cursor.to_list(length=None)
+            return [m.get("tmdb_id") for m in candidate_docs if m.get("tmdb_id") is not None]
+        except Exception:
+            return []
+
 @router.get("/user/{user_id}")
 async def get_user_recommendations(
     request: Request,
-    user_id: int = Path(..., ge=1, le=100000),
+    user_id: str = Path(...),
     top_k: int = Query(20, ge=1, le=50),
 ):
     """
@@ -84,20 +172,31 @@ async def get_user_recommendations(
         except Exception:
             pass
 
-    # 2. Get user watch history from database asynchronously
+    # 2. Get user watch history from database asynchronously (mapping back to tmdb_ids)
     user_history = []
     try:
-        from database import watch_history_collection
-        history_docs = await watch_history_collection.find({"user_id": str(user_id)}).to_list(length=None)
-        # Clamp context window to the last 50 items for sequential models
-        user_history = [doc.get("movie_id") for doc in history_docs if doc.get("movie_id")][-50:]
-    except Exception:
-        pass
+        from database import async_session_factory
+        from db.models import WatchEvent, Movie
+        from sqlalchemy import select
+        async with async_session_factory() as session:
+            stmt = select(Movie.tmdb_id).join(WatchEvent, WatchEvent.movie_id == Movie.id)\
+                .where(WatchEvent.user_id == str(user_id))\
+                .order_by(WatchEvent.timestamp.asc())\
+                .limit(50)
+            res = await session.execute(stmt)
+            user_history = [r[0] for r in res.all() if r[0] is not None]
+    except Exception as e:
+        logger.error(f"Error fetching user watch history: {e}")
 
     # 3. Safe User ID clamping
-    safe_user_id = user_id
+    safe_user_id = 0
     if ncf_model and hasattr(ncf_model, "user_gmf_emb"):
-        safe_user_id = min(user_id, ncf_model.user_gmf_emb.num_embeddings - 1)
+        import hashlib
+        if user_id.isdigit():
+            safe_user_id = min(int(user_id), ncf_model.user_gmf_emb.num_embeddings - 1)
+        else:
+            h = hashlib.sha256(user_id.encode("utf-8")).hexdigest()
+            safe_user_id = int(h, 16) % ncf_model.user_gmf_emb.num_embeddings
 
     # 4. Candidate Pool retrieval (cached for 60s to prevent serial DB hits)
     all_candidates = []
@@ -111,15 +210,12 @@ async def get_user_recommendations(
             pass
 
     if not all_candidates:
-        try:
-            from database import movies_collection
-            cursor = movies_collection.find({}, {"tmdb_id": 1, "_id": 0}).limit(150)
-            candidate_docs = await cursor.to_list(length=None)
-            all_candidates = [m.get("tmdb_id") for m in candidate_docs if m.get("tmdb_id") is not None]
-            if cache and all_candidates:
+        all_candidates = await _get_candidate_pool(user_id, user_history, limit=5000)
+        if cache and all_candidates:
+            try:
                 await cache.setex(candidates_cache_key, 60, json.dumps(all_candidates))
-        except Exception:
-            pass
+            except Exception:
+                pass
 
     # 5. Generate recommendations
     rec_pairs = []

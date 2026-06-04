@@ -33,8 +33,9 @@ async def lifespan(app: FastAPI):
         log.warning("failed_to_initialize_db_indexes", error=str(e))
         
     # 3. Load ContentBasedEngine TF-IDF matrix
-    from ml.content_based import content_engine
+    from ml.content_based import content_engine, auto_build_if_missing
     try:
+        await auto_build_if_missing()
         await asyncio.to_thread(content_engine.load)
         log.info("Content similarity index loaded")
     except Exception as e:

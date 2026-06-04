@@ -1,9 +1,14 @@
 import numpy as np
 from sklearn.cluster import KMeans
-from sentence_transformers import SentenceTransformer
 
-# Re-use the model from content engine or initialize a small fast one
-model = SentenceTransformer('all-MiniLM-L6-v2')
+_model = None
+
+def _get_model():
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _model
 
 def ensure_diversity(recommendations: list, n_clusters: int = 5) -> list:
     """
@@ -19,7 +24,7 @@ def ensure_diversity(recommendations: list, n_clusters: int = 5) -> list:
         for m in recommendations
     ]
     
-    embeddings = model.encode(texts)
+    embeddings = _get_model().encode(texts)
     
     # Cluster the recommendations into diverse groups
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)

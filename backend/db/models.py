@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey, Index
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -32,6 +32,11 @@ class User(Base):
 
 class Movie(Base):
     __tablename__ = "movies"
+    __table_args__ = (
+        Index("idx_movie_popularity", "popularity_score"),
+        Index("idx_movie_lang_popularity", "language", "popularity_score"),
+        Index("idx_movie_region_popularity", "cinema_region", "popularity_score"),
+    )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     tmdb_id = Column(Integer, unique=True, index=True, nullable=False)

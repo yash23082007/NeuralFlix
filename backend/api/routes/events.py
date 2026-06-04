@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
@@ -11,17 +12,31 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 class WatchEvent(BaseModel):
     user_id: str
-    movie_id: str
+    movie_id: Optional[str] = None
+    item_id: Optional[str] = None
     media_type: str = "movie"
     watch_duration: int = 0
     completed: bool = False
 
+    def model_post_init(self, __context):
+        if not self.movie_id and self.item_id:
+            self.movie_id = self.item_id
+        elif not self.item_id and self.movie_id:
+            self.item_id = self.movie_id
+
 
 class RateEvent(BaseModel):
     user_id: str
-    movie_id: str
+    movie_id: Optional[str] = None
+    item_id: Optional[str] = None
     rating: float
     media_type: str = "movie"
+
+    def model_post_init(self, __context):
+        if not self.movie_id and self.item_id:
+            self.movie_id = self.item_id
+        elif not self.item_id and self.movie_id:
+            self.item_id = self.movie_id
 
 
 class SearchEvent(BaseModel):
@@ -32,8 +47,15 @@ class SearchEvent(BaseModel):
 
 class ClickEvent(BaseModel):
     user_id: str
-    movie_id: str
+    movie_id: Optional[str] = None
+    item_id: Optional[str] = None
     source: str = "recommendation"
+
+    def model_post_init(self, __context):
+        if not self.movie_id and self.item_id:
+            self.movie_id = self.item_id
+        elif not self.item_id and self.movie_id:
+            self.item_id = self.movie_id
 
 
 def _log_event(event_type: str, data: dict):

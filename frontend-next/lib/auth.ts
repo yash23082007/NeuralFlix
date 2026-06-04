@@ -57,13 +57,17 @@ export function getUser(): AuthUser | null {
   }
 }
 
+import { useUserStore } from "../store/userStore";
+
 export function setUser(user: AuthUser): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  useUserStore.getState().setUserId(user.id);
 }
 
 export function logout(): void {
   clearToken();
+  useUserStore.getState().clearUserId();
   if (typeof window !== "undefined") {
     window.location.href = "/";
   }

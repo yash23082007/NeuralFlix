@@ -9,12 +9,24 @@ ncf_model: Optional[NCFModel] = None
 sasrec_model: Optional[SASRec] = None
 gnn_model = None
 
+import os
+import logging
+
+logger = logging.getLogger("HYBRID_RECOMMENDER")
+
+NUM_USERS = int(os.getenv("NCF_NUM_USERS", "100000"))
+NUM_ITEMS = int(os.getenv("NCF_NUM_ITEMS", "750000"))
+
 try:
-    # Reduced size for development environment
-    ncf_model = NCFModel(num_users=1000, num_items=5000)
-    sasrec_model = SASRec(num_items=5000)
-except Exception:
-    pass
+    ncf_model = NCFModel(
+        num_users=NUM_USERS,
+        num_items=NUM_ITEMS,
+        embedding_dim=64,
+        layers=[256, 128, 64]
+    )
+    sasrec_model = SASRec(num_items=NUM_ITEMS, max_seq_len=100)
+except Exception as e:
+    logger.warning(f"ML models failed to initialize: {e}")
 
 class HybridRecommender:
     def __init__(self, content_engine: ContentBasedEngine, ncf_model: NCFModel, seq_model: SASRec, gnn_model=None):
