@@ -120,43 +120,33 @@ class ContentBasedEngine:
 content_engine = ContentBasedEngine()
 
 async def auto_build_if_missing():
-    """Build content index from database if pickle doesn't exist."""
+    """Build TF-IDF content index from database if pickle doesn't exist."""
+    if content_engine._loaded:
+        return
     if os.path.exists(CONTENT_MATRIX_PATH):
+        import asyncio
+        await asyncio.to_thread(content_engine.load)
         return
     
     logger.info("Content index missing — building from database...")
-    from database import async_session_factory
-    from db.models import Movie
-    from sqlalchemy import select
+    from database import movies_collection
     
     try:
-        async with async_session_factory() as session:
-            stmt = select(
-                Movie.tmdb_id, 
-                Movie.title, 
-                Movie.overview, 
-                Movie.genres, 
-                Movie.director, 
-                Movie.cast_members, 
-                Movie.tagline
-            )\
-                .where(Movie.overview != None, Movie.overview != "")\
-                .order_by(Movie.popularity_score.desc())\
-                .limit(200000)
-                
-            result = await session.execute(stmt)
-            movies = []
-            for row in result.all():
-                movies.append({
-                    "tmdb_id": row[0],
-                    "title": row[1],
-                    "overview": row[2],
-                    "genres": row[3] or [],
-                    "director": row[4] or "",
-                    "cast": row[5] or [],
-                    "tagline": row[6] or ""
-                })
-                
+        movies = []
+        cursor = movies_collection.find({"overview": {"$ne": ""}})
+        cursor.sort("popularity_score", -1).limit(300000)
+        
+        async for doc in cursor:
+            movies.append({
+                "tmdb_id": doc.get("tmdb_id"),
+                "title": doc.get("title"),
+                "overview": doc.get("overview", ""),
+                "genres": doc.get("genres") or [],
+                "director": doc.get("director", ""),
+                "cast": doc.get("cast") or [],
+                "tagline": doc.get("tagline", "")
+            })
+            
         if movies:
             import asyncio
             await asyncio.to_thread(content_engine.build_index, movies)

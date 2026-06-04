@@ -298,3 +298,29 @@ async def get_current_user(request: Request):
         return user
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out"}
+
+
+@router.put("/me")
+async def update_profile(request: Request, body: dict):
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth_header[7:]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        
+        allowed_keys = {"name", "avatar_url", "preferred_language", "region"}
+        updates = {k: v for k, v in body.items() if k in allowed_keys}
+        if updates:
+            await users_collection.update_one({"id": user_id}, {"$set": updates})
+            
+        return {"message": "Profile updated"}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token or update failed")

@@ -150,17 +150,66 @@ async def _get_candidate_pool(user_id: str, user_history: list, limit: int = 500
         except Exception:
             return []
 
+def _build_explanation(movie: dict, user_history: list, profile: dict) -> str:
+    """Generate a human-readable explanation for why this movie was recommended."""
+    if not user_history:
+        return "New release you might enjoy"
+        
+    genres = set(movie.get("genres", []))
+    top_genres_field = profile.get("top_genres", {})
+    if isinstance(top_genres_field, dict):
+        user_top_genres = set(top_genres_field.keys())
+    elif isinstance(top_genres_field, list):
+        user_top_genres = set()
+        for item in top_genres_field:
+            if isinstance(item, (tuple, list)):
+                if len(item) > 0:
+                    user_top_genres.add(item[0])
+            elif isinstance(item, str):
+                user_top_genres.add(item)
+    else:
+        user_top_genres = set()
+        
+    matching_genres = genres & user_top_genres
+    
+    top_directors = profile.get("top_directors", {})
+    if isinstance(top_directors, list):
+        top_directors_set = set(top_directors)
+    elif isinstance(top_directors, dict):
+        top_directors_set = set(top_directors.keys())
+    else:
+        top_directors_set = set()
+        
+    if movie.get("director") in top_directors_set:
+        return f"You enjoy films by {movie['director']}"
+        
+    if matching_genres:
+        return f"Matches your {', '.join(list(matching_genres)[:2])} preference"
+        
+    if movie.get("language"):
+        lang_prefs = str(profile.get("language_preferences", ""))
+        if movie["language"] in lang_prefs:
+            return f"More {movie['language'].upper()} cinema"
+            
+    return "Popular with similar taste profiles"
+
+
 @router.get("/user/{user_id}")
 async def get_user_recommendations(
     request: Request,
     user_id: str = Path(...),
     top_k: int = Query(20, ge=1, le=50),
+    genres: Optional[str] = Query(None),
+    mood: Optional[str] = Query(None),
+    sort: Optional[str] = Query("score"),
+    language: Optional[str] = Query(None)
 ):
     """
     Get personalized recommendations using the Hybrid ML model.
     Checks Redis cache first before running the deep learning pipeline.
     """
-    cache_key = f"recs:{user_id}:{top_k}"
+    has_active_filters = bool(genres or mood or language or sort != "score")
+    cache_key = f"recs:{user_id}:{top_k}:{genres}:{mood}:{language}:{sort}"
     cache = getattr(request.app.state, "redis", None)
 
     # 1. Check Cache
@@ -325,13 +374,58 @@ async def get_user_recommendations(
     except Exception as e:
         logger.warning(f"Skipping bandit pipeline: {e}")
 
+    # Build User Taste Profile for explanations
+    taste_profile = {}
+    if not is_cold_start and user_history:
+        try:
+            from ml.taste_profile import build_taste_profile
+            history_movies = await _fetch_movies_from_db(user_history)
+            taste_profile = build_taste_profile([{
+                "title": m.get("title"),
+                "genres": m.get("genres"),
+                "release_year": m.get("year"),
+                "language": m.get("language"),
+                "rating": m.get("rating"),
+                "director": m.get("director")
+            } for m in history_movies])
+        except Exception as exc:
+            logger.warning(f"Failed to build taste profile: {exc}")
+
     # Final map output format
     final_recs = []
     for m in movies:
         rec = dict(m)
         rec["score"] = m.get("score") or m.get("rec_score") or 0.5
         rec["sources"] = []
+        rec["explanation"] = _build_explanation(rec, user_history, taste_profile)
         final_recs.append(rec)
+
+    # Apply filters dynamically
+    if genres:
+        genre_list = [g.strip().lower() for g in genres.split(",")]
+        final_recs = [r for r in final_recs if any(g.lower() in genre_list for g in r.get("genres", []))]
+        
+    if language:
+        final_recs = [r for r in final_recs if r.get("language") == language]
+        
+    if mood:
+        mood_genres = {
+            "chill": ["comedy", "romance", "family"],
+            "intense": ["thriller", "horror", "mystery", "crime"],
+            "thoughtful": ["drama", "documentary", "history"],
+            "exciting": ["action", "adventure", "science fiction", "sci-fi"],
+            "romantic": ["romance", "drama"],
+            "scary": ["horror", "thriller"]
+        }.get(mood.lower(), [])
+        if mood_genres:
+            final_recs = [r for r in final_recs if any(g.lower() in mood_genres for g in r.get("genres", []))]
+            
+    if sort == "popularity":
+        final_recs.sort(key=lambda x: x.get("popularity_score", 0.0), reverse=True)
+    elif sort == "year":
+        final_recs.sort(key=lambda x: x.get("year", 0) or 0, reverse=True)
+    else:
+        final_recs.sort(key=lambda x: x.get("score", 0.0), reverse=True)
 
     # 8. Set Cache (10 mins TTL)
     if cache and final_recs:

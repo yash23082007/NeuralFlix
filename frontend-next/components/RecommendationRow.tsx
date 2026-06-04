@@ -2,7 +2,9 @@
 
 import { useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import MovieCard3D from './three/MovieCard3D'
+import dynamic from 'next/dynamic'
+
+const MovieCard3D = dynamic(() => import('./three/MovieCard3D'), { ssr: false })
 
 interface Movie {
   tmdb_id: number

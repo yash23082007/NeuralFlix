@@ -33,15 +33,18 @@ class User(Base):
 class Movie(Base):
     __tablename__ = "movies"
     __table_args__ = (
-        Index("idx_movie_popularity", "popularity_score"),
-        Index("idx_movie_lang_popularity", "language", "popularity_score"),
-        Index("idx_movie_region_popularity", "cinema_region", "popularity_score"),
+        Index("idx_popularity_desc", "popularity_score"),
+        Index("idx_language_popularity", "language", "popularity_score"),
+        Index("idx_region_popularity", "cinema_region", "popularity_score"),
+        Index("idx_year_popularity", "year", "popularity_score"),
+        Index("idx_rating_desc", "tmdb_rating"),
     )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     tmdb_id = Column(Integer, unique=True, index=True, nullable=False)
     imdb_id = Column(String(50), unique=True, index=True)
     movielens_id = Column(Integer, unique=True, index=True)
+    year = Column(Integer, index=True)
 
     title = Column(String(500), index=True, nullable=False)
     overview = Column(Text)
@@ -96,7 +99,7 @@ class Rating(Base):
     user_id = Column(String(100), ForeignKey("users.id"), index=True)
     movie_id = Column(Integer, ForeignKey("movies.id"), index=True)
     rating = Column(Float, nullable=False)
-    timestamp = Column(Integer, default=lambda: int(datetime.utcnow().timestamp()))
+    timestamp = Column(Integer, default=lambda: int(datetime.utcnow().timestamp()), index=True)
 
     user = relationship("User", back_populates="ratings")
     movie = relationship("Movie", back_populates="ratings")
@@ -110,6 +113,6 @@ class WatchEvent(Base):
     movie_id = Column(Integer, ForeignKey("movies.id"), index=True, nullable=False)
     watch_time = Column(Integer, default=0)
     completed = Column(Boolean, default=False)
-    timestamp = Column(Integer, default=lambda: int(datetime.utcnow().timestamp()))
+    timestamp = Column(Integer, default=lambda: int(datetime.utcnow().timestamp()), index=True)
 
     user = relationship("User", back_populates="watch_events")

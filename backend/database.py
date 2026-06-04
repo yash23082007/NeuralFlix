@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, select, func, or_, and_, desc, asc, String
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import sessionmaker as sync_sessionmaker
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import text
 
 from db.models import Movie, User, WatchEvent, Rating
@@ -440,11 +441,29 @@ class SQLCollectionAdapter:
             d["votes"] = d["tmdb_votes"]
         if "cast_members" in d and d["cast_members"] is not None:
             d["cast"] = d["cast_members"]
+        # Merge preferences_json keys to the root dict for User objects
+        if self.model_class.__name__ == "User":
+            prefs = d.get("preferences_json")
+            if isinstance(prefs, dict):
+                for k, v in prefs.items():
+                    d[k] = v
         return d
 
     def _deserialize_to_model(self, doc):
         data = {}
+        col_names = {col.name for col in self.model_class.__table__.columns}
+        
+        # Gather non-column keys for User objects to store in preferences_json
+        if self.model_class.__name__ == "User":
+            prefs = dict(doc.get("preferences_json") or {})
+            for k, v in doc.items():
+                if k not in col_names and k != "_id" and not k.startswith("$"):
+                    prefs[k] = v
+            data["preferences_json"] = prefs
+
         for col in self.model_class.__table__.columns:
+            if col.name == "preferences_json" and self.model_class.__name__ == "User":
+                continue
             val = None
             col_type_name = str(col.type).lower()
             
@@ -489,6 +508,10 @@ class SQLCollectionAdapter:
                 data["hashed_password"] = "no-password-seeded"
 
         return self.model_class(**data)
+
+    async def create_index(self, keys, name=None, unique=False, sparse=False, weights=None):
+        logger.info(f"create_index stub called on {self.model_class.__name__} for index name: {name}")
+        return None
 
     async def find_one(self, query=None, projection=None):
         init_engines()
@@ -581,9 +604,22 @@ class SQLCollectionAdapter:
             result = await session.execute(stmt)
             obj = result.scalars().first()
 
-            set_fields = update.get("$set", {}) if isinstance(update, dict) else update
+            set_fields = {}
+            add_to_set_fields = {}
+            pull_fields = {}
+
+            if isinstance(update, dict):
+                set_fields = update.get("$set", {})
+                add_to_set_fields = update.get("$addToSet", {})
+                pull_fields = update.get("$pull", {})
+                # If there are no operator keys at all, treat the whole dictionary as set fields
+                if not any(k.startswith("$") for k in update.keys()):
+                    set_fields = update
+            else:
+                set_fields = update
 
             if obj:
+                # 1. Handle standard $set / set fields
                 for k, v in set_fields.items():
                     sql_k = k
                     if k in ("_id", "id"):
@@ -617,6 +653,48 @@ class SQLCollectionAdapter:
                         if sql_k == "id" and getattr(obj, "id") == v:
                             continue
                         setattr(obj, sql_k, v)
+                    elif self.model_class.__name__ == "User":
+                        if obj.preferences_json is None:
+                            obj.preferences_json = {}
+                        if "." in k:
+                            parts = k.split(".")
+                            current = obj.preferences_json
+                            for part in parts[:-1]:
+                                if part not in current or not isinstance(current[part], dict):
+                                    current[part] = {}
+                                current = current[part]
+                            current[parts[-1]] = v
+                        else:
+                            obj.preferences_json[k] = v
+                        flag_modified(obj, "preferences_json")
+
+                # 2. Handle $addToSet
+                for k, v in add_to_set_fields.items():
+                    if self.model_class.__name__ == "User":
+                        if obj.preferences_json is None:
+                            obj.preferences_json = {}
+                        if k not in obj.preferences_json or not isinstance(obj.preferences_json[k], list):
+                            obj.preferences_json[k] = []
+                        if v not in obj.preferences_json[k]:
+                            obj.preferences_json[k].append(v)
+                        flag_modified(obj, "preferences_json")
+                    elif hasattr(obj, k) and isinstance(getattr(obj, k), list):
+                        arr = getattr(obj, k) or []
+                        if v not in arr:
+                            setattr(obj, k, arr + [v])
+
+                # 3. Handle $pull
+                for k, v in pull_fields.items():
+                    if self.model_class.__name__ == "User":
+                        if obj.preferences_json and k in obj.preferences_json and isinstance(obj.preferences_json[k], list):
+                            if v in obj.preferences_json[k]:
+                                obj.preferences_json[k].remove(v)
+                                flag_modified(obj, "preferences_json")
+                    elif hasattr(obj, k) and isinstance(getattr(obj, k), list):
+                        arr = getattr(obj, k) or []
+                        if v in arr:
+                            setattr(obj, k, [x for x in arr if x != v])
+
                 await session.commit()
                 return type("UpdateResult", (), {"modified_count": 1, "matched_count": 1})()
             elif upsert:
@@ -626,6 +704,11 @@ class SQLCollectionAdapter:
                         new_doc[k] = v
                 for k, v in set_fields.items():
                     new_doc[k] = v
+                for k, v in add_to_set_fields.items():
+                    if k not in new_doc:
+                        new_doc[k] = [v]
+                    elif isinstance(new_doc[k], list) and v not in new_doc[k]:
+                        new_doc[k].append(v)
 
                 new_obj = self._deserialize_to_model(new_doc)
                 session.add(new_obj)
@@ -769,7 +852,9 @@ async def auto_seed_if_empty():
                     tmdb_votes=m.get("votes", 0),
                     popularity_score=m.get("popularity_score", 0.0),
                     platforms=m.get("platforms", []),
-                    director=m.get("director", "")
+                    director=m.get("director", ""),
+                    year=m.get("year"),
+                    cinema_region=m.get("cinema_region")
                 ))
             session.add_all(db_movies)
             await session.commit()

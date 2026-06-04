@@ -1,5 +1,4 @@
 import os
-from sentence_transformers import SentenceTransformer
 import numpy as np
 
 # Load the lightweight, high-performance model from Hugging Face
@@ -11,6 +10,7 @@ def get_model():
     global model
     if model is None:
         print(f"🚀 Loading Neural Engine ({MODEL_NAME})...")
+        from sentence_transformers import SentenceTransformer
         model = SentenceTransformer(MODEL_NAME)
     return model
 

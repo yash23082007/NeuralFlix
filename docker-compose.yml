@@ -10,15 +10,13 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/neuralflix}
-      - MONGO_TIMEOUT_MS=5000
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
+      - NEURALFLIX_DEMO_MODE=false
     depends_on:
       - redis
       - db
-      - mongo
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -33,12 +31,10 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/neuralflix}
-      - MONGO_TIMEOUT_MS=5000
+      - NEURALFLIX_DEMO_MODE=false
     depends_on:
       - redis
       - db
-      - mongo
     restart: unless-stopped
 
   beat:
@@ -68,24 +64,20 @@ services:
     command: redis-server --appendonly yes
     restart: unless-stopped
 
-  mongo:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodata:/data/db
-    restart: unless-stopped
-    command: mongod --wiredTigerCacheSizeGB 1.5
-
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: neuralflix
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 5
 
   prometheus:
     image: prom/prometheus:latest
@@ -104,7 +96,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
 volumes:
-  mongodata:
   redis_data:
   pgdata:
   grafana_data:

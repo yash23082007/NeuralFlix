@@ -223,6 +223,15 @@ async def fetch_by_mood(mood: str, page: int = 1):
         "nollywood_night": {"with_origin_country": "NG", "sort_by": "popularity.desc"},
         "90s_bollywood": {"with_origin_country": "IN", "primary_release_date.gte": "1990-01-01", "primary_release_date.lte": "1999-12-31"},
         "80s_nostalgia": {"primary_release_date.gte": "1980-01-01", "primary_release_date.lte": "1989-12-31", "sort_by": "popularity.desc"},
+        # 8 new custom moods
+        "intense":       {"with_genres": "53,27,9648", "sort_by": "popularity.desc"},
+        "chill":         {"with_genres": "35,10751", "sort_by": "popularity.desc"},
+        "funny":         {"with_genres": "35", "sort_by": "popularity.desc"},
+        "scary":         {"with_genres": "27", "sort_by": "popularity.desc"},
+        "romantic":      {"with_genres": "10749", "sort_by": "popularity.desc"},
+        "thoughtful":    {"with_genres": "18,99", "sort_by": "vote_average.desc", "vote_count.gte": 500},
+        "epic":          {"with_genres": "28,12,878", "sort_by": "popularity.desc"},
+        "sad":           {"with_genres": "18", "sort_by": "vote_average.desc"},
     }
     params = mood_map.get(mood.lower(), {"sort_by": "popularity.desc"})
     params["page"] = page

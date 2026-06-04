@@ -2,7 +2,6 @@ import os
 import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as rest_models
-from sentence_transformers import SentenceTransformer
 import structlog
 
 log = structlog.get_logger()
@@ -13,12 +12,19 @@ qdrant_client = AsyncQdrantClient(
     api_key=os.getenv("QDRANT_API_KEY", None)
 )
 
-# Text embedder for queries
-try:
-    embedder = SentenceTransformer('all-MiniLM-L6-v2')
-except Exception as e:
-    log.error("failed_to_load_embedder", error=str(e))
-    embedder = None
+# Text embedder for queries (lazy load)
+_embedder = None
+
+def _get_embedder():
+    global _embedder
+    if _embedder is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            _embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        except Exception as e:
+            log.error("failed_to_load_embedder", error=str(e))
+            _embedder = None
+    return _embedder
 
 class QdrantRetrievalService:
     def __init__(self, collection_name: str = "movies"):
@@ -41,6 +47,7 @@ class QdrantRetrievalService:
 
     async def search_by_text(self, text: str, limit: int = 50, genre_filters: list[str] = None) -> list[dict]:
         """Convert natural language to vector and search."""
+        embedder = _get_embedder()
         if not embedder:
             return []
             

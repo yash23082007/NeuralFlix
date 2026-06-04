@@ -5,11 +5,11 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simp
 import { useRouter } from "next/navigation";
 import { Globe2, X, Star, ArrowRight, Film } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { getByRegion, Movie } from "../lib/api";
+import { getByRegion, getMlOverview, Movie } from "../lib/api";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-const CINEMA_DATA: Record<string, { region: string; count: number; topMovie: string; color: string; hover: string; title: string }> = {
+const INITIAL_CINEMA_DATA: Record<string, { region: string; count: number; topMovie: string; color: string; hover: string; title: string }> = {
   IND: { region: "indian", title: "Indian Cinema", count: 12450, topMovie: "RRR", color: "var(--color-accent-india)", hover: "#ff8c61" },
   KOR: { region: "korean", title: "Korean Cinema", count: 2840, topMovie: "Parasite", color: "var(--color-accent-korea)", hover: "#74a8e6" },
   JPN: { region: "japanese", title: "Japanese Cinema", count: 4200, topMovie: "Spirited Away", color: "var(--color-accent-japan)", hover: "#d65345" },
@@ -23,6 +23,7 @@ const CINEMA_DATA: Record<string, { region: string; count: number; topMovie: str
 export default function CinemaWorldMap() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [cinemaData, setCinemaData] = useState(INITIAL_CINEMA_DATA);
   const [tooltipData, setTooltipData] = useState<{ x: number; y: number; content: any } | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [regionMovies, setRegionMovies] = useState<Movie[]>([]);
@@ -30,6 +31,35 @@ export default function CinemaWorldMap() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Fetch live regional stats from ML overview
+    const fetchLiveStats = async () => {
+      try {
+        const overview = await getMlOverview();
+        if (overview && overview.top_regions) {
+          setCinemaData((prev) => {
+            const nextData = { ...prev };
+            overview.top_regions.forEach((item: any) => {
+              // Find matching region
+              const key = Object.keys(nextData).find(
+                (k) => nextData[k].region === item.name.toLowerCase()
+              );
+              if (key) {
+                nextData[key] = {
+                  ...nextData[key],
+                  count: item.count || nextData[key].count
+                };
+              }
+            });
+            return nextData;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load map data from database:", err);
+      }
+    };
+    
+    fetchLiveStats();
   }, []);
 
   useEffect(() => {
@@ -78,7 +108,7 @@ export default function CinemaWorldMap() {
             {({ geographies }) =>
               geographies.map((geo) => {
                 const countryId = geo.id;
-                const cinemaInfo = CINEMA_DATA[countryId];
+                const cinemaInfo = cinemaData[countryId];
 
                 return (
                   <Geography
@@ -147,10 +177,10 @@ export default function CinemaWorldMap() {
       {/* Drill-down Sidebar */}
       <AnimatePresence>
         {selectedRegion && (() => {
-          const regionKey = Object.keys(CINEMA_DATA).find(
-            (k) => CINEMA_DATA[k].region === selectedRegion
+          const regionKey = Object.keys(cinemaData).find(
+            (k) => cinemaData[k].region === selectedRegion
           );
-          const info = regionKey ? CINEMA_DATA[regionKey] : null;
+          const info = regionKey ? cinemaData[regionKey] : null;
           if (!info) return null;
 
           return (
@@ -238,7 +268,7 @@ export default function CinemaWorldMap() {
 
               {/* Action Call */}
               <button
-                onClick={() => router.push(`/cinema?region=${selectedRegion}`)}
+                onClick={() => router.push(`/cinema/${selectedRegion}`)}
                 className="w-full bg-accent hover:brightness-110 active:scale-[0.98] text-black font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-glow text-sm"
               >
                 Explore All {info.title}

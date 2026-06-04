@@ -307,24 +307,35 @@ async def get_trending_movies(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
+    offset = (page - 1) * limit
     if _has_pg:
         try:
             async for session in get_db():
-                offset = (page - 1) * limit
                 stmt_total = select(func.count(PostgresMovie.id))
                 total = await session.scalar(stmt_total) or 0
                 stmt = select(PostgresMovie).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
                 result = await session.execute(stmt)
                 movies = result.scalars().all()
-                return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
-        except Exception:
-            pass
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_trending failed: {e}")
 
     from database import movies_collection
-    skip = (page - 1) * limit
     total = await movies_collection.count_documents({})
-    movies = await movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/search")
@@ -335,30 +346,41 @@ async def search_movies(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
+    offset = (page - 1) * limit
     if _has_pg:
         try:
             async for session in get_db():
-                offset = (page - 1) * limit
                 search_term = f"%{q}%"
                 filters = or_(PostgresMovie.title.ilike(search_term), PostgresMovie.overview.ilike(search_term))
                 stmt_total = select(func.count(PostgresMovie.id)).where(filters)
                 total = await session.scalar(stmt_total) or 0
-                stmt = select(PostgresMovie).where(filters).limit(limit).offset(offset)
+                stmt = select(PostgresMovie).where(filters).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
                 result = await session.execute(stmt)
                 movies = result.scalars().all()
-                return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
-        except Exception:
-            pass
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in search failed: {e}")
 
     from database import movies_collection
-    skip = (page - 1) * limit
     query = {"$text": {"$search": q}}
     total = await movies_collection.count_documents(query)
     movies = await movies_collection.find(
         query,
         {"score": {"$meta": "textScore"}, "_id": 0}
-    ).sort([("score", {"$meta": "textScore"})]).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    ).sort([("score", {"$meta": "textScore"})]).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/trending-all")
@@ -374,12 +396,36 @@ async def get_popular_movies(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
+    offset = (page - 1) * limit
+    query = {"votes": {"$gte": 100}}
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt_total = select(func.count(PostgresMovie.id)).where(PostgresMovie.tmdb_votes >= 100)
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).where(PostgresMovie.tmdb_votes >= 100).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_popular failed: {e}")
+
     from database import movies_collection
-    skip = (page - 1) * limit
-    query = {"votes": {"$gte": 1000}}
     total = await movies_collection.count_documents(query)
-    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/filter")
@@ -391,10 +437,64 @@ async def filter_movies(
     year_from: Optional[int] = None,
     year_to: Optional[int] = None,
     min_rating: Optional[float] = None,
+    max_rating: Optional[float] = None,
     sort: str = "popularity",
+    media_type: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
+    offset = (page - 1) * limit
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                from sqlalchemy import and_, desc, asc
+                filters = []
+                if genres:
+                    for g in genres.split(","):
+                        filters.append(PostgresMovie.genres.any(g.strip()))
+                if language:
+                    filters.append(PostgresMovie.language == language)
+                if year_from:
+                    filters.append(PostgresMovie.year >= year_from)
+                if year_to:
+                    filters.append(PostgresMovie.year <= year_to)
+                if min_rating is not None:
+                    filters.append(PostgresMovie.tmdb_rating >= min_rating)
+                if max_rating is not None:
+                    filters.append(PostgresMovie.tmdb_rating <= max_rating)
+                
+                stmt_total = select(func.count(PostgresMovie.id))
+                if filters:
+                    stmt_total = stmt_total.where(and_(*filters))
+                total = await session.scalar(stmt_total) or 0
+                
+                sort_map = {
+                    "popularity": desc(PostgresMovie.popularity_score),
+                    "rating": desc(PostgresMovie.tmdb_rating),
+                    "year": desc(PostgresMovie.year),
+                    "votes": desc(PostgresMovie.tmdb_votes),
+                    "title": asc(PostgresMovie.title)
+                }
+                sort_clause = sort_map.get(sort, desc(PostgresMovie.popularity_score))
+                
+                stmt = select(PostgresMovie)
+                if filters:
+                    stmt = stmt.where(and_(*filters))
+                stmt = stmt.order_by(sort_clause).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in filter failed: {e}")
+
     from database import movies_collection
     query = {}
     if genres:
@@ -402,78 +502,157 @@ async def filter_movies(
         query["genres"] = {"$in": genre_list}
     if language:
         query["language"] = language
-    if year_from:
-        query["release_date"] = query.get("release_date", {})
-        query["release_date"]["$gte"] = f"{year_from}-01-01"
-    if year_to:
-        query["release_date"] = query.get("release_date", {})
-        query["release_date"]["$lte"] = f"{year_to}-12-31"
-    if min_rating:
-        query["rating"] = {"$gte": min_rating}
+    if year_from or year_to:
+        query["year"] = {}
+        if year_from: query["year"]["$gte"] = year_from
+        if year_to:   query["year"]["$lte"] = year_to
+    if min_rating is not None:
+        query.setdefault("rating", {})["$gte"] = min_rating
+    if max_rating is not None:
+        query.setdefault("rating", {})["$lte"] = max_rating
 
     sort_field = {
         "popularity": ("popularity_score", -1),
         "rating": ("rating", -1),
-        "year": ("release_date", -1),
+        "year": ("year", -1),
         "votes": ("votes", -1),
+        "title": ("title", 1),
     }.get(sort, ("popularity_score", -1))
 
-    skip = (page - 1) * limit
     total = await movies_collection.count_documents(query)
-    movies = await movies_collection.find(query, {"_id": 0}).sort(sort_field[0], sort_field[1]).skip(skip).limit(limit).to_list(length=limit)
+    movies = await movies_collection.find(query, {"_id": 0}).sort(sort_field[0], sort_field[1]).skip(offset).limit(limit).to_list(length=limit)
     return {
         "page": page,
         "total": total,
-        "total_pages": math.ceil(total / limit) if limit > 0 else 1,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
         "results": [serialize_movie(m) for m in movies]
     }
 
 
 @router.get("/toprated")
 @cache_response(expire=3600)
-async def get_top_rated(request: Request, page: int = 1, limit: int = 20):
+async def get_top_rated(request: Request, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt_total = select(func.count(PostgresMovie.id))
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).order_by(PostgresMovie.tmdb_rating.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_top_rated failed: {e}")
+
     from database import movies_collection
-    skip = (page - 1) * limit
     total = await movies_collection.count_documents({})
-    movies = await movies_collection.find({}, {"_id": 0}).sort("rating", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find({}, {"_id": 0}).sort("rating", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/nowplaying")
 @cache_response(expire=1800)
-async def get_now_playing(request: Request, page: int = 1, limit: int = 20):
-    from database import movies_collection
+async def get_now_playing(request: Request, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
     import datetime
-    cutoff = datetime.datetime.now().year - 2
-    query = {"release_date": {"$gte": f"{cutoff}-01-01"}}
-    skip = (page - 1) * limit
+    cutoff_year = datetime.datetime.now().year - 2
+    query = {"year": {"$gte": cutoff_year}}
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt_total = select(func.count(PostgresMovie.id)).where(PostgresMovie.year >= cutoff_year)
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).where(PostgresMovie.year >= cutoff_year).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_now_playing failed: {e}")
+
+    from database import movies_collection
     total = await movies_collection.count_documents(query)
-    movies = await movies_collection.find(
-        query, {"_id": 0}
-    ).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/anime")
 @cache_response(expire=7200)
-async def get_anime(request: Request, page: int = 1, limit: int = 20):
-    from database import movies_collection
+async def get_anime(request: Request, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
     query = {"genres": "Animation"}
-    skip = (page - 1) * limit
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt_total = select(func.count(PostgresMovie.id)).where(PostgresMovie.genres.any("Animation"))
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).where(PostgresMovie.genres.any("Animation")).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_anime failed: {e}")
+
+    from database import movies_collection
     total = await movies_collection.count_documents(query)
-    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 @router.get("/series")
 @cache_response(expire=7200)
-async def get_series(request: Request, page: int = 1, limit: int = 20):
+async def get_series(request: Request, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
     from database import movies_collection
-    query = {"media_type": "tv"}
-    skip = (page - 1) * limit
-    total = await movies_collection.count_documents(query)
-    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    total = await movies_collection.count_documents({"media_type": "tv"})
+    movies = await movies_collection.find({"media_type": "tv"}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit) if limit > 0 else 1,
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 
 # Region Language Map
@@ -504,21 +683,50 @@ REGION_LANG_MAP = {
 
 @router.get("/region/{region}")
 @cache_response(expire=3600)
-async def get_by_region(request: Request, region: str, page: int = 1, limit: int = 20):
-    from database import movies_collection
-    
-    # 1. Query MongoDB by region and language
+async def get_by_region(request: Request, region: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
     langs = REGION_LANG_MAP.get(region.lower(), [])
+    
+    # 1. SQL Optimization path
+    if _has_pg:
+        try:
+            async for session in get_db():
+                from sqlalchemy import or_
+                conditions = [PostgresMovie.cinema_region == region.lower()]
+                if langs:
+                    conditions.append(PostgresMovie.language.in_(langs))
+                
+                stmt_total = select(func.count(PostgresMovie.id)).where(or_(*conditions))
+                total = await session.scalar(stmt_total) or 0
+                
+                stmt = select(PostgresMovie).where(or_(*conditions))\
+                    .order_by(PostgresMovie.popularity_score.desc())\
+                    .limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                
+                if len(movies) >= limit or total >= 10:
+                    return {
+                        "page": page,
+                        "total": total,
+                        "total_pages": math.ceil(total / limit),
+                        "has_next": (offset + limit) < total,
+                        "results": [serialize_movie(m) for m in movies]
+                    }
+        except Exception as e:
+            logger.error(f"SQL path in get_by_region failed: {e}")
+
+    # 2. Fallback to SQLCollectionAdapter (movies_collection)
+    from database import movies_collection
     or_filters = [{"cinema_region": region.lower()}]
     if langs:
         or_filters.append({"language": {"$in": langs}})
-        
     query = {"$or": or_filters}
-    total = await movies_collection.count_documents(query)
-    skip = (page - 1) * limit
-    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
     
-    # 2. Call TMDB discover if results are low (<10)
+    total = await movies_collection.count_documents(query)
+    movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    
+    # 3. Call TMDB discover if results are low (<10)
     if total < 10:
         try:
             from utils.tmdb_api import fetch_movies_by_region, fetch_genre_list
@@ -529,7 +737,6 @@ async def get_by_region(request: Request, region: str, page: int = 1, limit: int
                 for m in tmdb_movies:
                     norm = _normalize_tmdb_helper(m, genre_map, region.lower())
                     try:
-                        # Upsert to MongoDB so we build the local database
                         await movies_collection.update_one(
                             {"tmdb_id": norm["tmdb_id"]},
                             {"$set": norm},
@@ -539,7 +746,6 @@ async def get_by_region(request: Request, region: str, page: int = 1, limit: int
                         pass
                     normalized_movies.append(norm)
                 
-                # Merge lists
                 seen = {str(item.get("tmdb_id")) for item in movies}
                 for item in normalized_movies:
                     item_id = str(item.get("tmdb_id"))
@@ -550,20 +756,31 @@ async def get_by_region(request: Request, region: str, page: int = 1, limit: int
         except Exception as e:
             logger.error(f"Error fetching from TMDB region discover for {region}: {e}")
             
-    return {"page": page, "total": max(total, len(movies)), "results": [serialize_movie(m) for m in movies[:limit]]}
+    return {
+        "page": page,
+        "total": max(total, len(movies)),
+        "total_pages": math.ceil(max(total, len(movies)) / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies[:limit]]
+    }
 
 
 @router.get("/mood/{mood}")
 @cache_response(expire=3600)
-async def get_by_mood(request: Request, mood: str, page: int = 1, limit: int = 20):
-    # Mood mapping using TMDB discover or popular fallback
+async def get_by_mood(request: Request, mood: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
     try:
         from utils.tmdb_api import fetch_by_mood, fetch_genre_list
         tmdb_movies = await fetch_by_mood(mood, page=page)
         if tmdb_movies:
             genre_map = await fetch_genre_list()
             movies = [_normalize_tmdb_helper(m, genre_map) for m in tmdb_movies]
-            return {"page": page, "total": len(movies) * 10, "results": [serialize_movie(m) for m in movies]}
+            return {
+                "page": page,
+                "total": len(movies) * 10,
+                "total_pages": 10,
+                "has_next": True,
+                "results": [serialize_movie(m) for m in movies]
+            }
     except Exception:
         pass
     return await get_trending_movies(request=request, page=page, limit=limit)
@@ -571,20 +788,42 @@ async def get_by_mood(request: Request, mood: str, page: int = 1, limit: int = 2
 
 @router.get("/genre/{genre}")
 @cache_response(expire=3600)
-async def get_by_genre(request: Request, genre: str, page: int = 1, limit: int = 20):
-    from database import movies_collection
-    
-    # Map genre abbreviations/slugs to database names
+async def get_by_genre(request: Request, genre: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    offset = (page - 1) * limit
     genre_clean = genre.lower().replace("-", " ")
     if genre_clean == "sci fi":
         genre_clean = "science fiction"
-        
-    # Case-insensitive regex match
+    genre_cap = genre_clean.title()
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                stmt_total = select(func.count(PostgresMovie.id)).where(PostgresMovie.genres.any(genre_cap))
+                total = await session.scalar(stmt_total) or 0
+                stmt = select(PostgresMovie).where(PostgresMovie.genres.any(genre_cap)).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+                result = await session.execute(stmt)
+                movies = result.scalars().all()
+                return {
+                    "page": page,
+                    "total": total,
+                    "total_pages": math.ceil(total / limit),
+                    "has_next": (offset + limit) < total,
+                    "results": [serialize_movie(m) for m in movies]
+                }
+        except Exception as e:
+            logger.error(f"SQL path in get_by_genre failed: {e}")
+
+    from database import movies_collection
     pattern = {"$regex": f"^{genre_clean}$", "$options": "i"}
-    skip = (page - 1) * limit
     total = await movies_collection.count_documents({"genres": pattern})
-    movies = await movies_collection.find({"genres": pattern}, {"_id": 0}).sort("popularity_score", -1).skip(skip).limit(limit).to_list(length=limit)
-    return {"page": page, "total": total, "results": [serialize_movie(m) for m in movies]}
+    movies = await movies_collection.find({"genres": pattern}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+    return {
+        "page": page,
+        "total": total,
+        "total_pages": math.ceil(total / limit),
+        "has_next": (offset + limit) < total,
+        "results": [serialize_movie(m) for m in movies]
+    }
 
 @router.get("/{movie_id}")
 @cache_response(expire=86400)
@@ -676,3 +915,70 @@ async def get_movie(request: Request, movie_id: str):
             
     movie_serialized["similar"] = similar
     return movie_serialized
+
+
+@router.get("/region/{region}/stats")
+async def get_region_stats(region: str):
+    """Retrieve dynamic stats representing total movies, avg rating, and top genres of a region."""
+    langs = REGION_LANG_MAP.get(region.lower(), [])
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                from sqlalchemy import or_, func
+                conditions = [PostgresMovie.cinema_region == region.lower()]
+                if langs:
+                    conditions.append(PostgresMovie.language.in_(langs))
+                
+                # count
+                stmt_total = select(func.count(PostgresMovie.id)).where(or_(*conditions))
+                total = await session.scalar(stmt_total) or 0
+                
+                # avg rating
+                stmt_avg = select(func.avg(PostgresMovie.tmdb_rating)).where(or_(*conditions))
+                avg_rating = await session.scalar(stmt_avg) or 0.0
+                
+                # genres
+                stmt_genres = select(PostgresMovie.genres).where(or_(*conditions)).limit(100)
+                res = await session.execute(stmt_genres)
+                genres_rows = res.scalars().all()
+                genre_counts = {}
+                for g_list in genres_rows:
+                    if g_list:
+                        for g in g_list:
+                            genre_counts[g] = genre_counts.get(g, 0) + 1
+                top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+                top_genres_list = [g[0] for g in top_genres]
+                
+                return {
+                    "total_movies": total,
+                    "avg_rating": round(avg_rating, 1),
+                    "top_genres": top_genres_list
+                }
+        except Exception as e:
+            logger.error(f"Error fetching regional stats from SQL: {e}")
+            
+    from database import movies_collection
+    or_filters = [{"cinema_region": region.lower()}]
+    if langs:
+        or_filters.append({"language": {"$in": langs}})
+    query = {"$or": or_filters}
+    
+    total = await movies_collection.count_documents(query)
+    sample = await movies_collection.find(query, {"genres": 1, "rating": 1, "_id": 0}).limit(100).to_list(length=100)
+    
+    ratings = [m.get("rating", 0) for m in sample if m.get("rating")]
+    avg_rating = sum(ratings) / len(ratings) if ratings else 0.0
+    
+    genre_counts = {}
+    for m in sample:
+        for g in m.get("genres", []):
+            genre_counts[g] = genre_counts.get(g, 0) + 1
+    top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_genres_list = [g[0] for g in top_genres]
+    
+    return {
+        "total_movies": total,
+        "avg_rating": round(avg_rating, 1),
+        "top_genres": top_genres_list
+    }

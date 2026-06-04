@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, UserPlus, Film } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Film, Sparkles, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
 import GoogleLogin from "../../components/GoogleLogin";
 import GithubLogin from "../../components/GithubLogin";
+
+interface CollageMovie {
+  tmdb_id: number;
+  poster_url: string;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,6 +22,55 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [collageMovies, setCollageMovies] = useState<CollageMovie[]>([]);
+
+  useEffect(() => {
+    // Fetch popular movies for the collage
+    async function fetchCollage() {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API}/api/v1/movies/trending`);
+        if (res.ok) {
+          const data = await res.json();
+          const movies = (data.results || [])
+            .filter((m: any) => m.poster_url)
+            .map((m: any) => ({
+              tmdb_id: m.tmdb_id,
+              poster_url: m.poster_url
+            }));
+          setCollageMovies(movies.slice(0, 18));
+        }
+      } catch (err) {
+        console.error("Collage fetch failed:", err);
+      }
+    }
+    fetchCollage();
+  }, []);
+
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "Empty", color: "bg-zinc-800" };
+    let score = 0;
+    if (pass.length >= 6) score++;
+    if (pass.length >= 10) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    
+    switch (score) {
+      case 1:
+      case 2:
+        return { score, label: "Weak", color: "bg-[var(--accent-rose)]" };
+      case 3:
+      case 4:
+        return { score, label: "Medium", color: "bg-[var(--accent-warm)]" };
+      case 5:
+        return { score, label: "Strong", color: "bg-emerald-500" };
+      default:
+        return { score, label: "Too short", color: "bg-zinc-800" };
+    }
+  };
+
+  const strength = getPasswordStrength(password);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,70 +108,115 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)] px-4 pt-20 relative overflow-hidden">
-      {/* Background ambient orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] rounded-full bg-[var(--accent-warm)]/[0.03] blur-[100px] animate-orb-float" />
-        <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-[var(--accent-rose)]/[0.03] blur-[100px] animate-orb-float" style={{ animationDelay: "-12s" }} />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-md"
-      >
-        {/* Ambient glow */}
-        <div className="absolute -inset-20 rounded-3xl bg-gradient-to-br from-[var(--accent-warm)]/[0.04] to-[var(--accent-rose)]/[0.04] blur-3xl pointer-events-none" />
-
-        <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/90 p-8 shadow-xl backdrop-blur-xl">
-          <div className="mb-8 flex flex-col items-center gap-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-              className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] shadow-glow"
+    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-black text-white overflow-hidden">
+      {/* Left panel: poster collage */}
+      <section className="lg:col-span-7 xl:col-span-8 hidden lg:flex flex-col justify-between p-16 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-black to-zinc-900 border-r border-[var(--border-subtle)]">
+        {/* Animated scrolling collage */}
+        <div className="absolute inset-0 grid grid-cols-3 gap-4 p-4 opacity-25 scale-105 pointer-events-none origin-center rotate-6 translate-y-[-10%]">
+          {[0, 1, 2].map((colIndex) => (
+            <div
+              key={colIndex}
+              className={`flex flex-col gap-4 ${
+                colIndex === 1 ? "animate-scroll-slow-reverse" : "animate-scroll-slow"
+              }`}
             >
-              <Film className="h-7 w-7 text-black" />
-            </motion.div>
-            <div className="text-center">
-              <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-                Create account
-              </h1>
-              <p className="mt-1 text-sm text-[var(--text-tertiary)]">
-                Join NeuralFlix for personalized film recommendations
-              </p>
+              {(collageMovies.length > 0 ? collageMovies : Array.from({ length: 6 })).map((m: any, i) => (
+                <div
+                  key={i}
+                  className="aspect-[2/3] w-full rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-105"
+                >
+                  {m?.poster_url ? (
+                    <img
+                      src={m.poster_url}
+                      alt="Cinema Poster"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Film className="h-8 w-8 text-zinc-700" />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
+          ))}
+        </div>
+
+        {/* Ambient Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+        <div className="absolute inset-0 bg-radial-gradient z-10" />
+
+        {/* Brand info overlays */}
+        <div className="relative z-20 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-black">
+            <Film className="h-5 w-5" />
+          </div>
+          <span className="font-outfit font-extrabold text-lg tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)]">NEURALFLIX</span>
+        </div>
+
+        <div className="relative z-20 space-y-6 max-w-xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--accent-warm)]/20 bg-[var(--accent-warm)]/10 text-xs font-semibold text-[var(--accent-warm)] mb-4">
+              <Sparkles className="h-3.5 w-3.5" /> Neural Engine v2.5 Online
+            </span>
+            <h1 className="text-4xl xl:text-5xl font-extrabold font-playfair tracking-tight leading-tight text-white mb-4">
+              Discover over <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] font-black">930K Films</span> personalized for you.
+            </h1>
+            <p className="text-zinc-400 text-base leading-relaxed">
+              Unlock a cinematic universe calibrated to your unique Taste DNA. Real-time recommendation streams, cross-region collections, and infinite movie discoveries.
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="relative z-20 text-xs text-zinc-500 font-mono">
+          © 2026 NEURALFLIX SAAS INC. ALL RIGHTS RESERVED.
+        </div>
+      </section>
+
+      {/* Right panel: authentication form */}
+      <section className="lg:col-span-5 xl:col-span-4 col-span-12 flex items-center justify-center p-8 bg-[var(--surface-primary)] relative overflow-y-auto">
+        <div className="w-full max-w-md space-y-6 z-20 my-auto">
+          <div className="text-center lg:text-left space-y-2">
+            <h2 className="text-3xl font-extrabold font-playfair tracking-tight text-white">Create Account</h2>
+            <p className="text-sm text-zinc-400">
+              Join NeuralFlix to build your Taste DNA and track films.
+            </p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-4">
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl bg-[var(--accent-rose)]/10 border border-[var(--accent-rose)]/20 px-4 py-3 text-sm text-[var(--accent-rose)]"
+                className="rounded-xl bg-[var(--accent-rose)]/10 border border-[var(--accent-rose)]/20 px-4 py-3 text-xs text-[var(--accent-rose)] font-semibold"
               >
                 {error}
               </motion.div>
             )}
 
-            <div className="space-y-2">
-              <label htmlFor="register-name" className="text-sm font-medium text-[var(--text-secondary)]">
-                Name
+            <div className="space-y-1">
+              <label htmlFor="register-name" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Full Name
               </label>
               <input
                 id="register-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
-                placeholder="Your name"
+                required
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
+                placeholder="John Doe"
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="register-email" className="text-sm font-medium text-[var(--text-secondary)]">
-                Email
+            <div className="space-y-1">
+              <label htmlFor="register-email" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Email Address
               </label>
               <input
                 id="register-email"
@@ -125,13 +224,13 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                 placeholder="you@example.com"
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="register-password" className="text-sm font-medium text-[var(--text-secondary)]">
+            <div className="space-y-1">
+              <label htmlFor="register-password" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                 Password
               </label>
               <div className="relative">
@@ -141,22 +240,41 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
-                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
+                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              
+              {/* Password strength meter */}
+              {password && (
+                <div className="space-y-1.5 pt-1.5">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-zinc-500 font-semibold uppercase">Security Strength:</span>
+                    <span className="font-bold text-white uppercase tracking-wider">{strength.label}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                          i < strength.score ? strength.color : "bg-zinc-800"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="register-confirm" className="text-sm font-medium text-[var(--text-secondary)]">
+            <div className="space-y-1">
+              <label htmlFor="register-confirm" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                 Confirm Password
               </label>
               <input
@@ -165,50 +283,48 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-disabled)] outline-none input-glow"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                 placeholder="••••••••"
               />
             </div>
 
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+            <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[var(--accent-warm)] py-3 text-sm font-semibold text-black shadow-glow transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-xl bg-[var(--accent-warm)] hover:brightness-110 active:scale-[0.99] text-black text-sm font-bold uppercase tracking-wider shadow-[0_0_24px_rgba(232,168,73,0.2)] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-4"
             >
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
               ) : (
                 <UserPlus className="h-4 w-4" />
               )}
-              {loading ? "Creating account..." : "Create Account"}
-            </motion.button>
+              {loading ? "Creating Profile..." : "Create Account"}
+            </button>
           </form>
 
-          <div className="my-6 flex items-center gap-4">
-            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-            <span className="text-xs font-medium text-[var(--text-disabled)] uppercase tracking-wider">
-              Or
-            </span>
-            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-zinc-900"></div>
+            <span className="flex-shrink mx-4 text-zinc-600 text-xs font-mono uppercase">Or connect via</span>
+            <div className="flex-grow border-t border-zinc-900"></div>
           </div>
 
-          <div className="space-y-3 mb-4">
+          <div className="grid grid-cols-2 gap-3">
             <GoogleLogin />
             <GithubLogin />
           </div>
 
-          <p className="mt-6 text-center text-sm text-[var(--text-tertiary)]">
+          <p className="text-center text-xs text-zinc-500">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-medium text-[var(--accent-warm)] hover:text-[var(--accent-warm-dim)] transition-colors"
+              className="font-bold text-[var(--accent-warm)] hover:underline transition-colors ml-1"
             >
-              Sign in
+              Sign In here
             </Link>
           </p>
         </div>
-      </motion.div>
+      </section>
     </main>
   );
 }
+

@@ -2,20 +2,19 @@ from typing import List, Dict, Tuple, Optional
 from .content_based import ContentBasedEngine, content_engine
 from .ncf_model import NCFModel
 from .sasrec_model import SASRec
+from .id_mapper import id_mapper
 import torch
-
-# Singleton instances used across the application
-ncf_model: Optional[NCFModel] = None
-sasrec_model: Optional[SASRec] = None
-gnn_model = None
-
 import os
 import logging
 
 logger = logging.getLogger("HYBRID_RECOMMENDER")
 
-NUM_USERS = int(os.getenv("NCF_NUM_USERS", "100000"))
-NUM_ITEMS = int(os.getenv("NCF_NUM_ITEMS", "750000"))
+NUM_USERS = int(os.getenv("NCF_NUM_USERS", "200000"))
+NUM_ITEMS = int(os.getenv("NCF_NUM_ITEMS", "950000"))
+
+ncf_model: Optional[NCFModel] = None
+sasrec_model: Optional[SASRec] = None
+gnn_model = None
 
 try:
     ncf_model = NCFModel(
@@ -25,6 +24,7 @@ try:
         layers=[256, 128, 64]
     )
     sasrec_model = SASRec(num_items=NUM_ITEMS, max_seq_len=100)
+    logger.info(f"ML models initialized: {NUM_USERS} users, {NUM_ITEMS} items")
 except Exception as e:
     logger.warning(f"ML models failed to initialize: {e}")
 
@@ -59,12 +59,12 @@ class HybridRecommender:
             except Exception:
                 pass
         
-        # Build candidates pool to rank
+        # Build candidates pool to rank (do not slice the candidates list aggressively)
         if not candidates:
-            candidates = all_candidate_ids[:200] if all_candidate_ids else []
+            candidates = all_candidate_ids if all_candidate_ids else []
         elif all_candidate_ids:
             # Pad candidates to ensure we have enough to rank
-            candidates = list(set(candidates + all_candidate_ids[:100]))
+            candidates = list(set(candidates + all_candidate_ids))
             
         if not candidates:
             return []
@@ -72,20 +72,33 @@ class HybridRecommender:
         # 2. Score candidates with NCF
         try:
             if self.ncf:
-                ncf_scores = self.ncf.predict_for_user(user_id, candidates)
-                for movie_id, score in ncf_scores:
-                    scores[movie_id] = scores.get(movie_id, 0) + W_NCF * score
-        except Exception:
-            pass
+                # Map candidates TMDB IDs to model indices
+                candidate_indices = id_mapper.batch_to_idx(candidates)
+                idx_to_tmdb_map = {id_mapper.to_idx(cid): cid for cid in candidates}
+                
+                ncf_scores = self.ncf.predict_for_user(user_id, candidate_indices)
+                for idx, score in ncf_scores:
+                    cid = idx_to_tmdb_map.get(idx)
+                    if cid is not None:
+                        scores[cid] = scores.get(cid, 0) + W_NCF * score
+        except Exception as e:
+            logger.warning(f"NCF prediction failed: {e}")
             
-        # 3. Score candidates with Sequential Model
+        # 3. Score candidates with Sequential Model (SASRec)
         try:
             if watch_history and self.seq:
-                seq_scores = self.seq.predict_next(watch_history, candidates)
-                for movie_id, score in seq_scores:
-                    scores[movie_id] = scores.get(movie_id, 0) + W_SEQ * score
-        except Exception:
-            pass
+                # Map watch history and candidates TMDB IDs to model indices
+                watch_history_indices = id_mapper.batch_to_idx(watch_history)
+                candidate_indices = id_mapper.batch_to_idx(candidates)
+                idx_to_tmdb_map = {id_mapper.to_idx(cid): cid for cid in candidates}
+                
+                seq_scores = self.seq.predict_next(watch_history_indices, candidate_indices)
+                for idx, score in seq_scores:
+                    cid = idx_to_tmdb_map.get(idx)
+                    if cid is not None:
+                        scores[cid] = scores.get(cid, 0) + W_SEQ * score
+        except Exception as e:
+            logger.warning(f"Sequential prediction failed: {e}")
 
         # 4. Filter watched and sort
         filtered_scores = {k: v for k, v in scores.items() if k not in watch_history}

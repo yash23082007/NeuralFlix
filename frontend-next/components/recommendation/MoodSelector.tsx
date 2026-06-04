@@ -1,32 +1,42 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Activity, Brain, Clapperboard, Compass, Gem, Heart, Landmark, Sparkles, Trophy } from "lucide-react";
-import MovieRow from "../MovieRow";
+import { Sparkles, Film, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
+import MovieCard from "../MovieCard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const SIGNALS = [
-  { id: "feel_good", label: "Feel-good", icon: Heart, color: "#00A6C7", desc: "Comedy, romance, family" },
-  { id: "mind_blown", label: "High novelty", icon: Brain, color: "#7057FF", desc: "Thriller, mystery, sci-fi" },
-  { id: "adrenaline", label: "Action bias", icon: Clapperboard, color: "#E50914", desc: "Action and adventure" },
-  { id: "deep_thoughts", label: "Reflective", icon: Activity, color: "#27AE60", desc: "Drama and documentary" },
-  { id: "desi_vibes", label: "Indian cluster", icon: Compass, color: "#FF6B35", desc: "Indian language cinema" },
-  { id: "korean_wave", label: "Korean cluster", icon: Landmark, color: "#4A90D9", desc: "Korean thrillers and drama" },
-  { id: "award_winners", label: "Critical acclaim", icon: Trophy, color: "#F5C518", desc: "High-rated broad consensus" },
-  { id: "hidden_gems", label: "Long-tail gems", icon: Gem, color: "#00D4FF", desc: "High rating, lower vote count" },
-  { id: "new_releases", label: "Freshness", icon: Sparkles, color: "#10B981", desc: "Recent release recency boost" },
+const MOODS = [
+  { id: "intense", label: "Intense", icon: "⚡", gradient: "from-red-600 via-orange-600 to-yellow-500", desc: "Thrillers, crime, and high-stakes drama" },
+  { id: "chill", label: "Chill", icon: "🌊", gradient: "from-sky-500 via-blue-600 to-indigo-600", desc: "Relaxing, ambient, feel-good movies" },
+  { id: "funny", label: "Funny", icon: "😆", gradient: "from-yellow-400 via-amber-500 to-orange-500", desc: "Comedies, satires, and lighthearted fun" },
+  { id: "scary", label: "Scary", icon: "💀", gradient: "from-neutral-900 via-red-950 to-neutral-900", desc: "Horror, psychological terror, and suspense" },
+  { id: "romantic", label: "Romantic", icon: "💖", gradient: "from-pink-500 via-rose-500 to-red-500", desc: "Romance, dramas, and love stories" },
+  { id: "thoughtful", label: "Thoughtful", icon: "🧠", gradient: "from-emerald-500 via-teal-600 to-cyan-600", desc: "Philosophical, complex, and art-house films" },
+  { id: "epic", label: "Epic", icon: "👑", gradient: "from-violet-600 via-purple-600 to-amber-500", desc: "Sci-Fi epics, fantasy, and blockbusters" },
+  { id: "sad", label: "Sad", icon: "💧", gradient: "from-slate-700 via-slate-800 to-cyan-900", desc: "Melodramas, tragedies, and emotional journeys" }
+];
+
+const LANGUAGES = [
+  { code: "", name: "All Languages", flag: "🌍" },
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "ko", name: "Korean", flag: "🇰🇷" },
+  { code: "ja", name: "Japanese", flag: "🇯🇵" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" }
 ];
 
 export function MoodSelector() {
-  const [selectedMood, setSelectedMood] = useState<string | null>("hidden_gems");
-  const [moodMovies, setMoodMovies] = useState<any[]>([]);
+  const [selectedMood, setSelectedMood] = useState<string | null>("intense");
+  const [selectedLang, setSelectedLang] = useState<string>("");
+  const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!selectedMood) {
-      setMoodMovies([]);
+      setMovies([]);
       return;
     }
 
@@ -36,10 +46,10 @@ export function MoodSelector() {
         const res = await fetch(`${API_BASE}/api/v1/movies/mood/${selectedMood}`);
         if (res.ok) {
           const data = await res.json();
-          setMoodMovies(data.results || []);
+          setMovies(data.results || []);
         }
       } catch (error) {
-        console.error("Failed to fetch signal movies:", error);
+        console.error("Failed to fetch mood movies:", error);
       } finally {
         setLoading(false);
       }
@@ -48,54 +58,137 @@ export function MoodSelector() {
     fetchMoodMovies();
   }, [selectedMood]);
 
-  return (
-    <div className="space-y-7">
-      <div>
-        <p className="text-xs font-black uppercase tracking-wide text-accent">Signal workbench</p>
-        <h1 className="mt-2 text-4xl font-black text-text-primary">Preference signal testing</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted">
-          Inspect how different intent proxies alter recall and ranking behavior.
-        </p>
-      </div>
+  // Filter movies by language and limit to 20 results
+  const filteredMovies = movies
+    .filter((m) => !selectedLang || m.language === selectedLang)
+    .slice(0, 20);
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {SIGNALS.map((signal) => {
-          const Icon = signal.icon;
+  const activeMoodInfo = MOODS.find((m) => m.id === selectedMood);
+
+  return (
+    <div className="space-y-10">
+      {/* Header */}
+      <header className="space-y-3">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-[var(--accent-warm)] uppercase font-mono bg-[var(--accent-warm)]/10 px-3 py-1 rounded-full border border-[var(--accent-warm)]/20">
+          <Sparkles className="h-3 w-3 animate-spin" /> Neural Mood Mapping
+        </span>
+        <h1 className="text-4xl font-extrabold text-white font-playfair tracking-tight">Preferential Mood Alignment</h1>
+        <p className="text-sm leading-relaxed text-zinc-400 max-w-xl">
+          Calibrate the recommendations using emotional filters. Shift genres, novelty offsets, and aesthetic pacing coordinates dynamically.
+        </p>
+      </header>
+
+      {/* Grid of 8 Mood Cards */}
+      <section className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {MOODS.map((mood) => {
+          const active = selectedMood === mood.id;
           return (
             <motion.button
-              key={signal.id}
-              whileHover={{ y: -3 }}
+              key={mood.id}
+              whileHover={{ y: -4, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setSelectedMood(selectedMood === signal.id ? null : signal.id)}
-              className={`rounded-lg border p-4 text-left transition-all ${
-                selectedMood === signal.id
-                  ? "border-accent bg-accent/10 shadow-gold"
-                  : "border-border bg-surface shadow-card hover:border-accent/40"
+              onClick={() => setSelectedMood(mood.id)}
+              className={`rounded-2xl border p-5 text-left transition-all relative overflow-hidden flex flex-col justify-between h-40 cursor-pointer ${
+                active
+                  ? `border-[var(--accent-warm)] bg-gradient-to-br ${mood.gradient} text-white shadow-[0_0_24px_rgba(232,168,73,0.15)]`
+                  : "border-zinc-900 bg-zinc-950/60 text-zinc-400 hover:border-zinc-800"
               }`}
             >
-              <Icon className="mb-5 h-5 w-5" style={{ color: signal.color }} />
-              <p className="font-black text-text-primary">{signal.label}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-text-muted">{signal.id.replace(/_/g, " ")}</p>
-              <p className="mt-3 text-sm leading-5 text-text-muted">{signal.desc}</p>
+              {/* Dynamic light rays if active */}
+              {active && (
+                <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none animate-pulse" />
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-3xl filter drop-shadow-md">{mood.icon}</span>
+                {active && (
+                  <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                )}
+              </div>
+
+              <div className="space-y-1 z-10">
+                <h3 className={`text-base font-black uppercase tracking-wider ${active ? "text-white" : "text-white/90"}`}>
+                  {mood.label}
+                </h3>
+                <p className={`text-[10px] line-clamp-2 leading-relaxed ${active ? "text-white/80 font-medium" : "text-zinc-500"}`}>
+                  {mood.desc}
+                </p>
+              </div>
             </motion.button>
           );
         })}
-      </div>
+      </section>
 
-      {loading && (
-        <div className="flex justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </div>
+      {/* Filters row: Language */}
+      {selectedMood && (
+        <section className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-2">Language Lens</span>
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setSelectedLang(lang.code)}
+                className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  selectedLang === lang.code
+                    ? "border-[var(--accent-warm)] bg-[var(--accent-warm)]/10 text-white"
+                    : "border-zinc-900 bg-zinc-950/20 text-zinc-500 hover:border-zinc-800 hover:text-zinc-300"
+                }`}
+              >
+                <span className="mr-1.5">{lang.flag}</span>
+                {lang.name}
+              </button>
+            ))}
+          </div>
+
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+            {filteredMovies.length} of {movies.length} Results
+          </span>
+        </section>
       )}
 
-      {moodMovies.length > 0 && !loading && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <MovieRow
-            title={`${SIGNALS.find((signal) => signal.id === selectedMood)?.label || "Signal"} results`}
-            movies={moodMovies}
-          />
-        </motion.div>
-      )}
+      {/* Movies Results Grid */}
+      <section className="space-y-6">
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 animate-pulse">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="aspect-[2/3] bg-zinc-950 border border-zinc-900 rounded-2xl" />
+                  <div className="h-4 bg-zinc-900 w-4/5 rounded-md" />
+                  <div className="h-3.5 bg-zinc-900 w-3/5 rounded-md" />
+                </div>
+              ))}
+            </div>
+          ) : filteredMovies.length > 0 ? (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+            >
+              {filteredMovies.map((movie) => (
+                <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
+              ))}
+            </motion.div>
+          ) : selectedMood ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="py-16 text-center border border-dashed border-zinc-900 rounded-2xl max-w-md mx-auto"
+            >
+              <AlertCircle className="h-10 w-10 text-zinc-600 mx-auto mb-3" />
+              <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">No matches in language lens</h4>
+              <p className="text-xs text-zinc-500 mt-1">
+                There are no cached titles matching {activeMoodInfo?.label} in the selected language. Try another filter.
+              </p>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </section>
     </div>
   );
 }
+

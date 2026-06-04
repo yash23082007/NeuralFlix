@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { BarChart3, Clapperboard, Compass, Users, ArrowLeft } from "lucide-react";
+import { BarChart3, Clapperboard, Compass, Users, ArrowLeft, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MovieCard from "../../../components/MovieCard";
 import RowSkeleton from "../../../components/RowSkeleton";
@@ -124,6 +124,7 @@ export default function RegionPage() {
   const { region } = useParams() as { region: string };
   const router = useRouter();
   const [movies, setMovies] = useState<Movie[]>([]);
+  const [regionStats, setRegionStats] = useState<{ total_movies: number; avg_rating: number; top_genres: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -136,23 +137,32 @@ export default function RegionPage() {
       return;
     }
 
-    const fetchMovies = async () => {
+    const fetchRegionData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/v1/movies/region/${regionKey}?page=${page}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [moviesRes, statsRes] = await Promise.all([
+          fetch(`${API_BASE}/api/v1/movies/region/${regionKey}?page=${page}`),
+          fetch(`${API_BASE}/api/v1/movies/region/${regionKey}/stats`)
+        ]);
+
+        if (moviesRes.ok) {
+          const data = await moviesRes.json();
           setMovies(data.results || []);
           setTotalPages(data.total_pages || 1);
         }
+
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          setRegionStats(data);
+        }
       } catch (error) {
-        console.error("Failed to fetch region movies:", error);
+        console.error("Failed to fetch region data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMovies();
+    fetchRegionData();
   }, [regionKey, page, regionConfig]);
 
   if (!regionConfig) {
@@ -228,22 +238,24 @@ export default function RegionPage() {
             <div className="flex gap-4">
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-5 py-4 min-w-[90px] text-center shadow-lg backdrop-blur-sm">
                 <Clapperboard className="mx-auto h-5 w-5" style={{ color: regionConfig.accent }} />
-                <div className="mt-2 text-2xl font-bold text-[var(--text-primary)] font-sans">
-                  {movies.length || "—"}
+                <div className="mt-2 text-xl font-bold text-[var(--text-primary)] font-sans">
+                  {regionStats ? regionStats.total_movies.toLocaleString() : movies.length || "—"}
                 </div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">Titles</p>
               </div>
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-5 py-4 min-w-[90px] text-center shadow-lg backdrop-blur-sm">
-                <Users className="mx-auto h-5 w-5" style={{ color: regionConfig.accent }} />
-                <div className="mt-2 text-2xl font-bold text-[var(--text-primary)] font-sans">
-                  {regionConfig.directors?.length || 0}
+                <Star className="mx-auto h-5 w-5 text-amber-400" />
+                <div className="mt-2 text-xl font-bold text-[var(--text-primary)] font-sans">
+                  {regionStats ? `${regionStats.avg_rating}/10` : "—"}
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">Directors</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">Avg Rating</p>
               </div>
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-5 py-4 min-w-[90px] text-center shadow-lg backdrop-blur-sm">
                 <BarChart3 className="mx-auto h-5 w-5" style={{ color: regionConfig.accent }} />
-                <div className="mt-2 text-2xl font-bold text-[var(--text-primary)] font-sans">ML</div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">Cluster</p>
+                <div className="mt-2 text-sm font-bold text-[var(--text-primary)] font-sans truncate max-w-[80px]">
+                  {regionStats && regionStats.top_genres && regionStats.top_genres.length > 0 ? regionStats.top_genres[0] : "—"}
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">Top Genre</p>
               </div>
             </div>
           </div>

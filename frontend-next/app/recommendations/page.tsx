@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
-import { getUser } from "../../lib/auth";
+import { getUser, authFetch } from "../../lib/auth";
 
 interface Movie {
   tmdb_id: number;
@@ -35,10 +35,11 @@ function RecommendationsContent() {
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [sortBy, setSortBy] = useState<"score" | "popularity" | "year">("score");
   const [tasteProfile, setTasteProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [userId, setUserId] = useState<string>("1");
+  const [userId, setUserId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Initialize user ID from auth state or search params
@@ -50,6 +51,9 @@ function RecommendationsContent() {
       const queryUserId = searchParams.get("user_id");
       if (queryUserId) {
         setUserId(queryUserId);
+      } else {
+        setLoading(false);
+        setProfileLoading(false);
       }
     }
   }, [searchParams]);
@@ -57,10 +61,13 @@ function RecommendationsContent() {
   // Fetch user taste profile
   useEffect(() => {
     async function fetchTasteProfile() {
-      if (!userId) return;
+      if (!userId) {
+        setProfileLoading(false);
+        return;
+      }
       setProfileLoading(true);
       try {
-        const res = await fetch(`${API}/api/v1/users/${userId}/profile`);
+        const res = await authFetch(`${API}/api/v1/users/${userId}/profile`);
         if (res.ok) {
           const data = await res.json();
           if (data.profile) setTasteProfile(data.profile);
@@ -82,9 +89,10 @@ function RecommendationsContent() {
         const params = new URLSearchParams({ top_k: "20", page: String(pageNum) });
         if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
         if (selectedMood) params.set("mood", selectedMood);
+        if (selectedLanguage) params.set("language", selectedLanguage);
         params.set("sort", sortBy);
 
-        const recsRes = await fetch(`${API}/api/v1/recommendations/user/${userId}?` + params);
+        const recsRes = await authFetch(`${API}/api/v1/recommendations/user/${userId}?` + params);
         if (recsRes.ok) {
           const recsData = await recsRes.json();
           const movies = (recsData.recommendations || []).map((m: any) => ({
@@ -104,13 +112,13 @@ function RecommendationsContent() {
         setLoading(false);
       }
     },
-    [userId, selectedGenres, selectedMood, sortBy]
+    [userId, selectedGenres, selectedMood, selectedLanguage, sortBy]
   );
 
   useEffect(() => {
     setPage(1);
     fetchRecommendations(1);
-  }, [selectedGenres, selectedMood, sortBy, fetchRecommendations]);
+  }, [selectedGenres, selectedMood, selectedLanguage, sortBy, fetchRecommendations]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -182,6 +190,35 @@ function RecommendationsContent() {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } },
   };
+
+  if (!userId && !loading && !profileLoading) {
+    return (
+      <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden pb-24 pt-28 flex items-center justify-center">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-20" aria-hidden="true">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+        </div>
+        <div className="relative z-10 max-w-md w-full mx-auto px-6 text-center py-20 bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] rounded-3xl backdrop-blur-md glass-card">
+          <Sparkles className="w-12 h-12 text-[var(--accent-warm)] mx-auto mb-6 animate-pulse" />
+          <h2 className="text-2xl font-bold font-playfair mb-3">Authentication Required</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-8">
+            Log in to access your personalized Neural Engine curation, watch history, and Taste DNA.
+          </p>
+          <a
+            href="/login"
+            className="inline-block bg-[var(--accent-warm)] text-black font-semibold px-8 py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-glow uppercase tracking-wider text-xs font-sans"
+          >
+            Sign In / Register
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden pb-24 pt-28">
@@ -280,7 +317,7 @@ function RecommendationsContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                 {/* Emotional Bias */}
                 <div>
                   <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
@@ -320,6 +357,32 @@ function RecommendationsContent() {
                       <option value="score">Hybrid Neural Match Score</option>
                       <option value="popularity">Global Popularity Index</option>
                       <option value="year">Temporal Archiving (Year)</option>
+                    </select>
+                    {/* Select indicator */}
+                    <div className="absolute right-[calc(100%-8rem)] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-tertiary)]">
+                      <Sliders className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Language Filter */}
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
+                    Language Filter
+                  </p>
+                  <div className="relative">
+                    <select
+                      value={selectedLanguage}
+                      onChange={(e) => setSelectedLanguage(e.target.value)}
+                      className="w-full max-w-xs px-4 py-2.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/60 text-[var(--text-primary)] font-sans uppercase tracking-wider focus:outline-none focus:border-[var(--accent-warm)] transition-colors cursor-pointer appearance-none"
+                    >
+                      <option value="">All Languages</option>
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="ko">Korean</option>
+                      <option value="ja">Japanese</option>
+                      <option value="fr">French</option>
+                      <option value="es">Spanish</option>
                     </select>
                     {/* Select indicator */}
                     <div className="absolute right-[calc(100%-8rem)] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-tertiary)]">

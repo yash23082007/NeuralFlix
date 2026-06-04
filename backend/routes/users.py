@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List
 
 from ml.taste_profile import build_taste_profile
@@ -100,18 +100,17 @@ async def get_user_watch_history(user_id: str):
 async def onboard_user(data: dict):
     """
     Handles initial onboarding: sets user preferences and maps to a cluster.
-    Expected data: { user_id, liked_genres, liked_movies, disliked_movies }
+    Expected data: { user_id, liked_genres, liked_movies, pref_genres, pref_languages }
     """
     user_id = data.get("user_id")
-    liked_genres = data.get("liked_genres", [])
+    liked_genres = data.get("pref_genres") or data.get("liked_genres") or []
+    pref_languages = data.get("pref_languages") or data.get("languages") or []
     liked_movies = data.get("liked_movies", [])
     
-    # In a real app, we would store these in the user document and trigger a cold-start model update.
-    # For the demo, we'll just log it and return success.
     from database import users_collection
     await users_collection.update_one(
         {"id": str(user_id)},
-        {"$set": {"onboarded": True, "pref_genres": liked_genres}}
+        {"$set": {"onboarded": True, "pref_genres": liked_genres, "pref_languages": pref_languages}}
     )
 
     from database import watch_history_collection
@@ -162,18 +161,29 @@ async def onboard_user(data: dict):
     }
 
 
+async def invalidate_user_cache(user_id: str):
+    try:
+        from cache.redis_client import get_redis
+        redis_client = await get_redis()
+        if redis_client:
+            keys = await redis_client.keys(f"recs:{user_id}:*")
+            if keys:
+                await redis_client.delete(*keys)
+    except Exception:
+        pass
+
+
 @router.get("/{user_id}/watchlist")
-async def get_watchlist(user_id: str, page: int = 1, limit: int = 20):
+async def get_watchlist(user_id: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
     from database import users_collection
     user = await users_collection.find_one({"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    pref = user.get("preferences_json") or {}
-    if not isinstance(pref, dict):
-        pref = {}
-    watchlist_ids = pref.get("watchlist", [])
-    
+    watchlist_ids = user.get("watchlist", [])
+    if not isinstance(watchlist_ids, list):
+        watchlist_ids = []
+        
     # pagination
     skip = (page - 1) * limit
     paginated_ids = watchlist_ids[skip : skip + limit]
@@ -195,7 +205,7 @@ async def get_watchlist(user_id: str, page: int = 1, limit: int = 20):
         except ValueError:
             pass
             
-    return {"total": len(watchlist_ids), "results": results}
+    return {"total": len(watchlist_ids), "page": page, "results": results}
 
 
 @router.post("/{user_id}/watchlist/{movie_id}")
@@ -205,17 +215,11 @@ async def add_to_watchlist(user_id: str, movie_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    pref = user.get("preferences_json") or {}
-    if not isinstance(pref, dict):
-        pref = {}
-    watchlist = pref.get("watchlist", [])
-    if movie_id not in watchlist:
-        watchlist.append(movie_id)
-        pref["watchlist"] = watchlist
-        await users_collection.update_one(
-            {"id": user_id},
-            {"$set": {"preferences_json": pref}}
-        )
+    await users_collection.update_one(
+        {"id": user_id},
+        {"$addToSet": {"watchlist": movie_id}}
+    )
+    await invalidate_user_cache(user_id)
     return {"message": "Added to watchlist"}
 
 
@@ -226,17 +230,11 @@ async def remove_from_watchlist(user_id: str, movie_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    pref = user.get("preferences_json") or {}
-    if not isinstance(pref, dict):
-        pref = {}
-    watchlist = pref.get("watchlist", [])
-    if movie_id in watchlist:
-        watchlist.remove(movie_id)
-        pref["watchlist"] = watchlist
-        await users_collection.update_one(
-            {"id": user_id},
-            {"$set": {"preferences_json": pref}}
-        )
+    await users_collection.update_one(
+        {"id": user_id},
+        {"$pull": {"watchlist": movie_id}}
+    )
+    await invalidate_user_cache(user_id)
     return {"message": "Removed from watchlist"}
 
 
@@ -245,40 +243,136 @@ async def rate_movie(user_id: str, movie_id: str, rating: float):
     if not 0.5 <= rating <= 10.0:
         raise HTTPException(status_code=400, detail="Rating must be between 0.5 and 10.0")
     
-    from database import async_session_factory
-    from db.models import Movie, Rating
-    from sqlalchemy import select
+    # 1. Update SQL if Postgres is enabled
+    if _has_pg:
+        from database import async_session_factory
+        from db.models import Movie, Rating
+        from sqlalchemy import select
+        from datetime import datetime
+        try:
+            async with async_session_factory() as session:
+                stmt = select(Movie.id).where(Movie.tmdb_id == int(movie_id))
+                res = await session.execute(stmt)
+                movie_sql_id = res.scalar()
+                if movie_sql_id:
+                    stmt_rating = select(Rating).where(Rating.user_id == user_id, Rating.movie_id == movie_sql_id)
+                    res_rating = await session.execute(stmt_rating)
+                    rating_obj = res_rating.scalar_one_or_none()
+                    
+                    if rating_obj:
+                        rating_obj.rating = rating
+                        rating_obj.timestamp = int(datetime.utcnow().timestamp())
+                    else:
+                        rating_obj = Rating(
+                            user_id=user_id,
+                            movie_id=movie_sql_id,
+                            rating=rating,
+                            timestamp=int(datetime.utcnow().timestamp())
+                        )
+                        session.add(rating_obj)
+                    await session.commit()
+        except Exception as e:
+            print(f"Postgres rating failed: {e}")
+
+    # 2. Update adapted collections
+    from database import users_collection, watch_history_collection
     from datetime import datetime
-    
     try:
-        async with async_session_factory() as session:
-            stmt = select(Movie.id).where(Movie.tmdb_id == int(movie_id))
-            res = await session.execute(stmt)
-            movie_sql_id = res.scalar()
-            if not movie_sql_id:
-                raise HTTPException(status_code=404, detail="Movie not found in catalog")
-                
-            # Check if rating already exists
-            stmt_rating = select(Rating).where(Rating.user_id == user_id, Rating.movie_id == movie_sql_id)
-            res_rating = await session.execute(stmt_rating)
-            rating_obj = res_rating.scalar_one_or_none()
-            
-            if rating_obj:
-                rating_obj.rating = rating
-                rating_obj.timestamp = int(datetime.utcnow().timestamp())
-            else:
-                rating_obj = Rating(
-                    user_id=user_id,
-                    movie_id=movie_sql_id,
-                    rating=rating,
-                    timestamp=int(datetime.utcnow().timestamp())
-                )
-                session.add(rating_obj)
-                
-            await session.commit()
-            
-        return {"message": "Rating saved"}
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid movie ID format")
+        await users_collection.update_one(
+            {"id": user_id},
+            {"$set": {f"ratings.{movie_id}": rating}}
+        )
+        await watch_history_collection.update_one(
+            {"user_id": user_id, "movie_id": movie_id},
+            {"$set": {"user_id": user_id, "movie_id": movie_id, "rating": rating, "timestamp": datetime.utcnow()}},
+            upsert=True
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Collection rating failed: {e}")
+
+    # 3. Invalidate Redis Cache
+    await invalidate_user_cache(user_id)
+    return {"message": "Rating saved", "rating": rating}
+
+
+@router.get("/{user_id}/ratings")
+async def get_ratings(user_id: str):
+    from database import users_collection
+    user = await users_collection.find_one({"id": user_id})
+    if not user:
+        return {"ratings": {}}
+    return {"ratings": user.get("ratings", {}) or {}}
+
+
+@router.get("/{user_id}/favorites")
+async def get_favorites(user_id: str):
+    from database import users_collection, movies_collection
+    user = await users_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    favorites_ids = user.get("favorites", [])
+    if not favorites_ids:
+        return {"results": []}
+    
+    movies = await movies_collection.find(
+        {"tmdb_id": {"$in": [int(i) for i in favorites_ids if str(i).isdigit()]}},
+        {"_id": 0}
+    ).to_list(length=None)
+    return {"results": movies}
+
+
+@router.post("/{user_id}/favorites/{movie_id}")
+async def toggle_favorite(user_id: str, movie_id: str):
+    from database import users_collection
+    user = await users_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    favorites = user.get("favorites", [])
+    if not isinstance(favorites, list):
+        favorites = []
+    
+    if movie_id in favorites:
+        await users_collection.update_one(
+            {"id": user_id},
+            {"$pull": {"favorites": movie_id}}
+        )
+        status = "removed"
+    else:
+        await users_collection.update_one(
+            {"id": user_id},
+            {"$addToSet": {"favorites": movie_id}}
+        )
+        status = "added"
+        
+    await invalidate_user_cache(user_id)
+    return {"status": status}
+
+
+@router.get("/{user_id}/stats")
+async def get_user_stats(user_id: str):
+    """Retrieve dynamic stats representing user's catalog interactions."""
+    if _has_pg:
+        try:
+            watch_history = await _fetch_watch_history_pg(user_id)
+        except Exception:
+            watch_history = await _fetch_watch_history_inmem(user_id)
+    else:
+        watch_history = await _fetch_watch_history_inmem(user_id)
+        
+    from database import users_collection
+    user = await users_collection.find_one({"id": user_id})
+    ratings = {}
+    if user:
+        ratings = user.get("ratings", {}) or {}
+        
+    films_watched = len(watch_history)
+    hours_watched = sum([m.get("runtime", 0) for m in watch_history if m.get("runtime")]) / 60.0
+    avg_rating = sum(ratings.values()) / len(ratings) if ratings else 0.0
+    countries = len(set([m.get("language") for m in watch_history if m.get("language")]))
+    
+    return {
+        "films_watched": films_watched,
+        "hours_watched": round(hours_watched, 1),
+        "avg_rating": round(avg_rating, 2),
+        "countries_watched": countries
+    }

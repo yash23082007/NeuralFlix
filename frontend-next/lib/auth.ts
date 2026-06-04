@@ -78,3 +78,49 @@ export function getAuthHeaders(): Record<string, string> {
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performRefresh(): Promise<string | null> {
+  try {
+    const refreshRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/refresh`,
+      { method: "POST", credentials: "include" }
+    );
+    if (refreshRes.ok) {
+      const { access_token } = await refreshRes.json();
+      setToken(access_token);
+      return access_token;
+    }
+  } catch (err) {
+    console.error("Token refresh failed:", err);
+  }
+  logout();
+  return null;
+}
+
+// Auto-refresh: interceptor for expired tokens
+export async function authFetch(url: string, options: RequestInit = {}) {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    if (!refreshPromise) {
+      refreshPromise = performRefresh().finally(() => {
+        refreshPromise = null;
+      });
+    }
+    const newToken = await refreshPromise;
+    if (newToken) {
+      headers.Authorization = `Bearer ${newToken}`;
+      res = await fetch(url, { ...options, headers });
+    }
+  }
+  return res;
+}
+

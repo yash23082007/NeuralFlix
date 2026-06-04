@@ -81,7 +81,7 @@ async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dic
 import time
 
 _SVD_MODEL = None
-_SVD_TRAINED_AT = 0
+_SVD_TRAINED_AT = 0.0
 SVD_TTL = 3600  # Retrain hourly
 
 def _get_svd_model(df):
@@ -89,9 +89,9 @@ def _get_svd_model(df):
     now = time.time()
     if _SVD_MODEL is None or (now - _SVD_TRAINED_AT) > SVD_TTL:
         from surprise import Dataset, Reader, SVD
-        reader = Reader(rating_scale=(1.0, 5.0))
+        reader = Reader(rating_scale=(1.0, 10.0))
         data = Dataset.load_from_df(df[['user', 'item', 'rating']], reader)
-        _SVD_MODEL = SVD(n_factors=100, n_epochs=20)
+        _SVD_MODEL = SVD(n_factors=100, n_epochs=20, lr_all=0.005, reg_all=0.02)
         _SVD_MODEL.fit(data.build_full_trainset())
         _SVD_TRAINED_AT = now
     return _SVD_MODEL

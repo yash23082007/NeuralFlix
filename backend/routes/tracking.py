@@ -38,14 +38,26 @@ async def log_watch_event(
     try:
         if _has_pg:
             async for session in get_db():
-                watch_event = WatchEvent(
-                    user_id=int(event.user_id),
-                    movie_id=int(event.item_id),
-                    watch_time=event.metadata.get("watch_time", 0) if event.metadata else 0,
-                    completed=event.metadata.get("completed", False) if event.metadata else False,
-                )
-                session.add(watch_event)
-                await session.commit()
+                from sqlalchemy import select
+                from db.models import Movie
+                stmt = select(Movie.id).where(Movie.tmdb_id == int(event.item_id))
+                res = await session.execute(stmt)
+                movie_sql_id = res.scalar()
+                if not movie_sql_id:
+                    try:
+                        movie_sql_id = int(event.item_id)
+                    except ValueError:
+                        movie_sql_id = None
+                
+                if movie_sql_id:
+                    watch_event = WatchEvent(
+                        user_id=str(event.user_id),
+                        movie_id=movie_sql_id,
+                        watch_time=event.metadata.get("watch_time", 0) if event.metadata else 0,
+                        completed=event.metadata.get("completed", False) if event.metadata else False,
+                    )
+                    session.add(watch_event)
+                    await session.commit()
         else:
             from database import watch_history_collection
             watch_history_collection.insert_one({
