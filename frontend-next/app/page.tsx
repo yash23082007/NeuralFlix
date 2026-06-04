@@ -9,7 +9,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import MovieRow from "../components/MovieRow";
 import RowSkeleton from "../components/RowSkeleton";
 import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
@@ -25,32 +24,12 @@ import {
 
 import CinemaWorldMapWrapper from "../components/CinemaWorldMapWrapper";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  // Fetch ALL rows in parallel
-  const [
-    trending,
-    bollywood,
-    korean,
-    japanese,
-    anime,
-    topRated,
-    mlOverview,
-    french,
-    hollywood,
-    tamil
-  ] = await Promise.all([
+async function HeroSectionWrapper() {
+  const [trending, mlOverview] = await Promise.all([
     getTrendingAll(),
-    getByRegion("bollywood"),
-    getByRegion("korean"),
-    getByRegion("japanese"),
-    getAnime(),
-    getTopRated(),
-    getMlOverview(),
-    getByRegion("french"),
-    getByRegion("hollywood"),
-    getByRegion("tamil"),
+    getMlOverview()
   ]);
 
   const featuredMovie = (trending?.[0] || {
@@ -77,7 +56,41 @@ export default async function HomePage() {
 
   const catalogSize = mlOverview?.catalog_size || 930000;
 
-  // Region configuration for Bento Grid mapping
+  return <Hero featuredMovie={featuredMovie} sideMovies={sideMovies} catalogSize={catalogSize} />;
+}
+
+async function TrendingRow() {
+  const trending = await getTrendingAll();
+  return <MovieRow title="Trending Now" movies={trending} seeAllHref="/discover?sort=popularity" />;
+}
+
+async function TopRatedRow() {
+  const topRated = await getTopRated();
+  return <MovieRow title="Top Rated" movies={topRated} seeAllHref="/discover?sort=rating" />;
+}
+
+async function AnimeRow() {
+  const anime = await getAnime();
+  return <MovieRow title="Anime Spotlight" movies={anime} seeAllHref="/discover?genres=Animation" />;
+}
+
+async function RegionalBentoGridWrapper() {
+  const [
+    hollywood,
+    bollywood,
+    korean,
+    japanese,
+    french,
+    tamil
+  ] = await Promise.all([
+    getByRegion("hollywood"),
+    getByRegion("bollywood"),
+    getByRegion("korean"),
+    getByRegion("japanese"),
+    getByRegion("french"),
+    getByRegion("tamil"),
+  ]);
+
   const REGION_CARDS = [
     { key: "hollywood", name: "Hollywood", movies: hollywood, desc: "Blockbusters & auteur cinema", accent: "from-amber-600/20 to-yellow-600/10", border: "border-yellow-500/20" },
     { key: "bollywood", name: "Bollywood", movies: bollywood, desc: "Hindi epics, dramas & musicals", accent: "from-orange-600/20 to-red-600/10", border: "border-orange-500/20" },
@@ -88,9 +101,54 @@ export default async function HomePage() {
   ];
 
   return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {REGION_CARDS.map((r) => {
+        const topMovie = r.movies?.[0];
+        return (
+          <a
+            key={r.key}
+            href={`/cinema/${r.key}`}
+            className={`group relative rounded-2xl border ${r.border} bg-gradient-to-br ${r.accent} p-6 overflow-hidden flex flex-col justify-between h-[240px] hover:border-white/20 transition-all hover:scale-[1.01] shadow-md`}
+          >
+            {topMovie?.backdrop_url && (
+              <img
+                src={topMovie.backdrop_url}
+                alt={r.name}
+                className="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-elevated)] via-[var(--surface-elevated)]/60 to-transparent" />
+            
+            <div className="relative z-10">
+              <span className="text-[10px] font-bold text-[var(--accent-warm)] uppercase tracking-wider">{r.name}</span>
+              <h3 className="text-xl font-bold text-white mt-1 group-hover:text-[var(--accent-warm)] transition-colors">{r.name}</h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{r.desc}</p>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+              {topMovie && (
+                <span className="text-[10px] text-white/40 truncate max-w-[70%]">
+                  Featured: <strong className="text-white/70">{topMovie.title}</strong>
+                </span>
+              )}
+              <span className="text-xs font-bold text-[var(--accent-warm)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                Explore →
+              </span>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+export default async function HomePage() {
+  return (
     <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden page-enter">
       {/* ── Hero Section (Full Viewport, 50% backdrop) ── */}
-      <Hero featuredMovie={featuredMovie} sideMovies={sideMovies} catalogSize={catalogSize} />
+      <Suspense fallback={<div className="h-screen bg-black" />}>
+        <HeroSectionWrapper />
+      </Suspense>
 
       {/* ── Main Content ── */}
       <div className="relative z-10 max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 py-20 space-y-24">
@@ -103,7 +161,7 @@ export default async function HomePage() {
 
         {/* Trending Now */}
         <Suspense fallback={<RowSkeleton label="Trending Now" />}>
-          <MovieRow title="Trending Now" movies={trending} seeAllHref="/discover?sort=popularity" />
+          <TrendingRow />
         </Suspense>
 
         {/* Regional Bento Grid */}
@@ -117,54 +175,19 @@ export default async function HomePage() {
             <p className="text-[var(--text-secondary)] text-sm mt-1">Exceptional cinema clusters mapped by origin and language family.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {REGION_CARDS.map((r) => {
-              const topMovie = r.movies?.[0];
-              return (
-                <a
-                  key={r.key}
-                  href={`/cinema/${r.key}`}
-                  className={`group relative rounded-2xl border ${r.border} bg-gradient-to-br ${r.accent} p-6 overflow-hidden flex flex-col justify-between h-[240px] hover:border-white/20 transition-all hover:scale-[1.01] shadow-md`}
-                >
-                  {topMovie?.backdrop_url && (
-                    <img
-                      src={topMovie.backdrop_url}
-                      alt={r.name}
-                      className="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-elevated)] via-[var(--surface-elevated)]/60 to-transparent" />
-                  
-                  <div className="relative z-10">
-                    <span className="text-[10px] font-bold text-[var(--accent-warm)] uppercase tracking-wider">{r.name}</span>
-                    <h3 className="text-xl font-bold text-white mt-1 group-hover:text-[var(--accent-warm)] transition-colors">{r.name}</h3>
-                    <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{r.desc}</p>
-                  </div>
-
-                  <div className="relative z-10 flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-                    {topMovie && (
-                      <span className="text-[10px] text-white/40 truncate max-w-[70%]">
-                        Featured: <strong className="text-white/70">{topMovie.title}</strong>
-                      </span>
-                    )}
-                    <span className="text-xs font-bold text-[var(--accent-warm)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      Explore →
-                    </span>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
+          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="animate-pulse bg-[var(--surface-muted)] h-[240px] rounded-2xl" />)}</div>}>
+            <RegionalBentoGridWrapper />
+          </Suspense>
         </section>
 
         {/* Top Rated */}
         <Suspense fallback={<RowSkeleton label="Top Rated" />}>
-          <MovieRow title="Top Rated" movies={topRated} seeAllHref="/discover?sort=rating" />
+          <TopRatedRow />
         </Suspense>
 
         {/* Anime Spotlight */}
         <Suspense fallback={<RowSkeleton label="Anime Spotlight" />}>
-          <MovieRow title="Anime Spotlight" movies={anime} seeAllHref="/discover?genres=Animation" />
+          <AnimeRow />
         </Suspense>
 
         {/* Mood Picker Strip */}
