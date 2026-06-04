@@ -15,7 +15,6 @@ TFIDF_MODEL_PATH = os.getenv("TFIDF_MODEL_PATH", "models/tfidf_model.pkl")
 class ContentBasedEngine:
     def __init__(self):
         self.tfidf = None
-        self.cosine_sim = None
         self.movie_ids = []
         self._loaded = False
 
@@ -50,12 +49,11 @@ class ContentBasedEngine:
         
         tfidf_matrix = self.tfidf.fit_transform(soups)
         self.tfidf_matrix = tfidf_matrix
-        self.cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
         
         # Save models
         os.makedirs("models", exist_ok=True)
         with open(CONTENT_MATRIX_PATH, "wb") as f:
-            pickle.dump((self.cosine_sim, self.movie_ids, tfidf_matrix), f)
+            pickle.dump((self.movie_ids, tfidf_matrix), f)
         with open(TFIDF_MODEL_PATH, "wb") as f:
             pickle.dump(self.tfidf, f)
             
@@ -70,9 +68,11 @@ class ContentBasedEngine:
             with open(CONTENT_MATRIX_PATH, "rb") as f:
                 loaded = pickle.load(f)
                 if len(loaded) == 3:
-                    self.cosine_sim, self.movie_ids, self.tfidf_matrix = loaded
+                    _, self.movie_ids, self.tfidf_matrix = loaded
+                elif len(loaded) == 2:
+                    self.movie_ids, self.tfidf_matrix = loaded
                 else:
-                    self.cosine_sim, self.movie_ids = loaded
+                    self.movie_ids = loaded
                     self.tfidf_matrix = None
             self.id_to_index = {movie_id: i for i, movie_id in enumerate(self.movie_ids)}
             with open(TFIDF_MODEL_PATH, "rb") as f:
@@ -88,8 +88,13 @@ class ContentBasedEngine:
             return []
         
         idx = self.id_to_index[tmdb_id]
-        # Get pairwise similarity scores for all movies with that movie
-        sim_scores = list(enumerate(self.cosine_sim[idx]))
+        if self.tfidf_matrix is None:
+            return []
+        
+        # Compute similarity on the fly to save RAM
+        movie_vec = self.tfidf_matrix[idx]
+        sim_scores_array = cosine_similarity(movie_vec, self.tfidf_matrix).flatten()
+        sim_scores = list(enumerate(sim_scores_array))
         # Sort by similarity
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         # Exclude the movie itself and take top_k
@@ -134,7 +139,7 @@ async def auto_build_if_missing():
     try:
         movies = []
         cursor = movies_collection.find({"overview": {"$ne": ""}})
-        cursor.sort("popularity_score", -1).limit(300000)
+        cursor.sort("popularity_score", -1).limit(10000)
         
         async for doc in cursor:
             movies.append({
