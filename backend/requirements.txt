@@ -46,5 +46,8 @@ tenacity>=9.0.0           # Retry logic for external APIs
 # Rate limiting
 slowapi>=0.1.9
 
+# Background Tasks
+celery>=5.5.0
+
 # Async HTTP (mega ingest pipeline)
 aiohttp>=3.10.0

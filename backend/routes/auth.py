@@ -10,8 +10,7 @@ from database import users_collection
 import os
 import uuid
 import httpx
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
+
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -55,6 +54,8 @@ def create_token(data: dict, expires_minutes: int):
 
 def verify_google_token(token: str):
     try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
         idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), GOOGLE_CLIENT_ID)
         return idinfo
     except Exception as e:

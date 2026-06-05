@@ -6,12 +6,17 @@ router = APIRouter()
 @router.get("/")
 async def get_genres():
     """Return all unique genres from the movies collection."""
-    pipeline = [
-        {"$unwind": "$genres"},
-        {"$group": {"_id": "$genres"}},
-        {"$sort": {"_id": 1}}
-    ]
-    cursor = movies_collection.aggregate(pipeline)
-    result = await cursor.to_list(length=None)
-    genres = [doc["_id"] for doc in result if doc["_id"]]
-    return {"genres": genres}
+    all_movies = await movies_collection.find({}, {"genres": 1}).to_list(length=10000)
+    genre_set = set()
+    for movie in all_movies:
+        genres = movie.get("genres", [])
+        if isinstance(genres, list):
+            for g in genres:
+                if g:
+                    genre_set.add(g)
+        elif isinstance(genres, str):
+            for g in genres.split(","):
+                g = g.strip()
+                if g:
+                    genre_set.add(g)
+    return {"genres": sorted(genre_set)}
