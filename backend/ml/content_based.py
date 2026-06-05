@@ -139,7 +139,7 @@ async def auto_build_if_missing():
     try:
         movies = []
         cursor = movies_collection.find({"overview": {"$ne": ""}})
-        cursor.sort("popularity_score", -1).limit(10000)
+        cursor.sort("popularity_score", -1).limit(1000)
         
         async for doc in cursor:
             movies.append({

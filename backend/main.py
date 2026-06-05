@@ -35,11 +35,10 @@ async def lifespan(app: FastAPI):
     # 3. Load ContentBasedEngine TF-IDF matrix
     from ml.content_based import content_engine, auto_build_if_missing
     try:
-        await auto_build_if_missing()
-        await asyncio.to_thread(content_engine.load)
-        log.info("Content similarity index loaded")
+        asyncio.create_task(auto_build_if_missing())
+        log.info("Content similarity index background build started")
     except Exception as e:
-        log.warning("failed_to_load_content_index", error=str(e))
+        log.warning("failed_to_start_content_index_build", error=str(e))
         
     # 4. Load NCF pre-trained weights if they exist
     import torch
