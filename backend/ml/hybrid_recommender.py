@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger("HYBRID_RECOMMENDER")
 
-NUM_USERS = int(os.getenv("NCF_NUM_USERS", "10000"))
+NUM_USERS = int(os.getenv("NCF_NUM_USERS", "50000"))
 NUM_ITEMS = int(os.getenv("NCF_NUM_ITEMS", "15000"))
 
 ncf_model: Optional[NCFModel] = None

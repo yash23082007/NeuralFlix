@@ -15,7 +15,7 @@ router = APIRouter()
 _has_pg = False
 try:
     import os
-    if os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() != "true":
+    if os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() != "true":
         from sqlalchemy.ext.asyncio import AsyncSession
         from sqlalchemy import select, func, or_
         from db.connection import get_db

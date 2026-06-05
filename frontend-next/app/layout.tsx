@@ -92,12 +92,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
+        <ThemeProvider>
           <Providers>
             <div className="app-shell relative min-h-screen flex flex-col">
               <AmbientBackground />

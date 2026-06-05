@@ -17,7 +17,7 @@ recommender = HybridRecommender(content_engine, ncf_model, sasrec_model, gnn_mod
 # Try to load PostgreSQL dependencies if available (not in demo mode)
 _has_pg = False
 try:
-    if os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() != "true":
+    if os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() != "true":
         from sqlalchemy.ext.asyncio import AsyncSession
         from sqlalchemy import select
         from db.connection import get_db

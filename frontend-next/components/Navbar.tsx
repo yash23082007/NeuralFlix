@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUser, isAuthenticated, logout } from "../lib/auth";
+import ThemeToggle from "./ThemeToggle";
 
 const CINEMA_REGIONS = [
   { name: "Indian", href: "/cinema/indian", code: "IN", accent: "text-orange-400" },
@@ -176,6 +177,9 @@ export default function Navbar() {
                 ⌘K
               </kbd>
             </motion.button>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Auth */}
             {mounted &&

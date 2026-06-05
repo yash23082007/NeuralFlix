@@ -51,7 +51,7 @@ async def get_content_based_recommendations(movie_id: str, limit: int = 10) -> L
 
 
 async def get_neural_recommendations(movie_id: str, limit: int = 10) -> List[dict]:
-    if os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() == "true" or not SessionLocal:
+    if os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() == "true" or not SessionLocal:
         return []
 
     def _fetch_neural():

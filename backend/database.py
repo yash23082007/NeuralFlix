@@ -261,7 +261,7 @@ def init_engines():
 
     # Check connection parameter
     use_postgres = False
-    demo_mode = os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() == "true"
+    demo_mode = os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() == "true"
     if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
         try:
             # Sync connection check with 3s timeout
@@ -864,16 +864,37 @@ async def auto_seed_if_empty():
 
 
 async def init_db():
-    init_engines()
-    from db.models import Base
-    from sqlalchemy import text
-    async with async_engine.begin() as conn:
-        # Patch: fix missing 'id' column caused by pandas.to_sql(if_exists='replace')
-        try:
-            await conn.execute(text("ALTER TABLE movies ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;"))
-        except Exception as e:
-            logger.warning(f"Failed to patch movies table: {e}")
-            
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("SQL database tables initialized.")
-    await auto_seed_if_empty()
+    """Create all indexes for fast movie queries."""
+    from motor.motor_asyncio import AsyncIOMotorClient
+    import os
+
+    client = AsyncIOMotorClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+    db = client["neuralflix"]
+    movies_col = db["movies"]
+    
+    # Core performance indexes
+    await movies_col.create_index([("popularity_score", -1)], name="idx_pop_desc")
+    await movies_col.create_index([("rating", -1)],           name="idx_rating_desc")
+    await movies_col.create_index([("year", -1)],             name="idx_year_desc")
+    await movies_col.create_index([("language", 1), ("popularity_score", -1)], name="idx_lang_pop")
+    await movies_col.create_index([("genres", 1),  ("popularity_score", -1)], name="idx_genre_pop")
+    await movies_col.create_index([("cinema_region", 1), ("popularity_score", -1)], name="idx_region_pop")
+    await movies_col.create_index([("media_type", 1), ("popularity_score", -1)], name="idx_type_pop")
+    await movies_col.create_index([("tmdb_id", 1)], unique=True, sparse=True, name="idx_tmdb_unique")
+    
+    # Full text search
+    await movies_col.create_index([
+        ("title", "text"), ("overview", "text"), 
+        ("director", "text"), ("cast", "text")
+    ], weights={"title": 10, "director": 5, "overview": 3}, name="idx_text_search")
+    
+    # User data indexes
+    users_col = db["users"]
+    await users_col.create_index([("email", 1)],  unique=True, name="idx_email")
+    await users_col.create_index([("id", 1)],     unique=True, name="idx_userid")
+    
+    history_col = db["watch_history"]
+    await history_col.create_index([("user_id", 1), ("timestamp", -1)], name="idx_user_history")
+    await history_col.create_index([("user_id", 1), ("movie_id", 1)], unique=True, sparse=True, name="idx_user_movie")
+    
+    print("✅ All MongoDB indexes created")

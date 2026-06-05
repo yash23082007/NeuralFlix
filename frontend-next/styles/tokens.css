@@ -1,7 +1,7 @@
 /* ─── NeuralFlix Design Tokens ─── */
 /* Cinematic Dark-First Design System */
 
-:root {
+:root, .dark {
   /* Surface Palette — Deep Obsidian Scale */
   --surface-primary:   #06060a;
   --surface-elevated:  #0d0d12;
@@ -53,6 +53,66 @@
   --shadow-poster: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.03);
   --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(232, 168, 73, 0.12);
 
+  /* Glass */
+  --glass-bg:      rgba(13, 13, 18, 0.80);
+  --glass-bg-heavy: rgba(6, 6, 10, 0.90);
+  --glass-border:  rgba(255, 255, 255, 0.06);
+  --glass-blur:    20px;
+}
+
+/* ─── LIGHT THEME ─── */
+.light {
+  /* Surfaces — Clean Cream Scale */
+  --surface-primary:   #fafaf8;  /* off-white background */
+  --surface-elevated:  #ffffff;  /* card surface */
+  --surface-overlay:   #f4f3f0;  /* modal, dropdowns */
+  --surface-muted:     #f0efe9;  /* subtle fills */
+  --surface-hover:     #e8e7e0;  /* hover states */
+  --surface-active:    #dddcd4;  /* active/pressed */
+
+  /* Text — Dark Ink Scale */
+  --text-primary:    #1a1814;
+  --text-secondary:  #5a5750;
+  --text-tertiary:   #8a8780;
+  --text-disabled:   #b8b5ac;
+  --text-inverse:    #fafaf8;
+
+  /* Accent — Warmer in light mode */
+  --accent-warm:       #c47f0f;  /* darker gold for contrast */
+  --accent-warm-dim:   rgba(196, 127, 15, 0.10);
+  --accent-warm-glow:  rgba(196, 127, 15, 0.20);
+  --accent-rose:       #b5445a;
+  --accent-rose-dim:   rgba(181, 68, 90, 0.10);
+  --accent-blue:       #2563eb;
+  --accent-purple:     #7c3aed;
+  --accent-teal:       #0d9488;
+
+  /* Borders */
+  --border-faint:   rgba(0, 0, 0, 0.03);
+  --border-subtle:  rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.10);
+  --border-strong:  rgba(0, 0, 0, 0.18);
+  --border-accent:  rgba(196, 127, 15, 0.25);
+  --border-glow:    rgba(196, 127, 15, 0.35);
+
+  /* Shadows — Lighter */
+  --shadow-xs:       0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm:       0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:       0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg:       0 8px 40px rgba(0,0,0,0.12);
+  --shadow-xl:       0 16px 60px rgba(0,0,0,0.15);
+  --shadow-poster:   0 12px 40px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-glow:     0 0 20px rgba(196,127,15,0.15);
+  --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(196,127,15,0.12);
+
+  /* Glass */
+  --glass-bg:        rgba(255, 255, 255, 0.85);
+  --glass-bg-heavy:  rgba(250, 250, 248, 0.95);
+  --glass-border:    rgba(0, 0, 0, 0.06);
+  --glass-blur:      20px;
+}
+
+:root {
   /* Radii */
   --radius-xs:   4px;
   --radius-sm:   8px;
@@ -78,10 +138,4 @@
   --duration-slow:   400ms;
   --duration-slower:  600ms;
   --duration-slowest: 1000ms;
-
-  /* Glass */
-  --glass-bg:      rgba(13, 13, 18, 0.80);
-  --glass-bg-heavy: rgba(6, 6, 10, 0.90);
-  --glass-border:  rgba(255, 255, 255, 0.06);
-  --glass-blur:    20px;
 }

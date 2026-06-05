@@ -16,7 +16,7 @@ interface Movie {
   trailer_key?: string;
 }
 
-export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featuredMovie: Movie; sideMovies: Movie[]; catalogSize: number }) {
+export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featuredMovie: Movie; sideMovies: Movie[]; catalogSize: string | number }) {
   const [trailerOpen, setTrailerOpen] = useState(false);
 
   const title = featuredMovie?.title || "Discover Global Cinema";

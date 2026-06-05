@@ -23,6 +23,7 @@ import {
 } from "../lib/api";
 
 import CinemaWorldMapWrapper from "../components/CinemaWorldMapWrapper";
+import { CATALOG_DISPLAY_SIZE } from "../lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ async function HeroSectionWrapper() {
     }) as any,
   ];
 
-  const catalogSize = mlOverview?.catalog_size || 930000;
+  const catalogSize = mlOverview?.catalog_size || CATALOG_DISPLAY_SIZE;
 
   return <Hero featuredMovie={featuredMovie} sideMovies={sideMovies} catalogSize={catalogSize} />;
 }
