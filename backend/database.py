@@ -20,6 +20,8 @@ from utils.wsl_resolver import resolve_wsl_url
 
 # Environment Configuration
 DATABASE_URL = resolve_wsl_url(os.getenv("DATABASE_URL", ""))
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 if DATABASE_URL:
     os.environ["DATABASE_URL"] = DATABASE_URL
 
