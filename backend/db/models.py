@@ -1,12 +1,20 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey, Index
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
-from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.types import TypeDecorator
 
-# Map ARRAY type to JSON for SQLite dialect compatibility
-@compiles(ARRAY, "sqlite")
-def compile_array_sqlite(element, compiler, **kw):
-    return "JSON"
+class SQLiteCompatibleArray(TypeDecorator):
+    impl = ARRAY
+    cache_ok = True
+
+    def __init__(self, item_type, *args, **kwargs):
+        super().__init__(item_type, *args, **kwargs)
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "sqlite":
+            return dialect.type_descriptor(JSON)
+        else:
+            return super().load_dialect_impl(dialect)
 
 try:
     from pgvector.sqlalchemy import Vector
@@ -28,7 +36,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     auth_type = Column(String(50), default="local")
     onboarded = Column(Boolean, default=False)
-    pref_genres = Column(ARRAY(String), default=[])
+    pref_genres = Column(SQLiteCompatibleArray(String), default=[])
     created_at = Column(DateTime, default=datetime.utcnow)
     preferences_json = Column(JSON, default=dict)
 
@@ -55,7 +63,7 @@ class Movie(Base):
     title = Column(String(500), index=True, nullable=False)
     overview = Column(Text)
     tagline = Column(Text)
-    genres = Column(ARRAY(String))
+    genres = Column(SQLiteCompatibleArray(String))
     language = Column(String(20))
     release_date = Column(String(50))
     runtime = Column(Integer)
@@ -74,7 +82,7 @@ class Movie(Base):
     filmfare_wins = Column(Integer, default=0)
     oscar_wins = Column(Integer, default=0)
 
-    platforms = Column(ARRAY(String))
+    platforms = Column(SQLiteCompatibleArray(String))
     ott_global = Column(JSON)
     cinema_region = Column(String(50), index=True)
     is_indian = Column(Boolean, default=False)
@@ -83,7 +91,7 @@ class Movie(Base):
     director = Column(String(255))
     cast_members = Column(JSON)
     trailer_key = Column(String(200))
-    keywords = Column(ARRAY(String))
+    keywords = Column(SQLiteCompatibleArray(String))
     budget = Column(Integer)
     box_office = Column(String(100))
     awards = Column(Text)
