@@ -869,5 +869,5 @@ async def init_db():
     init_engines()
     # Create all tables in the bound database (PostgreSQL/SQLite)
     Base.metadata.create_all(bind=sync_engine)
-    print("✅ All SQL database tables and indexes verified/created")
+    logger.info("All SQL database tables and indexes verified/created")
 
