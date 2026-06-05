@@ -1,6 +1,12 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey, Index
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
+from sqlalchemy.ext.compiler import compiles
+
+# Map ARRAY type to JSON for SQLite dialect compatibility
+@compiles(ARRAY, "sqlite")
+def compile_array_sqlite(element, compiler, **kw):
+    return "JSON"
 
 try:
     from pgvector.sqlalchemy import Vector
