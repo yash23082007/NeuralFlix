@@ -124,7 +124,7 @@ async def legacy_redirect(request: Request, call_next):
 
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://neural-flix.vercel.app",
 ).split(",")
 app.add_middleware(
     CORSMiddleware,
