@@ -145,7 +145,7 @@ def seed_from_kaggle():
     columns_to_read = [
         "id", "title", "overview", "tagline", "genres", "original_language",
         "release_date", "runtime", "vote_average", "vote_count", "popularity",
-        "poster_path", "backdrop_path", "budget"
+        "poster_path", "budget"
     ]
     
     df = pd.read_csv(csv_file, usecols=columns_to_read, low_memory=False)
@@ -197,8 +197,7 @@ def seed_from_kaggle():
         poster_path = row.get("poster_path")
         poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if pd.notna(poster_path) else None
         
-        backdrop_path = row.get("backdrop_path")
-        backdrop_url = f"https://image.tmdb.org/t/p/original{backdrop_path}" if pd.notna(backdrop_path) else None
+        backdrop_url = None
         
         movie_doc = {
             "tmdb_id": tmdb_id,
