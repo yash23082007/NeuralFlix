@@ -26,9 +26,10 @@ async def lifespan(app: FastAPI):
     log.info("Redis connection established")
     
     # 2. Initialize Database and Indexes
-    from database import init_db
+    from database import init_db, auto_seed_if_empty
     try:
         await init_db()
+        await auto_seed_if_empty()
     except Exception as e:
         log.warning("failed_to_initialize_db_indexes", error=str(e))
         
@@ -221,3 +222,13 @@ if HAS_ROUTES:
 if feedback_router:
     # V2 Feedback system for real-time model tuning
     app.include_router(feedback_router, prefix="/api/v2/feedback", tags=["Feedback"])
+
+# ─── Seed Endpoint (manual trigger) ──────────────────────────
+@app.post("/api/v1/seed")
+async def seed_database():
+    from database import auto_seed_if_empty
+    try:
+        await auto_seed_if_empty()
+        return {"status": "seeded", "message": "Database seeded with sample movies"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
