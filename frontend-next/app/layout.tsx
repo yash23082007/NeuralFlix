@@ -67,7 +67,7 @@ export default function RootLayout({
     >
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#0E0E10" />
+        <meta name="theme-color" content="#FAFAF7" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
