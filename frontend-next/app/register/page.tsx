@@ -108,9 +108,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-black text-white overflow-hidden">
+    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[var(--surface-primary)] text-[var(--text-primary)] overflow-hidden">
       {/* Left panel: poster collage */}
-      <section className="lg:col-span-7 xl:col-span-8 hidden lg:flex flex-col justify-between p-16 relative overflow-hidden bg-gradient-to-br from-zinc-950 via-black to-zinc-900 border-r border-[var(--border-subtle)]">
+      <section className="lg:col-span-7 xl:col-span-8 hidden lg:flex flex-col justify-between p-16 relative overflow-hidden bg-gradient-to-br from-[var(--surface-overlay)] to-[var(--surface-primary)] border-r border-[var(--border-subtle)]">
         {/* Animated scrolling collage */}
         <div className="absolute inset-0 grid grid-cols-3 gap-4 p-4 opacity-25 scale-105 pointer-events-none origin-center rotate-6 translate-y-[-10%]">
           {[0, 1, 2].map((colIndex) => (
@@ -123,7 +123,7 @@ export default function RegisterPage() {
               {(collageMovies.length > 0 ? collageMovies : Array.from({ length: 6 })).map((m: any, i) => (
                 <div
                   key={i}
-                  className="aspect-[2/3] w-full rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-105"
+                  className="aspect-[2/3] w-full rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden shadow-card transition-transform duration-500 hover:scale-105"
                 >
                   {m?.poster_url ? (
                     <img
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Film className="h-8 w-8 text-zinc-700" />
+                      <Film className="h-8 w-8 text-[var(--text-tertiary)]" />
                     </div>
                   )}
                 </div>
@@ -144,7 +144,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Ambient Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/80 to-transparent z-10" />
         <div className="absolute inset-0 bg-radial-gradient z-10" />
 
         {/* Brand info overlays */}
@@ -164,16 +164,16 @@ export default function RegisterPage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--accent-warm)]/20 bg-[var(--accent-warm)]/10 text-xs font-semibold text-[var(--accent-warm)] mb-4">
               <Sparkles className="h-3.5 w-3.5" /> Neural Engine v2.5 Online
             </span>
-            <h1 className="text-4xl xl:text-5xl font-extrabold font-playfair tracking-tight leading-tight text-white mb-4">
+            <h1 className="text-4xl xl:text-5xl font-extrabold font-playfair tracking-tight leading-tight text-[var(--text-primary)] mb-4">
               Discover over <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] font-black">930K Films</span> personalized for you.
             </h1>
-            <p className="text-zinc-400 text-base leading-relaxed">
+            <p className="text-[var(--text-secondary)] text-base leading-relaxed">
               Unlock a cinematic universe calibrated to your unique Taste DNA. Real-time recommendation streams, cross-region collections, and infinite movie discoveries.
             </p>
           </motion.div>
         </div>
 
-        <div className="relative z-20 text-xs text-zinc-500 font-mono">
+        <div className="relative z-20 text-xs text-[var(--text-tertiary)] font-mono">
           © 2026 NEURALFLIX SAAS INC. ALL RIGHTS RESERVED.
         </div>
       </section>
@@ -182,8 +182,8 @@ export default function RegisterPage() {
       <section className="lg:col-span-5 xl:col-span-4 col-span-12 flex items-center justify-center p-8 bg-[var(--surface-primary)] relative overflow-y-auto">
         <div className="w-full max-w-md space-y-6 z-20 my-auto">
           <div className="text-center lg:text-left space-y-2">
-            <h2 className="text-3xl font-extrabold font-playfair tracking-tight text-white">Create Account</h2>
-            <p className="text-sm text-zinc-400">
+            <h2 className="text-3xl font-extrabold font-playfair tracking-tight text-[var(--text-primary)]">Create Account</h2>
+            <p className="text-sm text-[var(--text-secondary)]">
               Join NeuralFlix to build your Taste DNA and track films.
             </p>
           </div>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-1">
-              <label htmlFor="register-name" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <label htmlFor="register-name" className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 Full Name
               </label>
               <input
@@ -215,7 +215,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="register-email" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <label htmlFor="register-email" className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 Email Address
               </label>
               <input
@@ -230,7 +230,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="register-password" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <label htmlFor="register-password" className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 Password
               </label>
               <div className="relative">
@@ -240,13 +240,13 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
+                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 pr-11 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -256,15 +256,15 @@ export default function RegisterPage() {
               {password && (
                 <div className="space-y-1.5 pt-1.5">
                   <div className="flex justify-between items-center text-[10px]">
-                    <span className="text-zinc-500 font-semibold uppercase">Security Strength:</span>
-                    <span className="font-bold text-white uppercase tracking-wider">{strength.label}</span>
+                    <span className="text-[var(--text-tertiary)] font-semibold uppercase">Security Strength:</span>
+                    <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider">{strength.label}</span>
                   </div>
                   <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden flex gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <div
                         key={i}
                         className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                          i < strength.score ? strength.color : "bg-zinc-800"
+                          i < strength.score ? strength.color : "bg-[var(--surface-elevated)]"
                         }`}
                       />
                     ))}
@@ -274,7 +274,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="register-confirm" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <label htmlFor="register-confirm" className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 Confirm Password
               </label>
               <input
@@ -283,7 +283,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                 placeholder="••••••••"
               />
             </div>
@@ -303,9 +303,9 @@ export default function RegisterPage() {
           </form>
 
           <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-zinc-900"></div>
-            <span className="flex-shrink mx-4 text-zinc-600 text-xs font-mono uppercase">Or connect via</span>
-            <div className="flex-grow border-t border-zinc-900"></div>
+            <div className="flex-grow border-t border-[var(--border-default)]"></div>
+            <span className="flex-shrink mx-4 text-[var(--text-tertiary)] text-xs font-mono uppercase">Or connect via</span>
+            <div className="flex-grow border-t border-[var(--border-default)]"></div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -313,7 +313,7 @@ export default function RegisterPage() {
             <GithubLogin />
           </div>
 
-          <p className="text-center text-xs text-zinc-500">
+          <p className="text-center text-xs text-[var(--text-secondary)]">
             Already have an account?{" "}
             <Link
               href="/login"

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ARRAY, ForeignKey, Index
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, deferred
 from datetime import datetime
 from sqlalchemy.types import TypeDecorator
 
@@ -97,9 +97,9 @@ class Movie(Base):
     awards = Column(Text)
 
     if HAS_PGVECTOR:
-        embedding = Column(Vector(384))
+        embedding = deferred(Column(Vector(384)))
     else:
-        embedding = Column(JSON)
+        embedding = deferred(Column(JSON))
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

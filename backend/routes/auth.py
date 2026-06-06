@@ -103,7 +103,7 @@ async def login(request: Request, response: Response, body: LoginSchema):
         refresh_token, 
         httponly=True, 
         secure=True, 
-        samesite="lax", 
+        samesite="none", 
         max_age=604800
     )
     
@@ -168,7 +168,7 @@ async def google_login(request: Request, response: Response, body: GoogleLoginSc
         refresh_token, 
         httponly=True, 
         secure=True, 
-        samesite="lax", 
+        samesite="none", 
         max_age=604800
     )
     
@@ -247,7 +247,7 @@ async def github_login(request: Request, response: Response, body: GithubLoginSc
         jwt_refresh_token, 
         httponly=True, 
         secure=True, 
-        samesite="lax", 
+        samesite="none", 
         max_age=604800
     )
     
