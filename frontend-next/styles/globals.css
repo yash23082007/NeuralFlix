@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "./tokens.css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* ─── Tailwind Theme Mapping ─── */
 @theme {
   --color-background: var(--surface-primary);
@@ -12,7 +10,7 @@
   --color-bg-elevated: var(--surface-muted);
   --color-border: var(--border-subtle);
   --color-accent: var(--accent-warm);
-  --color-accent-foreground: #000000;
+  --color-accent-foreground: #ffffff;
 
   --color-glass: var(--glass-bg);
   --color-text-primary: var(--text-primary);
@@ -35,7 +33,7 @@
   --color-neural-crimson: var(--accent-rose);
   --color-neural-crimson-dim: var(--accent-rose-dim);
   --color-neural-electric: var(--accent-blue);
-  --color-neural-purple: var(--accent-warm);
+  --color-neural-purple: var(--accent-purple);
 
   --font-sans: var(--font-outfit), var(--font-inter), 'Outfit', 'Inter', system-ui, sans-serif;
 }
@@ -120,10 +118,10 @@
 }
 
 .glass-panel {
-  background: rgba(13, 13, 18, 0.65);
-  border: 1px solid var(--border-subtle);
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.15);
 }
 
 .premium-card {
@@ -249,7 +247,7 @@
   gap: 0.25rem;
   border-radius: var(--radius-xs);
   background: var(--rating-gold);
-  color: #111111;
+  color: #ffffff;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 800;
@@ -295,6 +293,11 @@
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--border-subtle);
+}
+
+/* ─── Light Text Glow ─── */
+.light-text-glow {
+  text-shadow: 0 0 16px rgba(255,255,255,0.8);
 }
 
 /* ─── Animations ─── */
@@ -510,26 +513,8 @@
 
 /* ─── Film Grain (subtle) ─── */
 .film-grain {
-  background-image: linear-gradient(0deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px);
+  background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
   background-size: 100% 4px;
-}
-
-/* Dark Mode Variables (dark-first system) */
-.dark {
-  --bg-primary: var(--surface-primary);
-  --bg-surface: var(--surface-elevated);
-  --bg-surface-light: var(--surface-overlay);
-  --bg-elevated: var(--surface-muted);
-  --border: var(--border-subtle);
-  --text-primary: var(--text-primary);
-  --text-secondary: var(--text-secondary);
-  --text-muted: var(--text-tertiary);
-  --accent: var(--accent-warm);
-  --accent-foreground: #000000;
-  --glass-bg: rgba(6, 6, 10, 0.85);
-  --glass-border: var(--border-subtle);
-  --shadow-card: var(--shadow-md);
-  --shadow-glow: 0 0 24px rgba(232, 168, 73, 0.15);
 }
 
 :root {
@@ -541,14 +526,14 @@
   --bg-elevated: var(--surface-muted);
   --bg-surface-light: var(--surface-overlay);
   --accent: var(--accent-warm);
-  --accent-foreground: #000000;
+  --accent-foreground: #ffffff;
   --neural-crimson: var(--accent-rose);
   --neural-crimson-dim: var(--accent-rose-dim);
   --neural-gold: var(--rating-gold);
   --neural-electric: var(--accent-blue);
-  --neural-purple: var(--accent-warm);
+  --neural-purple: var(--accent-purple);
   --neural-cyan: var(--accent-sage);
   --shadow-card: var(--shadow-md);
-  --shadow-gold: 0 4px 24px rgba(232, 168, 73, 0.10);
+  --shadow-gold: 0 4px 24px rgba(212, 175, 55, 0.15);
   --border: var(--border-subtle);
 }

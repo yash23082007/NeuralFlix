@@ -122,14 +122,14 @@ async function RegionalBentoGridWrapper() {
             
             <div className="relative z-10">
               <span className="text-[10px] font-bold text-[var(--accent-warm)] uppercase tracking-wider">{r.name}</span>
-              <h3 className="text-xl font-bold text-white mt-1 group-hover:text-[var(--accent-warm)] transition-colors">{r.name}</h3>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mt-1 group-hover:text-[var(--accent-warm)] transition-colors">{r.name}</h3>
               <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{r.desc}</p>
             </div>
 
             <div className="relative z-10 flex items-center justify-between mt-4 pt-4 border-t border-white/5">
               {topMovie && (
-                <span className="text-[10px] text-white/40 truncate max-w-[70%]">
-                  Featured: <strong className="text-white/70">{topMovie.title}</strong>
+                <span className="text-[10px] text-[var(--text-secondary)] truncate max-w-[70%]">
+                  Featured: <strong className="text-[var(--text-primary)]">{topMovie.title}</strong>
                 </span>
               )}
               <span className="text-xs font-bold text-[var(--accent-warm)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
@@ -147,7 +147,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden page-enter">
       {/* ── Hero Section (Full Viewport, 50% backdrop) ── */}
-      <Suspense fallback={<div className="h-screen bg-black" />}>
+      <Suspense fallback={<div className="h-screen bg-[var(--surface-primary)]" />}>
         <HeroSectionWrapper />
       </Suspense>
 
@@ -172,7 +172,7 @@ export default async function HomePage() {
               <Compass className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">World Cinema Matrix</span>
             </div>
-            <h2 className="text-3xl font-bold text-white">Regional Bento Grid</h2>
+            <h2 className="text-3xl font-bold text-[var(--text-primary)]">Regional Bento Grid</h2>
             <p className="text-[var(--text-secondary)] text-sm mt-1">Exceptional cinema clusters mapped by origin and language family.</p>
           </div>
 
@@ -201,7 +201,7 @@ export default async function HomePage() {
               <Globe className="h-4 w-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">Spatial Embeddings</span>
             </div>
-            <h2 className="text-3xl font-bold text-white">Cinema Globe</h2>
+            <h2 className="text-3xl font-bold text-[var(--text-primary)]">Cinema Globe</h2>
             <p className="text-[var(--text-secondary)] text-sm mt-1">Holographic coordinate projection of international film networks.</p>
           </div>
           <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 p-4 md:p-6 backdrop-blur-md relative overflow-hidden">
