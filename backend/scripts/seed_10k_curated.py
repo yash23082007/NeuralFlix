@@ -229,6 +229,7 @@ async def seed_database():
     print("=" * 60)
     
     print("\n[1/4] Ensuring database schema and tables are created...")
+    Base.metadata.drop_all(bind=sync_engine)
     Base.metadata.create_all(bind=sync_engine)
     
     print("\n[2/4] Fetching movie data...")
@@ -255,9 +256,13 @@ async def seed_database():
         except Exception as e:
             print(f"  Warning: batch error: {e}")
             
-    print(f"\n[4/4] Seeding users and ratings for recommendation engine collaborative filtering...")
+    print("\n[4/4] Seeding users and ratings for recommendation engine collaborative filtering...")
     users_collection.drop()
     watch_history_collection.drop()
+    
+    # Retrieve all inserted movies to map tmdb_id to the database auto-incremented primary key (id)
+    all_movies = await movies_collection.find().to_list(length=12000)
+    tmdb_to_db_id = {int(m["tmdb_id"]): int(m["id"]) for m in all_movies if m.get("tmdb_id") and m.get("id")}
     
     sample_movies = random.sample(documents, min(100, len(documents)))
     users = [
@@ -270,9 +275,12 @@ async def seed_database():
     for u in users:
         watched = random.sample(sample_movies, random.randint(5, 20))
         for m in watched:
+            db_id = tmdb_to_db_id.get(int(m["tmdb_id"]))
+            if not db_id:
+                continue
             history.append({
                 "user_id": u["id"],
-                "movie_id": m["tmdb_id"],
+                "movie_id": db_id,
                 "rating": round(random.uniform(3.0, 5.0), 1),
                 "timestamp": int(random.uniform(1700000000, 1730000000))
             })
