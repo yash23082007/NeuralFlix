@@ -259,34 +259,23 @@ def init_engines():
     if async_engine is not None:
         return
 
-    # Check connection parameter
-    use_postgres = False
-    demo_mode = os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() == "true"
-    if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
-        try:
-            # Sync connection check with 3s timeout
-            temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})
-            with temp_engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            use_postgres = True
-            logger.info("Database: Postgres active connection verified.")
-        except Exception as e:
-            if not demo_mode:
-                logger.error(f"Database: Postgres connection failed ({e}) and NEURALFLIX_DEMO_MODE is false. Aborting.")
-                raise RuntimeError(f"Failed to connect to PostgreSQL: {e}")
-            logger.warning(f"Database: Postgres connection failed ({e}). Falling back to local SQLite.")
+    if not DATABASE_URL or not DATABASE_URL.startswith("postgresql"):
+        raise RuntimeError("Database: Postgres strictly required. Please set a valid DATABASE_URL starting with postgresql://")
+        
+    try:
+        # Sync connection check with 3s timeout
+        temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})
+        with temp_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        logger.info("Database: Postgres active connection verified.")
+    except Exception as e:
+        logger.error(f"Database: Postgres connection failed ({e}). Aborting.")
+        raise RuntimeError(f"Failed to connect to PostgreSQL: {e}")
 
-    if use_postgres:
-        pg_url = DATABASE_URL
-        async_pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
-        sync_engine = create_engine(pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
-        async_engine = create_async_engine(async_pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
-    else:
-        sqlite_url = "sqlite:///./neuralflix.db"
-        async_sqlite_url = "sqlite+aiosqlite:///./neuralflix.db"
-        sync_engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
-        async_engine = create_async_engine(async_sqlite_url, connect_args={"check_same_thread": False})
-        logger.info(f"Database: Using local SQLite file database at: {sqlite_url}")
+    pg_url = DATABASE_URL
+    async_pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
+    sync_engine = create_engine(pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+    async_engine = create_async_engine(async_pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
 
     sync_session_factory = sync_sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
     async_session_factory = async_sessionmaker(bind=async_engine, expire_on_commit=False)
