@@ -328,25 +328,53 @@ async def get_user_recommendations(
 
     # 7. Pipeline Reranking: Ensemble Ranker, Diversity filter, and Exploration Bandit
     # Stage 1: Ensemble Ranker (if available)
+    taste_profile = {}
     try:
         from ml.ranker import MovieRanker
         ranker = MovieRanker(model_path="models/ranker_model.txt")
         user_features = {"preferred_genres": [], "preferred_decades": [], "avg_rating": 7.0}
-        if not is_cold_start:
+        if not is_cold_start and user_history:
             from ml.taste_profile import build_taste_profile
-            # Simple metadata mockup
-            profile = build_taste_profile([{
+            history_movies = await _fetch_movies_from_db(user_history)
+            taste_profile = build_taste_profile([{
                 "title": m.get("title"),
                 "genres": m.get("genres"),
                 "release_year": m.get("year"),
+                "runtime": m.get("runtime"),
                 "language": m.get("language"),
                 "rating": m.get("rating"),
                 "director": m.get("director")
-            } for m in movies])
+            } for m in history_movies])
+
+            pref_genres = []
+            top_genres_field = taste_profile.get("top_genres", {})
+            if isinstance(top_genres_field, dict):
+                pref_genres = list(top_genres_field.keys())
+            elif isinstance(top_genres_field, list):
+                for item in top_genres_field:
+                    if isinstance(item, (tuple, list)):
+                        if len(item) > 0:
+                            pref_genres.append(item[0])
+                    else:
+                        pref_genres.append(item)
+
+            pref_decades_list = []
+            pref_decades = taste_profile.get("preferred_decades", {})
+            if isinstance(pref_decades, dict):
+                pref_decades_list = [int(d) for d in pref_decades.keys() if str(d).isdigit() or isinstance(d, int)]
+            else:
+                for item in pref_decades:
+                    if isinstance(item, (tuple, list)):
+                        d = item[0]
+                    else:
+                        d = item
+                    if str(d).isdigit() or isinstance(d, int):
+                        pref_decades_list.append(int(d))
+
             user_features = {
-                "preferred_genres": profile.get("top_genres", []),
-                "preferred_decades": [int(d) for d, _ in profile.get("preferred_decades", []) if str(d).isdigit()],
-                "avg_rating": profile.get("rating_threshold", 7.0)
+                "preferred_genres": pref_genres,
+                "preferred_decades": pref_decades_list,
+                "avg_rating": taste_profile.get("rating_threshold", 7.0)
             }
         movies = ranker.rank(movies, user_features)
     except Exception as e:
@@ -374,9 +402,8 @@ async def get_user_recommendations(
     except Exception as e:
         logger.warning(f"Skipping bandit pipeline: {e}")
 
-    # Build User Taste Profile for explanations
-    taste_profile = {}
-    if not is_cold_start and user_history:
+    # Build User Taste Profile for explanations (reused cache or fallback if needed)
+    if not taste_profile and not is_cold_start and user_history:
         try:
             from ml.taste_profile import build_taste_profile
             history_movies = await _fetch_movies_from_db(user_history)
@@ -384,6 +411,7 @@ async def get_user_recommendations(
                 "title": m.get("title"),
                 "genres": m.get("genres"),
                 "release_year": m.get("year"),
+                "runtime": m.get("runtime"),
                 "language": m.get("language"),
                 "rating": m.get("rating"),
                 "director": m.get("director")

@@ -21,7 +21,8 @@ except Exception:
 
 
 async def _fetch_watch_history_pg(user_id: str) -> List[dict]:
-    async for session in get_db():
+    from database import async_session_factory
+    async with async_session_factory() as session:
         stmt = select(WatchEvent).where(WatchEvent.user_id == user_id)
         result = await session.execute(stmt)
         events = result.scalars().all()

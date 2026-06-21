@@ -165,7 +165,7 @@ async def get_collaborative_recommendations(user_id: str, limit: int = 10) -> Li
     if not recommended_ids:
         return []
         
-    cursor = movies_collection.find({"_id": {"$in": [str(rid) for rid in recommended_ids]}}, {"_id": 0})
+    cursor = movies_collection.find({"tmdb_id": {"$in": [int(rid) if str(rid).isdigit() else rid for rid in recommended_ids]}}, {"_id": 0})
     return await cursor.to_list(length=None)
 
 

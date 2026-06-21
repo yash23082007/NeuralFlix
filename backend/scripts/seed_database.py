@@ -19,7 +19,11 @@ import random
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import movies_collection, users_collection, watch_history_collection, init_db
+# Safe console printing for Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="ignore")
+
+from database import movies_collection, users_collection, watch_history_collection, recommendations_collection, init_db
 from utils.tmdb_api import (
     fetch_popular_movies,
     fetch_top_rated,
@@ -206,7 +210,10 @@ async def seed():
     documents = sorted(all_movies.values(), key=lambda x: x.get("popularity_score", 0), reverse=True)
     documents = documents[:10000]
     
-    print(f"\n[4/6] Inserting {len(documents)} movies into SQL Database...")
+    print(f"\n[4/6] Clearing tables and inserting {len(documents)} movies into SQL Database...")
+    watch_history_collection.drop()
+    recommendations_collection.drop()
+    users_collection.drop()
     movies_collection.drop()
     
     BATCH_SIZE = 500
@@ -224,8 +231,7 @@ async def seed():
     await init_db()
 
     print(f"\n[6/6] Seeding mock users for collaborative filtering...")
-    users_collection.drop()
-    watch_history_collection.drop()
+    # Already dropped and cleared in step 4
     
     sample_movies = random.sample(documents, min(100, len(documents)))
     

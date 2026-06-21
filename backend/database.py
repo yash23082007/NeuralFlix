@@ -310,6 +310,28 @@ def build_sqlalchemy_filters(model, mongo_query):
         del query_copy["$text"]
 
     for key, value in query_copy.items():
+        if key == "movie_id" and model.__name__ in ("WatchEvent", "Rating"):
+            if isinstance(value, dict):
+                if "$in" in value:
+                    translated_list = []
+                    for v in value["$in"]:
+                        try:
+                            sql_id = get_sql_id_by_tmdb(int(v))
+                            if sql_id is not None:
+                                translated_list.append(sql_id)
+                            else:
+                                translated_list.append(int(v))
+                        except ValueError:
+                            translated_list.append(v)
+                    value["$in"] = translated_list
+            else:
+                try:
+                    sql_id = get_sql_id_by_tmdb(int(value))
+                    if sql_id is not None:
+                        value = sql_id
+                except ValueError:
+                    pass
+
         sql_key = key
         if key in ("_id", "id"):
             sql_key = "id"
@@ -412,6 +434,32 @@ class SQLCursorAdapter:
             raise StopAsyncIteration
 
 
+_tmdb_to_sql_cache = {}
+_sql_to_tmdb_cache = {}
+
+def _init_movie_id_caches():
+    global _tmdb_to_sql_cache, _sql_to_tmdb_cache
+    if not _tmdb_to_sql_cache:
+        try:
+            init_engines()
+            with sync_session_factory() as session:
+                results = session.execute(text("SELECT id, tmdb_id FROM movies")).all()
+                for row in results:
+                    _tmdb_to_sql_cache[int(row[1])] = int(row[0])
+                    _sql_to_tmdb_cache[int(row[0])] = int(row[1])
+            logger.info(f"Loaded {len(_tmdb_to_sql_cache)} movies into ID translation cache")
+        except Exception as e:
+            logger.error(f"Error loading movie ID caches: {e}")
+
+def get_sql_id_by_tmdb(tmdb_id: int) -> Optional[int]:
+    _init_movie_id_caches()
+    return _tmdb_to_sql_cache.get(tmdb_id)
+
+def get_tmdb_id_by_sql(sql_id: int) -> Optional[int]:
+    _init_movie_id_caches()
+    return _sql_to_tmdb_cache.get(sql_id)
+
+
 class SQLCollectionAdapter:
     def __init__(self, model_class):
         self.model_class = model_class
@@ -427,6 +475,15 @@ class SQLCollectionAdapter:
             d[col.name] = val
         if "id" in d:
             d["_id"] = str(d["id"])
+        
+        # Translate internal SQL movie_id back to TMDB ID for watch events and ratings
+        if self.model_class.__name__ in ("WatchEvent", "Rating"):
+            sql_id = d.get("movie_id")
+            if sql_id is not None:
+                tmdb_id = get_tmdb_id_by_sql(sql_id)
+                if tmdb_id is not None:
+                    d["movie_id"] = str(tmdb_id)
+
         # MongoDB/JSON key compatibility mapping
         if "tmdb_rating" in d and d["tmdb_rating"] is not None:
             d["rating"] = d["tmdb_rating"]
@@ -460,7 +517,21 @@ class SQLCollectionAdapter:
             val = None
             col_type_name = str(col.type).lower()
             
-            if col.name in doc:
+            if col.name == "movie_id" and self.model_class.__name__ in ("WatchEvent", "Rating"):
+                tmdb_val = doc.get("movie_id") or doc.get("item_id")
+                if tmdb_val is not None:
+                    try:
+                        tmdb_int = int(tmdb_val)
+                        sql_id = get_sql_id_by_tmdb(tmdb_int)
+                        if sql_id is not None:
+                            val = sql_id
+                        else:
+                            val = tmdb_int
+                    except ValueError:
+                        val = None
+                else:
+                    continue
+            elif col.name in doc:
                 val = doc[col.name]
             elif col.name == "id" and "_id" in doc:
                 val = doc["_id"]
@@ -624,6 +695,16 @@ class SQLCollectionAdapter:
                     elif k == "cast":
                         sql_k = "cast_members"
                         
+                    if sql_k == "movie_id" and self.model_class.__name__ in ("WatchEvent", "Rating"):
+                        if v is not None:
+                            try:
+                                tmdb_int = int(v)
+                                sql_id = get_sql_id_by_tmdb(tmdb_int)
+                                if sql_id is not None:
+                                    v = sql_id
+                            except ValueError:
+                                pass
+
                     if hasattr(obj, sql_k):
                         col = self.model_class.__table__.columns.get(sql_k)
                         if col is not None and hasattr(col, "type"):
