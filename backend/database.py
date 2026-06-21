@@ -421,6 +421,8 @@ class SQLCollectionAdapter:
             return None
         d = {}
         for col in obj.__table__.columns:
+            if col.name == "embedding":
+                continue
             val = getattr(obj, col.name)
             d[col.name] = val
         if "id" in d:

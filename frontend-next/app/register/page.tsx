@@ -209,7 +209,7 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                 placeholder="John Doe"
               />
             </div>
@@ -224,7 +224,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
+                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none focus:border-[var(--accent-warm)] transition-all font-sans"
                 placeholder="you@example.com"
               />
             </div>

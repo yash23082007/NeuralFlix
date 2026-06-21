@@ -64,48 +64,48 @@ async function apiFetch<T>(path: string, options?: RequestInit & { revalidate?: 
 }
 
 export async function getTrending(): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>("/api/v1/movies/trending");
-  return data?.results || [];
+  const data = await apiFetch<any>("/api/v1/movies/trending");
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getTopRated(page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/toprated?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/toprated?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getNowPlaying(page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/nowplaying?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/nowplaying?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getTrendingAll(): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>("/api/v1/movies/trending-all");
-  return data?.results || [];
+  const data = await apiFetch<any>("/api/v1/movies/trending-all");
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getAnime(page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/anime?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/anime?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getSeries(page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/series?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/series?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getByRegion(region: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/region/${region}?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/region/${region}?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getByMood(mood: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/mood/${mood}?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/mood/${mood}?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getByGenre(genre: string, page = 1): Promise<Movie[]> {
-  const data = await apiFetch<{ results: Movie[] }>(`/api/v1/movies/genre/${genre}?page=${page}`);
-  return data?.results || [];
+  const data = await apiFetch<any>(`/api/v1/movies/genre/${genre}?page=${page}`);
+  return Array.isArray(data) ? data : (data?.results || []);
 }
 
 export async function getMovieDetails(id: string, mediaType = "movie"): Promise<MovieDetail | null> {

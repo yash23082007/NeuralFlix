@@ -147,7 +147,7 @@ export default function RegionPage() {
 
         if (moviesRes.ok) {
           const data = await moviesRes.json();
-          setMovies(data.results || []);
+          setMovies(Array.isArray(data) ? data : (data.results || []));
           setTotalPages(data.total_pages || 1);
         }
 
