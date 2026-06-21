@@ -245,6 +245,26 @@ SAMPLE_MOVIES: List[Dict[str, Any]] = [
         "backdrop_url": "https://image.tmdb.org/t/p/original/9ZlGiEKmcYrrxmiQEJDhjeT2kEW.jpg",
         "platforms": ["Prime Video"], "media_type": "movie",
     },
+    {
+        "_id": "830784", "tmdb_id": 830784, "title": "Vikram",
+        "overview": "A special agent investigates a case connected to a drug network and discovers a deeper conspiracy.",
+        "year": 2022, "release_date": "2022-06-03", "runtime": 174,
+        "language": "ta", "cinema_region": "tamil", "indian_industry": "kollywood",
+        "genres": ["Action", "Thriller", "Crime"], "rating": 7.6, "votes": 850, "popularity_score": 20.4,
+        "poster_url": "https://image.tmdb.org/t/p/w500/74w0BoIaJKh0vYmSJrbMpylR9eB.jpg",
+        "backdrop_url": "https://image.tmdb.org/t/p/original/bvf9VHMqsYbOtqx5x2oEmVnhvvb.jpg",
+        "platforms": ["Disney+ Hotstar"], "media_type": "movie", "director": "Lokesh Kanagaraj",
+    },
+    {
+        "_id": "675327", "tmdb_id": 675327, "title": "Ponniyin Selvan: I",
+        "overview": "An epic tale of the Chola dynasty in the 10th century, filled with intrigue and betrayal.",
+        "year": 2022, "release_date": "2022-09-30", "runtime": 167,
+        "language": "ta", "cinema_region": "tamil", "indian_industry": "kollywood",
+        "genres": ["Action", "Drama", "History"], "rating": 7.2, "votes": 650, "popularity_score": 18.1,
+        "poster_url": "https://image.tmdb.org/t/p/w500/gYCfKxIX3LPHZ6syHiORpmvELiP.jpg",
+        "backdrop_url": "https://image.tmdb.org/t/p/original/nO43aGZprPPOxljMfSxuhCZ1VhO.jpg",
+        "platforms": ["Prime Video"], "media_type": "movie", "director": "Mani Ratnam",
+    },
 ]
 
 # Database Engine Init
@@ -259,23 +279,33 @@ def init_engines():
     if async_engine is not None:
         return
 
-    if not DATABASE_URL or not DATABASE_URL.startswith("postgresql"):
-        raise RuntimeError("Database: Postgres strictly required. Please set a valid DATABASE_URL starting with postgresql://")
-        
-    try:
-        # Sync connection check with 3s timeout
-        temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})
-        with temp_engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        logger.info("Database: Postgres active connection verified.")
-    except Exception as e:
-        logger.error(f"Database: Postgres connection failed ({e}). Aborting.")
-        raise RuntimeError(f"Failed to connect to PostgreSQL: {e}")
+    # Check if we can use Postgres
+    use_postgres = False
+    if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+        try:
+            # Sync connection check with 3s timeout
+            temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})
+            with temp_engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Database: Postgres active connection verified.")
+            use_postgres = True
+        except Exception as e:
+            logger.warning(f"Database: Postgres connection failed ({e}). Falling back to SQLite.")
 
-    pg_url = DATABASE_URL
-    async_pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
-    sync_engine = create_engine(pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
-    async_engine = create_async_engine(async_pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+    if use_postgres:
+        pg_url = DATABASE_URL
+        async_pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
+        sync_engine = create_engine(pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+        async_engine = create_async_engine(async_pg_url, pool_size=10, max_overflow=20, pool_pre_ping=True)
+    else:
+        # Fallback to SQLite
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(current_dir, "neuralflix.db")
+        sync_url = f"sqlite:///{db_path}"
+        async_url = f"sqlite+aiosqlite:///{db_path}"
+        logger.info(f"Database: Using SQLite fallback at {db_path}")
+        sync_engine = create_engine(sync_url, connect_args={"check_same_thread": False})
+        async_engine = create_async_engine(async_url)
 
     sync_session_factory = sync_sessionmaker(bind=sync_engine, autocommit=False, autoflush=False)
     async_session_factory = async_sessionmaker(bind=async_engine, expire_on_commit=False)

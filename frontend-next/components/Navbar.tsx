@@ -23,6 +23,7 @@ const CINEMA_REGIONS = [
   { name: "Indian", href: "/cinema/indian", code: "IN", accent: "text-orange-400" },
   { name: "Bollywood", href: "/cinema/bollywood", code: "HI", accent: "text-orange-400" },
   { name: "Tollywood", href: "/cinema/tollywood", code: "TE", accent: "text-amber-400" },
+  { name: "Tamil", href: "/cinema/tamil", code: "TA", accent: "text-teal-400" },
   { name: "Korean", href: "/cinema/korean", code: "KR", accent: "text-blue-400" },
   { name: "Japanese", href: "/cinema/japanese", code: "JP", accent: "text-red-400" },
   { name: "French", href: "/cinema/french", code: "FR", accent: "text-violet-400" },

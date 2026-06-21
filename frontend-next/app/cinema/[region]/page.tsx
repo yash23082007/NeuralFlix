@@ -118,6 +118,25 @@ const REGION_MAP: Record<
     accentGlow: "rgba(243, 156, 18, 0.15)",
     anchors: ["The Black Book", "Lionheart", "October 1", "Living in Bondage"],
   },
+  tamil: {
+    title: "Tamil Cinema",
+    subtitle: "Mass spectacles, high-octane drama, and socially conscious storytelling.",
+    code: "TA",
+    accent: "#0D9488",
+    accentGlow: "rgba(13, 148, 136, 0.15)",
+    movement: "Dravidian identity cinema and modern pan-India blockbusters.",
+    directors: ["Mani Ratnam", "Lokesh Kanagaraj", "Vetrimaaran", "Pa. Ranjith"],
+    anchors: ["Vikram", "Ponniyin Selvan", "Vada Chennai", "Asuran"],
+  },
+  kollywood: {
+    title: "Kollywood",
+    subtitle: "Tamil-language cinema with action spectacles and deep social themes.",
+    code: "TA",
+    accent: "#0D9488",
+    accentGlow: "rgba(13, 148, 136, 0.15)",
+    directors: ["Mani Ratnam", "Lokesh Kanagaraj", "Vetrimaaran", "Shankar"],
+    anchors: ["Vikram", "Ponniyin Selvan", "Indian", "Kaaka Muttai"],
+  },
 };
 
 export default function RegionPage() {

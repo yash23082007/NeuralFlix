@@ -660,6 +660,7 @@ REGION_LANG_MAP = {
     "bollywood": ["hi"],
     "tollywood": ["te"],
     "kollywood": ["ta"],
+    "tamil": ["ta"],
     "mollywood": ["ml"],
     "sandalwood": ["kn"],
     "korean": ["ko"],
@@ -825,6 +826,75 @@ async def get_by_genre(request: Request, genre: str, page: int = Query(1, ge=1),
         "results": [serialize_movie(m) for m in movies]
     }
 
+
+@router.get("/region/{region}/stats")
+async def get_region_stats(region: str, request: Request = None):
+    """Retrieve dynamic stats representing total movies, avg rating, and top genres of a region.
+    NOTE: This route MUST be defined BEFORE /{movie_id} to avoid being shadowed by the catch-all."""
+    langs = REGION_LANG_MAP.get(region.lower(), [])
+    
+    if _has_pg:
+        try:
+            async for session in get_db():
+                from sqlalchemy import or_, func
+                conditions = [PostgresMovie.cinema_region == region.lower()]
+                if langs:
+                    conditions.append(PostgresMovie.language.in_(langs))
+                
+                # count
+                stmt_total = select(func.count(PostgresMovie.id)).where(or_(*conditions))
+                total = await session.scalar(stmt_total) or 0
+                
+                # avg rating
+                stmt_avg = select(func.avg(PostgresMovie.tmdb_rating)).where(or_(*conditions))
+                avg_rating = await session.scalar(stmt_avg) or 0.0
+                
+                # genres
+                stmt_genres = select(PostgresMovie.genres).where(or_(*conditions)).limit(100)
+                res = await session.execute(stmt_genres)
+                genres_rows = res.scalars().all()
+                genre_counts = {}
+                for g_list in genres_rows:
+                    if g_list:
+                        for g in g_list:
+                            genre_counts[g] = genre_counts.get(g, 0) + 1
+                top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+                top_genres_list = [g[0] for g in top_genres]
+                
+                return {
+                    "total_movies": total,
+                    "avg_rating": round(avg_rating, 1),
+                    "top_genres": top_genres_list
+                }
+        except Exception as e:
+            logger.error(f"Error fetching regional stats from SQL: {e}")
+            
+    from database import movies_collection
+    or_filters = [{"cinema_region": region.lower()}]
+    if langs:
+        or_filters.append({"language": {"$in": langs}})
+    query = {"$or": or_filters}
+    
+    total = await movies_collection.count_documents(query)
+    sample = await movies_collection.find(query, {"genres": 1, "rating": 1, "_id": 0}).limit(100).to_list(length=100)
+    
+    ratings = [m.get("rating", 0) for m in sample if m.get("rating")]
+    avg_rating = sum(ratings) / len(ratings) if ratings else 0.0
+    
+    genre_counts = {}
+    for m in sample:
+        for g in m.get("genres", []):
+            genre_counts[g] = genre_counts.get(g, 0) + 1
+    top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_genres_list = [g[0] for g in top_genres]
+    
+    return {
+        "total_movies": total,
+        "avg_rating": round(avg_rating, 1),
+        "top_genres": top_genres_list
+    }
+
+
 @router.get("/{movie_id}")
 @cache_response(expire=86400)
 async def get_movie(request: Request, movie_id: str):
@@ -917,68 +987,4 @@ async def get_movie(request: Request, movie_id: str):
     return movie_serialized
 
 
-@router.get("/region/{region}/stats")
-async def get_region_stats(region: str):
-    """Retrieve dynamic stats representing total movies, avg rating, and top genres of a region."""
-    langs = REGION_LANG_MAP.get(region.lower(), [])
-    
-    if _has_pg:
-        try:
-            async for session in get_db():
-                from sqlalchemy import or_, func
-                conditions = [PostgresMovie.cinema_region == region.lower()]
-                if langs:
-                    conditions.append(PostgresMovie.language.in_(langs))
-                
-                # count
-                stmt_total = select(func.count(PostgresMovie.id)).where(or_(*conditions))
-                total = await session.scalar(stmt_total) or 0
-                
-                # avg rating
-                stmt_avg = select(func.avg(PostgresMovie.tmdb_rating)).where(or_(*conditions))
-                avg_rating = await session.scalar(stmt_avg) or 0.0
-                
-                # genres
-                stmt_genres = select(PostgresMovie.genres).where(or_(*conditions)).limit(100)
-                res = await session.execute(stmt_genres)
-                genres_rows = res.scalars().all()
-                genre_counts = {}
-                for g_list in genres_rows:
-                    if g_list:
-                        for g in g_list:
-                            genre_counts[g] = genre_counts.get(g, 0) + 1
-                top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-                top_genres_list = [g[0] for g in top_genres]
-                
-                return {
-                    "total_movies": total,
-                    "avg_rating": round(avg_rating, 1),
-                    "top_genres": top_genres_list
-                }
-        except Exception as e:
-            logger.error(f"Error fetching regional stats from SQL: {e}")
-            
-    from database import movies_collection
-    or_filters = [{"cinema_region": region.lower()}]
-    if langs:
-        or_filters.append({"language": {"$in": langs}})
-    query = {"$or": or_filters}
-    
-    total = await movies_collection.count_documents(query)
-    sample = await movies_collection.find(query, {"genres": 1, "rating": 1, "_id": 0}).limit(100).to_list(length=100)
-    
-    ratings = [m.get("rating", 0) for m in sample if m.get("rating")]
-    avg_rating = sum(ratings) / len(ratings) if ratings else 0.0
-    
-    genre_counts = {}
-    for m in sample:
-        for g in m.get("genres", []):
-            genre_counts[g] = genre_counts.get(g, 0) + 1
-    top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-    top_genres_list = [g[0] for g in top_genres]
-    
-    return {
-        "total_movies": total,
-        "avg_rating": round(avg_rating, 1),
-        "top_genres": top_genres_list
-    }
+# NOTE: /region/{region}/stats has been moved BEFORE /{movie_id} to prevent route shadowing
