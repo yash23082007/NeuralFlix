@@ -155,12 +155,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-radial-gradient z-10" />
 
         {/* Brand info overlays */}
-        <div className="relative z-20 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-black">
-            <Film className="h-5 w-5" />
-          </div>
-          <span className="font-outfit font-extrabold text-lg tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)]">NEURALFLIX</span>
-        </div>
+
 
         <div className="relative z-20 space-y-6 max-w-xl">
           <motion.div
@@ -181,7 +176,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-20 text-xs text-[var(--text-tertiary)] font-mono">
-          © 2026 NEURALFLIX SAAS INC. ALL RIGHTS RESERVED.
+          © 2024 NeuralFlix. All rights reserved.
         </div>
       </section>
 

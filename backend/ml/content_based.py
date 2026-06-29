@@ -41,7 +41,7 @@ class ContentBasedEngine:
         self.id_to_index = {movie_id: i for i, movie_id in enumerate(self.movie_ids)}
         
         self.tfidf = TfidfVectorizer(
-            max_features=20000,
+            max_features=5000,
             ngram_range=(1, 2),
             sublinear_tf=True,
             stop_words='english'

@@ -7,7 +7,8 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
 import Providers from "../components/Providers";
 import AmbientBackground from "../components/AmbientBackground";
-import ServerStatusToast from "../components/ServerStatusToast";
+import KeepAlive from "../components/KeepAlive";
+
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -99,7 +100,8 @@ export default function RootLayout({
               <AmbientBackground />
               <Navbar />
               <CommandPalette />
-              <ServerStatusToast />
+              <KeepAlive />
+
               <main className="flex-grow z-10 relative">
                 {children}
               </main>

@@ -7,7 +7,7 @@ import { Globe2, X, Star, ArrowRight, Film } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { getByRegion, getMlOverview, Movie } from "../lib/api";
 
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+const geoUrl = "/countries-110m.json";
 
 const INITIAL_CINEMA_DATA: Record<string, { region: string; count: number; topMovie: string; color: string; hover: string; title: string }> = {
   IND: { region: "indian", title: "Indian Cinema", count: 12450, topMovie: "RRR", color: "var(--color-accent-india)", hover: "#ff8c61" },

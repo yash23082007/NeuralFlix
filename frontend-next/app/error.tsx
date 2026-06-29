@@ -1,8 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { useEffect } from 'react';
 
 export default function Error({
   error,
@@ -12,31 +10,21 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    console.error('App Error:', error);
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[var(--surface-primary)] px-6">
-      <AlertTriangle className="h-12 w-12 text-[var(--accent-rose)]" />
-      <h2 className="text-2xl font-bold text-[var(--text-primary)]">Something went wrong</h2>
-      <p className="max-w-md text-center text-sm text-[var(--text-secondary)]">
-        An unexpected error occurred. Please try again or return to the homepage.
+    <div className="flex min-h-[70vh] flex-col items-center justify-center bg-transparent text-[var(--text-primary)] px-4 text-center">
+      <h2 className="text-3xl font-bold mb-4 font-playfair text-[var(--accent-rose)]">Connection Lost</h2>
+      <p className="text-[var(--text-secondary)] mb-8 max-w-md">
+        The ML engine might be temporarily restarting or experiencing high load. Please try again.
       </p>
-      <div className="flex gap-3">
-        <button
-          onClick={reset}
-          className="rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110"
-        >
-          Try Again
-        </button>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition-all hover:bg-[var(--surface-hover)]"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Home
-        </Link>
-      </div>
+      <button
+        className="px-6 py-3 bg-[var(--accent-warm)] text-black font-bold rounded-xl hover:brightness-110 transition-all shadow-glow"
+        onClick={() => reset()}
+      >
+        Reload Page
+      </button>
     </div>
   );
 }

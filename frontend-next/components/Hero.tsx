@@ -64,25 +64,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
             </span>
           </h1>
 
-          {/* Meta Tags */}
-          <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-[var(--text-secondary)] font-medium">
-            <span className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-[var(--rating-gold)] text-[var(--rating-gold)]" />
-              {rating.toFixed(1)}
-            </span>
-            <span>·</span>
-            <span>{year}</span>
-            <span>·</span>
-            <span>Dir. {director}</span>
-            <span>·</span>
-            <div className="flex gap-1.5">
-              {genres.slice(0, 2).map((g) => (
-                <span key={g} className="bg-[var(--accent-warm)]/10 text-[var(--accent-warm)] px-2 py-0.5 rounded-full text-[10px] uppercase border border-[var(--accent-warm)]/20">
-                  {g}
-                </span>
-              ))}
-            </div>
-          </div>
+
 
           <p className="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg font-sans">
             Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.
@@ -111,19 +93,19 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
           <div className="pt-6 border-t border-[var(--border-subtle)] max-w-xl">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] p-4 rounded-2xl backdrop-blur-md">
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
-                <p className="text-lg font-bold text-white font-mono">{catalogSize.toLocaleString()}</p>
+                <p className="text-lg font-bold text-white font-mono">930K+</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Films</p>
               </div>
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
-                <p className="text-lg font-bold text-white font-mono">20+</p>
+                <p className="text-lg font-bold text-white font-mono">120+</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Languages</p>
               </div>
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
-                <p className="text-lg font-bold text-white font-mono">15+</p>
+                <p className="text-lg font-bold text-white font-mono">150+</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Regions</p>
               </div>
               <div className="text-center last:border-none">
-                <p className="text-lg font-bold text-white font-mono">5</p>
+                <p className="text-lg font-bold text-white font-mono">12</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">ML Models</p>
               </div>
             </div>
@@ -131,31 +113,8 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
         </div>
 
         {/* Right Collage (Floating Thumbnails) */}
-        <div className="lg:col-span-5 hidden lg:flex justify-center relative h-[480px]">
-          <div className="relative w-[360px] h-[440px] rotate-6 scale-95 select-none pointer-events-none">
-            {/* Primary floating poster */}
-            {sideMovies[0]?.poster_url && (
-              <motion.div
-                animate={{ y: [0, -12, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute left-4 top-4 w-[180px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl z-20 bg-black"
-              >
-                <img className="w-full h-full object-cover" src={sideMovies[0].poster_url} alt="Gallery 1" />
-              </motion.div>
-            )}
-            {/* Secondary floating poster */}
-            {sideMovies[1]?.poster_url && (
-              <motion.div
-                animate={{ y: [0, 15, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute right-4 bottom-8 w-[160px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl z-10 bg-black"
-              >
-                <img className="w-full h-full object-cover" src={sideMovies[1].poster_url} alt="Gallery 2" />
-              </motion.div>
-            )}
-            {/* Background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[var(--accent-warm)]/10 to-transparent blur-3xl rounded-full -z-10 opacity-30" />
-          </div>
+        <div className="lg:col-span-5 hidden lg:flex justify-center items-center relative h-[480px]">
+          <img src="/hero_art.png" alt="Cinema Art" className="max-w-[400px] w-full h-auto drop-shadow-2xl opacity-90 hover:opacity-100 transition-opacity duration-500" />
         </div>
       </div>
 
