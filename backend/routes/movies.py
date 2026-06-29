@@ -329,12 +329,38 @@ async def get_trending_movies(
     from database import movies_collection
     total = await movies_collection.count_documents({})
     movies = await movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+
+    if total < 10:
+        try:
+            from utils.tmdb_api import fetch_trending, fetch_genre_list
+            tmdb_movies = await fetch_trending(time_window="day")
+            if tmdb_movies:
+                genre_map = await fetch_genre_list()
+                normalized_movies = []
+                for m in tmdb_movies:
+                    norm = _normalize_tmdb_helper(m, genre_map)
+                    try:
+                        await movies_collection.update_one({"tmdb_id": norm["tmdb_id"]}, {"$set": norm}, upsert=True)
+                    except Exception:
+                        pass
+                    normalized_movies.append(norm)
+                
+                seen = {str(item.get("tmdb_id")) for item in movies}
+                for item in normalized_movies:
+                    item_id = str(item.get("tmdb_id"))
+                    if item_id not in seen:
+                        movies.append(item)
+                        seen.add(item_id)
+                total = max(total, len(movies))
+        except Exception as e:
+            logger.error(f"Error fetching from TMDB trending: {e}")
+
     return {
         "page": page,
         "total": total,
-        "total_pages": math.ceil(total / limit),
+        "total_pages": math.ceil(total / limit) if limit > 0 else 1,
         "has_next": (offset + limit) < total,
-        "results": [serialize_movie(m) for m in movies]
+        "results": [serialize_movie(m) for m in movies[:limit]]
     }
 
 
@@ -556,12 +582,38 @@ async def get_top_rated(request: Request, page: int = Query(1, ge=1), limit: int
     from database import movies_collection
     total = await movies_collection.count_documents({})
     movies = await movies_collection.find({}, {"_id": 0}).sort("rating", -1).skip(offset).limit(limit).to_list(length=limit)
+
+    if total < 10:
+        try:
+            from utils.tmdb_api import fetch_top_rated, fetch_genre_list
+            tmdb_movies = await fetch_top_rated(page=page)
+            if tmdb_movies:
+                genre_map = await fetch_genre_list()
+                normalized_movies = []
+                for m in tmdb_movies:
+                    norm = _normalize_tmdb_helper(m, genre_map)
+                    try:
+                        await movies_collection.update_one({"tmdb_id": norm["tmdb_id"]}, {"$set": norm}, upsert=True)
+                    except Exception:
+                        pass
+                    normalized_movies.append(norm)
+                
+                seen = {str(item.get("tmdb_id")) for item in movies}
+                for item in normalized_movies:
+                    item_id = str(item.get("tmdb_id"))
+                    if item_id not in seen:
+                        movies.append(item)
+                        seen.add(item_id)
+                total = max(total, len(movies))
+        except Exception as e:
+            logger.error(f"Error fetching from TMDB top_rated: {e}")
+
     return {
         "page": page,
         "total": total,
-        "total_pages": math.ceil(total / limit),
+        "total_pages": math.ceil(total / limit) if limit > 0 else 1,
         "has_next": (offset + limit) < total,
-        "results": [serialize_movie(m) for m in movies]
+        "results": [serialize_movie(m) for m in movies[:limit]]
     }
 
 
@@ -594,12 +646,38 @@ async def get_now_playing(request: Request, page: int = Query(1, ge=1), limit: i
     from database import movies_collection
     total = await movies_collection.count_documents(query)
     movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
+
+    if total < 10:
+        try:
+            from utils.tmdb_api import fetch_now_playing, fetch_genre_list
+            tmdb_movies = await fetch_now_playing(page=page)
+            if tmdb_movies:
+                genre_map = await fetch_genre_list()
+                normalized_movies = []
+                for m in tmdb_movies:
+                    norm = _normalize_tmdb_helper(m, genre_map)
+                    try:
+                        await movies_collection.update_one({"tmdb_id": norm["tmdb_id"]}, {"$set": norm}, upsert=True)
+                    except Exception:
+                        pass
+                    normalized_movies.append(norm)
+                
+                seen = {str(item.get("tmdb_id")) for item in movies}
+                for item in normalized_movies:
+                    item_id = str(item.get("tmdb_id"))
+                    if item_id not in seen:
+                        movies.append(item)
+                        seen.add(item_id)
+                total = max(total, len(movies))
+        except Exception as e:
+            logger.error(f"Error fetching from TMDB now_playing: {e}")
+
     return {
         "page": page,
         "total": total,
-        "total_pages": math.ceil(total / limit),
+        "total_pages": math.ceil(total / limit) if limit > 0 else 1,
         "has_next": (offset + limit) < total,
-        "results": [serialize_movie(m) for m in movies]
+        "results": [serialize_movie(m) for m in movies[:limit]]
     }
 
 

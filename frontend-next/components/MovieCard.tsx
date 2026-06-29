@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Film, Heart, Play, Plus, Star } from "lucide-react";
 import { useState } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Movie } from "../lib/api";
 
 export type { Movie } from "../lib/api";
@@ -28,31 +28,14 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
   const score = movie.rec_score || movie.popularity_score;
   const scoreWidth = score != null && score <= 1 ? score * 100 : Math.min((score || 0) * 5, 100);
 
-  // Subtle 3D Tilt
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["5deg", "-5deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-5deg", "5deg"]);
-
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    x.set((event.clientX - rect.left) / rect.width - 0.5);
-    y.set((event.clientY - rect.top) / rect.height - 0.5);
-  };
-
   const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
     setIsHovered(false);
   };
 
   return (
     <Link href={getMovieHref(movie)} className="group block perspective-1000">
       <motion.div
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        onMouseMove={handleMouseMove}
+        whileHover={{ scale: 1.02 }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
         className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-poster transition-all duration-500 group-hover:shadow-xl group-hover:border-[var(--border-default)]"
