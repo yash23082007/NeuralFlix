@@ -41,7 +41,7 @@ class ContentBasedEngine:
         self.id_to_index = {movie_id: i for i, movie_id in enumerate(self.movie_ids)}
         
         self.tfidf = TfidfVectorizer(
-            max_features=10000,
+            max_features=20000,
             ngram_range=(1, 2),
             sublinear_tf=True,
             stop_words='english'
@@ -139,7 +139,7 @@ async def auto_build_if_missing():
     try:
         movies = []
         cursor = movies_collection.find({"overview": {"$ne": ""}})
-        cursor.sort("popularity_score", -1).limit(1000)
+        cursor.sort("popularity_score", -1).limit(5000)
         
         async for doc in cursor:
             movies.append({
