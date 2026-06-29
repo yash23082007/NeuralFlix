@@ -41,20 +41,27 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("failed_to_start_content_index_build", error=str(e))
         
-    # 4. Load NCF pre-trained weights if they exist
-    import torch
-    from ml.hybrid_recommender import ncf_model
-    if ncf_model is not None:
-        weights_path = "models/ncf_weights.pt"
-        if os.path.exists(weights_path):
-            try:
-                ncf_model.load_state_dict(torch.load(weights_path, map_location="cpu"))
-                log.info("Pre-trained NCF weights loaded successfully")
-            except Exception as e:
-                log.warning("failed_to_load_ncf_weights", error=str(e))
-        else:
-            log.warning("ncf_weights_not_found_using_random_initialization")
-            
+    # 4. Load NCF pre-trained weights if they exist (only if not LITE_MODE)
+    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
+    if not LITE_MODE:
+        try:
+            import torch
+            from ml.hybrid_recommender import ncf_model
+            if ncf_model is not None:
+                weights_path = "models/ncf_weights.pt"
+                if os.path.exists(weights_path):
+                    try:
+                        ncf_model.load_state_dict(torch.load(weights_path, map_location="cpu"))
+                        log.info("Pre-trained NCF weights loaded successfully")
+                    except Exception as e:
+                        log.warning("failed_to_load_ncf_weights", error=str(e))
+                else:
+                    log.warning("ncf_weights_not_found_using_random_initialization")
+        except Exception as e:
+            log.warning("failed_to_initialize_ml", error=str(e))
+    else:
+        log.info("LITE_MODE enabled: Bypassing heavy PyTorch ML models to save memory.")
+
     yield
     
     # 5. Shutdown: Close Redis
@@ -142,11 +149,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 from routes import auth, genres, imdb, ml, movies, recommendations, search, tracking, trakt, enhanced_data, users
 HAS_ROUTES = True
 
-try:
-    from routers.recommendations import router as feedback_router
-except ImportError as exc:
-    log.warning("feedback_router_not_loaded", error=str(exc))
-    feedback_router = None
+# V2 Feedback route has been deprecated or moved.
 
 # ─── New API Routes ───────────────────────────────────────
 try:
@@ -202,7 +205,10 @@ if HAS_ROUTES:
     
     # ML & Personalization
     app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["Recommendations"])
-    app.include_router(ml.router, prefix="/api/v1/ml", tags=["ML Engine"])
+    
+    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
+    if not LITE_MODE:
+        app.include_router(ml.router, prefix="/api/v1/ml", tags=["ML Engine"])
     
     # Infrastructure & Engagement
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
@@ -219,9 +225,7 @@ if HAS_ROUTES:
     # Enhanced Data Layer (Streaming, Ratings, Trakt Trending)
     app.include_router(enhanced_data.router, prefix="/api/v1/data", tags=["Enhanced Data"])
 
-if feedback_router:
-    # V2 Feedback system for real-time model tuning
-    app.include_router(feedback_router, prefix="/api/v2/feedback", tags=["Feedback"])
+# V2 Feedback route integration removed to clean up architecture.
 
 # ─── Seed Endpoint (manual trigger) ──────────────────────────
 @app.post("/api/v1/seed")

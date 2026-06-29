@@ -1,18 +1,22 @@
 import asyncio
 import json
 import os
-import logging
 from fastapi import APIRouter, HTTPException, Query, Request, Path
 from typing import List, Optional
 
-from ml.hybrid_recommender import HybridRecommender, content_engine, ncf_model, sasrec_model, gnn_model
+LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
+
+recommender = None
+ncf_model = None
 from utils.recommendation_engine import hybrid_recommendation
 
-logger = logging.getLogger("API_MONITOR")
-router = APIRouter()
-
-# Instantiate the hybrid recommender singleton
-recommender = HybridRecommender(content_engine, ncf_model, sasrec_model, gnn_model)
+if not LITE_MODE:
+    try:
+        from ml.hybrid_recommender import HybridRecommender, content_engine, ncf_model as ncf, sasrec_model, gnn_model
+        ncf_model = ncf
+        recommender = HybridRecommender(content_engine, ncf_model, sasrec_model, gnn_model)
+    except Exception as e:
+        logger.warning(f"Failed to load heavy ML models: {e}")
 
 # Try to load PostgreSQL dependencies if available (not in demo mode)
 _has_pg = False
@@ -293,7 +297,7 @@ async def get_user_recommendations(
         except Exception as exc:
             logger.error(f"Failed to fetch onboarding profile for cold start user {user_id}: {exc}")
 
-    if not rec_pairs:
+    if not rec_pairs and not LITE_MODE and recommender:
         # Run hybrid pipeline recommendation (CPU-bound, wrap in to_thread)
         def _run_recommender():
             return recommender.recommend(
