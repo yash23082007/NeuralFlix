@@ -33,7 +33,7 @@ export default function Footer() {
       <div className="relative bg-[var(--surface-primary)] border-t border-[var(--border-subtle)]">
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-8">
           <ScrollReveal>
-            <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-10 md:grid-cols-3">
               {/* Brand Column */}
               <div className="col-span-2 md:col-span-1">
                 <Link href="/" className="mb-4 flex items-center gap-2.5 group">
@@ -107,19 +107,7 @@ export default function Footer() {
                 </ul>
               </div>
 
-              {/* Tech Column */}
-              <div>
-                <h4 className="mb-5 text-sm font-semibold text-[var(--text-primary)]">
-                  Built With
-                </h4>
-                <ul className="space-y-3 text-sm text-[var(--text-tertiary)]">
-                  <li>FastAPI + Python</li>
-                  <li>Next.js 15 + React 19</li>
-                  <li>Tailwind CSS v4</li>
-                  <li>TF-IDF + Hybrid ML</li>
-                  <li>Collaborative Filtering</li>
-                </ul>
-              </div>
+
             </div>
           </ScrollReveal>
 
