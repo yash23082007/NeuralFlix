@@ -772,13 +772,14 @@ async def get_by_region(request: Request, region: str, page: int = Query(1, ge=1
             async for session in get_db():
                 from sqlalchemy import or_
                 conditions = [PostgresMovie.cinema_region == region.lower()]
-                if langs:
+                if langs and region.lower() not in ("hollywood", "nollywood"):
                     conditions.append(PostgresMovie.language.in_(langs))
                 
-                stmt_total = select(func.count(PostgresMovie.id)).where(or_(*conditions))
+                filter_cond = or_(*conditions) if len(conditions) > 1 else conditions[0]
+                stmt_total = select(func.count(PostgresMovie.id)).where(filter_cond)
                 total = await session.scalar(stmt_total) or 0
                 
-                stmt = select(PostgresMovie).where(or_(*conditions))\
+                stmt = select(PostgresMovie).where(filter_cond)\
                     .order_by(PostgresMovie.popularity_score.desc())\
                     .limit(limit).offset(offset)
                 result = await session.execute(stmt)
@@ -798,9 +799,9 @@ async def get_by_region(request: Request, region: str, page: int = Query(1, ge=1
     # 2. Fallback to SQLCollectionAdapter (movies_collection)
     from database import movies_collection
     or_filters = [{"cinema_region": region.lower()}]
-    if langs:
+    if langs and region.lower() not in ("hollywood", "nollywood"):
         or_filters.append({"language": {"$in": langs}})
-    query = {"$or": or_filters}
+    query = {"$or": or_filters} if len(or_filters) > 1 else or_filters[0]
     
     total = await movies_collection.count_documents(query)
     movies = await movies_collection.find(query, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)

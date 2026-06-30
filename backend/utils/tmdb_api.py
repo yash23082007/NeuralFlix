@@ -99,7 +99,7 @@ def _get_headers():
     return headers
 
 def _get_params(extra=None):
-    p = {}
+    p = {"language": "en-US"}
     if not TMDB_READ_ACCESS_TOKEN and TMDB_API_KEY:
         p["api_key"] = TMDB_API_KEY
     if extra:
@@ -351,3 +351,9 @@ async def fetch_movie_poster(movie_title: str):
         poster_path = results[0].get('poster_path')
         return get_poster_url(poster_path)
     return None
+
+async def fetch_movie_reviews(tmdb_id: str, page: int = 1) -> list:
+    if not TMDB_API_KEY: return []
+    url = f"{BASE_URL}/movie/{tmdb_id}/reviews"
+    data = await _safe_get(url, headers=_get_headers(), params=_get_params({"page": page}), cache_ttl=120)
+    return data.get('results', [])

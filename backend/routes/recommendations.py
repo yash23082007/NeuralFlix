@@ -1,8 +1,12 @@
 import asyncio
 import json
 import os
+import logging
 from fastapi import APIRouter, HTTPException, Query, Request, Path
 from typing import List, Optional
+
+logger = logging.getLogger("RECOMMENDATIONS_ROUTE")
+router = APIRouter()
 
 LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
 
@@ -198,6 +202,16 @@ def _build_explanation(movie: dict, user_history: list, profile: dict) -> str:
     return "Popular with similar taste profiles"
 
 
+_ranker_instance = None
+
+def _get_ranker():
+    global _ranker_instance
+    if _ranker_instance is None:
+        from ml.ranker import MovieRanker
+        _ranker_instance = MovieRanker(model_path="models/ranker_model.txt")
+    return _ranker_instance
+
+
 @router.get("/user/{user_id}")
 async def get_user_recommendations(
     request: Request,
@@ -253,7 +267,7 @@ async def get_user_recommendations(
 
     # 4. Candidate Pool retrieval (cached for 60s to prevent serial DB hits)
     all_candidates = []
-    candidates_cache_key = "candidate_pool_ids"
+    candidates_cache_key = f"candidate_pool_ids:{user_id}"
     if cache:
         try:
             cached_pool = await cache.get(candidates_cache_key)
@@ -334,8 +348,7 @@ async def get_user_recommendations(
     # Stage 1: Ensemble Ranker (if available)
     taste_profile = {}
     try:
-        from ml.ranker import MovieRanker
-        ranker = MovieRanker(model_path="models/ranker_model.txt")
+        ranker = _get_ranker()
         user_features = {"preferred_genres": [], "preferred_decades": [], "avg_rating": 7.0}
         if not is_cold_start and user_history:
             from ml.taste_profile import build_taste_profile
@@ -405,6 +418,35 @@ async def get_user_recommendations(
         )
     except Exception as e:
         logger.warning(f"Skipping bandit pipeline: {e}")
+
+    # Stage 4: BERT Sentiment Reranker (if not LITE_MODE)
+    if not LITE_MODE:
+        try:
+            from ml.sentiment_reranker import SentimentReranker
+            sentiment_model = SentimentReranker()
+            from utils.tmdb_api import fetch_movie_reviews
+            
+            async def get_reviews(tmdb_id):
+                try:
+                    data = await fetch_movie_reviews(str(tmdb_id))
+                    return [r.get("content", "") for r in data]
+                except Exception:
+                    return []
+            
+            # Asynchronously fetch reviews for all candidates in parallel
+            reviews_map = {}
+            tasks = [get_reviews(m.get("tmdb_id")) for m in movies if m.get("tmdb_id")]
+            results = await asyncio.gather(*tasks)
+            
+            idx = 0
+            for m in movies:
+                if m.get("tmdb_id"):
+                    reviews_map[m["tmdb_id"]] = results[idx]
+                    idx += 1
+                    
+            movies = sentiment_model.rerank(movies, review_fn=lambda x: reviews_map.get(x, []))
+        except Exception as e:
+            logger.warning(f"Skipping sentiment reranker pipeline: {e}")
 
     # Build User Taste Profile for explanations (reused cache or fallback if needed)
     if not taste_profile and not is_cold_start and user_history:
