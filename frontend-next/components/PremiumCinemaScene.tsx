@@ -155,7 +155,7 @@ function FilmRibbon() {
 
 export default function PremiumCinemaScene() {
   return (
-    <div className="hero-3d-canvas absolute inset-y-0 right-0 hidden w-[55%] md:block">
+    <div className="hero-3d-canvas absolute inset-y-0 right-0 hidden w-[55%] lg:block">
       <Canvas
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 5.4], fov: 42 }}

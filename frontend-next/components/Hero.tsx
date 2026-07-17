@@ -49,7 +49,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/20" />
       </div>
 
-      <div className="relative z-10 px-5 sm:px-8 md:px-12 w-full max-w-7xl mx-auto pb-16 pt-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="relative z-10 px-5 sm:px-8 md:px-12 w-full max-w-7xl mx-auto pb-16 pt-24 sm:pt-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         {/* Left Content */}
         <div className="lg:col-span-7 max-w-2xl space-y-6 md:space-y-8 animate-fade-in-up">
           <div className="flex items-center gap-3">

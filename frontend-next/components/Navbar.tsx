@@ -103,7 +103,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             <Link className={`nav-link ${pathname === "/" ? "active" : ""}`} href="/">
               Home
             </Link>
@@ -239,7 +239,7 @@ export default function Navbar() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setMobileOpen((o) => !o)}
-              className="rounded-lg p-2 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] md:hidden"
+              className="rounded-lg p-2 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] lg:hidden"
             >
               {mobileOpen ? (
                 <X className="h-5 w-5" />
@@ -258,7 +258,7 @@ export default function Navbar() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="overflow-hidden border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)]/95 backdrop-blur-xl md:hidden"
+              className="overflow-hidden border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)]/95 backdrop-blur-xl lg:hidden"
             >
               <div className="grid gap-1 py-3 px-4">
                 {[
