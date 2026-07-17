@@ -48,15 +48,34 @@ export interface MlOverview {
   model_cards: { name: string; type: string; status: string; purpose: string }[];
 }
 
+const apiCache = new Map<string, { data: any; expiry: number }>();
+
 async function apiFetch<T>(path: string, options?: RequestInit & { revalidate?: number }): Promise<T | null> {
+  const { revalidate = 600, ...fetchOptions } = options || {};
+  const cacheKey = `${path}_${JSON.stringify(fetchOptions)}`;
+  
+  if (revalidate > 0 && typeof window !== "undefined") {
+    const cached = apiCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data as T;
+    }
+  }
+
   try {
-    const { revalidate = 600, ...fetchOptions } = options || {};
     const res = await fetch(`${API_BASE}${path}`, {
       next: { revalidate },
       ...fetchOptions,
     });
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json();
+
+    if (revalidate > 0 && typeof window !== "undefined") {
+      apiCache.set(cacheKey, {
+        data,
+        expiry: Date.now() + revalidate * 1000,
+      });
+    }
+    return data;
   } catch (error) {
     console.error(`API Error [${path}]:`, error);
     return null;

@@ -341,7 +341,15 @@ function SearchContent() {
                       Try different keywords, adjust filter values, or query popular categories.
                     </p>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/60 py-24 text-center backdrop-blur-sm">
+                    <Search className="mx-auto mb-4 h-12 w-12 text-white/20 animate-pulse" />
+                    <h3 className="text-lg font-bold text-white">Start typing to search</h3>
+                    <p className="mt-2 text-sm text-[var(--text-tertiary)] max-w-sm mx-auto leading-relaxed">
+                      Type at least 2 characters to browse the cinematic catalog.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

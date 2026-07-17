@@ -353,7 +353,7 @@ export default function MovieDetailPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert("URL linked pinned to clipboard!");
+                alert("Movie link copied to clipboard!");
               }}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 py-3 text-xs font-bold text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer uppercase tracking-wider"
             >

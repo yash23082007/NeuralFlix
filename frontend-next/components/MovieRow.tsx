@@ -71,7 +71,7 @@ export default function MovieRow({ title, movies, seeAllHref }: MovieRowProps) {
         </div>
 
         {/* Gradient fade edges */}
-        <div className="relative">
+        <div className="relative w-full overflow-hidden">
           <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-[var(--surface-primary)] to-transparent z-10 pointer-events-none" />
           <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-[var(--surface-primary)] to-transparent z-10 pointer-events-none" />
           <div ref={scrollRef} className="scroll-row movie-row-snap">

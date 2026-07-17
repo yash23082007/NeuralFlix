@@ -24,8 +24,9 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
   const rating = featuredMovie?.rating || 9.1;
   const genres = featuredMovie?.genres || ["Sci-Fi", "Drama"];
   const director = featuredMovie?.director || "NeuralFlix";
-  const backdrop = featuredMovie?.backdrop_url || featuredMovie?.poster_url;
+  const backdrop = featuredMovie?.backdrop_url || featuredMovie?.poster_url || "";
   const trailerKey = featuredMovie?.trailer_key;
+  const overview = featuredMovie?.overview || "Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.";
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--surface-primary)]">
@@ -64,10 +65,8 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
             </span>
           </h1>
 
-
-
-          <p className="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg font-sans">
-            Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.
+          <p className="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg font-sans line-clamp-3">
+            {overview}
           </p>
 
           {/* CTAs */}

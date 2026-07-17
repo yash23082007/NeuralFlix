@@ -8,6 +8,9 @@ const nextConfig = {
       { protocol: "https", hostname: "m.media-amazon.com",  pathname: "/**" },
       { protocol: "https", hostname: "images.justwatch.com",pathname: "/**" },
       { protocol: "https", hostname: "lh3.googleusercontent.com", pathname: "/**" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com", pathname: "/**" },
+      { protocol: "https", hostname: "secure.gravatar.com", pathname: "/**" },
+      { protocol: "https", hostname: "images-na.ssl-images-amazon.com", pathname: "/**" },
     ],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 3600,
@@ -16,6 +19,10 @@ const nextConfig = {
   // Performance
   compress: true,
   poweredByHeader: false,
+  experimental: {
+    optimizePackageImports: ["lucide-react", "framer-motion", "three"],
+  },
+  
   
   // Allow the backend API URL at build time
   env: {

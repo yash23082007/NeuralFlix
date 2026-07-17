@@ -69,7 +69,7 @@ def serialize_movie(movie) -> dict:
 def _normalize_tmdb_helper(movie: dict, genre_map: dict, region: str = None) -> dict:
     genre_ids = movie.get("genre_ids", [])
     genres = [genre_map.get(gid) for gid in genre_ids if genre_map.get(gid)]
-    date_field = movie.get("release_date")
+    date_field = movie.get("release_date") or movie.get("first_air_date")
     year = None
     if date_field and len(str(date_field)) >= 4:
         try:
@@ -84,7 +84,7 @@ def _normalize_tmdb_helper(movie: dict, genre_map: dict, region: str = None) -> 
     
     norm = {
         "tmdb_id": movie.get("id"),
-        "title": movie.get("title") or movie.get("original_title") or "Unknown",
+        "title": movie.get("title") or movie.get("original_title") or movie.get("name") or movie.get("original_name") or "Unknown",
         "overview": movie.get("overview") or "",
         "year": year,
         "release_date": date_field,
@@ -95,7 +95,7 @@ def _normalize_tmdb_helper(movie: dict, genre_map: dict, region: str = None) -> 
         "popularity_score": popularity,
         "poster_url": get_poster_url(movie.get("poster_path")),
         "backdrop_url": get_backdrop_url(movie.get("backdrop_path")),
-        "media_type": "movie"
+        "media_type": movie.get("media_type", "movie")
     }
     if region:
         norm["cinema_region"] = region

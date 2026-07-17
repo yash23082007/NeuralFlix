@@ -35,6 +35,11 @@ export const metadata: Metadata = {
     "streaming guide",
     "NeuralFlix",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" }
+    ],
+  },
   openGraph: {
     title: "NeuralFlix",
     description: "Global cinema discovery with ML-driven recommendations.",
@@ -68,7 +73,6 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${outfit.variable}`}
     >
       <head>
-        <link rel="icon" href="/favicon.ico" />
         <meta name="theme-color" content="#FAFAF7" />
         <script
           type="application/ld+json"

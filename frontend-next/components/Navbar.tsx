@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   Compass,
@@ -41,6 +42,13 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+
+  // Close menus on route change
+  useEffect(() => {
+    setMobileOpen(false);
+    setCinemaOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -49,7 +57,7 @@ export default function Navbar() {
     if (user?.name) setUserName(user.name);
     else if (user?.email) setUserName(user.email.charAt(0).toUpperCase());
     setIsAdmin(!!user?.is_admin);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -96,10 +104,10 @@ export default function Navbar() {
 
           {/* Desktop Nav Links */}
           <div className="hidden items-center gap-1 md:flex">
-            <Link className="nav-link" href="/">
+            <Link className={`nav-link ${pathname === "/" ? "active" : ""}`} href="/">
               Home
             </Link>
-            <Link className="nav-link" href="/discover">
+            <Link className={`nav-link ${pathname === "/discover" ? "active" : ""}`} href="/discover">
               <Compass className="h-3.5 w-3.5" />
               Explore
             </Link>
@@ -107,7 +115,7 @@ export default function Navbar() {
             {/* Cinema Dropdown */}
             <div className="relative">
               <button
-                className="nav-link"
+                className={`nav-link ${pathname.startsWith("/cinema") ? "active" : ""}`}
                 onClick={() => setCinemaOpen((o) => !o)}
               >
                 <Globe2 className="h-3.5 w-3.5" />
@@ -142,7 +150,9 @@ export default function Navbar() {
                           <Link
                             href={item.href}
                             onClick={() => setCinemaOpen(false)}
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                            className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-[var(--surface-hover)] ${
+                              pathname === item.href ? "text-[var(--accent-warm)] bg-[var(--surface-hover)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            }`}
                           >
                             <span className="rounded border border-[var(--border-default)] bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-tertiary)]">
                               {item.code}
@@ -157,7 +167,7 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            <Link className="nav-link" href="/recommendations">
+            <Link className={`nav-link ${pathname === "/recommendations" ? "active" : ""}`} href="/recommendations">
               <Sparkles className="h-3.5 w-3.5" />
               For You
             </Link>
@@ -266,7 +276,9 @@ export default function Navbar() {
                     <Link
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] block"
+                      className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors block ${
+                        pathname === item.href ? "text-[var(--accent-warm)] bg-[var(--surface-hover)]" : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      }`}
                     >
                       {item.label}
                     </Link>
