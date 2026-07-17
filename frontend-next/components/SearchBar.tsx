@@ -24,11 +24,16 @@ export default function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const stored = localStorage.getItem('neuralflix_recent_searches')
     if (stored) setRecentSearches(JSON.parse(stored))
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -46,22 +51,39 @@ export default function SearchBar() {
       setSuggestions([])
       return
     }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/api/v1/search/movies?query=${encodeURIComponent(q)}&limit=6`)
+      const res = await fetch(
+        `${API_BASE}/api/v1/search/movies?query=${encodeURIComponent(q)}&limit=6`,
+        { signal: abortControllerRef.current.signal }
+      )
       if (!res.ok) throw new Error('Search failed')
       const data = await res.json()
       setSuggestions(data.results || [])
-    } catch {
-      setSuggestions([])
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setSuggestions([])
+      }
     } finally {
-      setLoading(false)
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+        setLoading(false)
+      }
     }
   }, [])
 
   const handleChange = (value: string) => {
     setQuery(value)
     setIsOpen(true)
+    if (value.length < 2) {
+      setSuggestions([])
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      return
+    }
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => searchAPI(value), 300)
   }

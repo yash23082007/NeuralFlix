@@ -41,14 +41,14 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
         className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-poster transition-all duration-500 group-hover:shadow-xl group-hover:border-[var(--border-default)]"
       >
         {/* Shimmer until loaded */}
-        {!imgLoaded && movie.poster_url && !imgError && (
+        {!imgLoaded && movie.poster_url && movie.poster_url !== "null" && movie.poster_url !== "undefined" && !imgError && (
           <div className="absolute inset-0 skeleton" />
         )}
 
-        {movie.poster_url && !imgError ? (
+        {movie.poster_url && movie.poster_url !== "null" && movie.poster_url !== "undefined" && !imgError ? (
           <Image
             src={movie.poster_url}
-            alt={`${movie.title} (${movie.year || "N/A"}) - Rating: ${movie.rating ? movie.rating.toFixed(1) : "N/A"}`}
+            alt={`${movie.title || "Untitled"} (${movie.year || "N/A"}) - Rating: ${movie.rating ? movie.rating.toFixed(1) : "N/A"}`}
             fill
             priority={priority}
             className={`object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-[0.30] ${
@@ -61,7 +61,7 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[var(--surface-muted)] to-[var(--surface-elevated)] px-3 text-center text-[var(--text-tertiary)]">
             <Film className="h-8 w-8 opacity-30" />
-            <span className="line-clamp-2 text-xs font-medium">{movie.title}</span>
+            <span className="line-clamp-2 text-xs font-medium">{movie.title || "Untitled"}</span>
           </div>
         )}
 
@@ -134,7 +134,7 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
       {/* Info */}
       <div className="mt-3 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-warm)]">
-          {movie.title}
+          {movie.title || "Untitled"}
         </h3>
         <div className="mt-1 flex items-center gap-2 text-[11px] text-[var(--text-tertiary)]">
           {movie.year && <span>{movie.year}</span>}

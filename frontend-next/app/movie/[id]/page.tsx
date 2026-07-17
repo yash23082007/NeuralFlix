@@ -24,7 +24,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import MovieRow from "../../../components/MovieRow";
 import MultiRatingPanel from "../../../components/movie/MultiRatingPanel";
 import StreamingPanel from "../../../components/movie/StreamingPanel";
+import Loading from "./loading";
 import { getUser, authFetch, isAuthenticated } from "../../../lib/auth";
+
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -156,7 +158,7 @@ export default function MovieDetailPage() {
           fetch(`${API}/api/v1/recommendations/${id}?media_type=${type}`),
         ]);
         const movieData = await movieRes.json();
-        setMovie(movieData?.error ? null : movieData);
+        setMovie(!movieRes.ok || movieData?.error || movieData?.detail ? null : movieData);
         if (recRes.ok) {
           const recData = await recRes.json();
           setRecommendations(recData.recommendations || []);
@@ -198,14 +200,7 @@ export default function MovieDetailPage() {
   }, [id, type]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--surface-primary)]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--accent-warm)] border-t-transparent" />
-          <p className="text-sm text-[var(--text-tertiary)] font-mono uppercase">Syncing film details...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (!movie) {
