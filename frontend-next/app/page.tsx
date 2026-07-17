@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Suspense } from "react";
+import Link from "next/link";
 import MovieRow from "../components/MovieRow";
 import RowSkeleton from "../components/RowSkeleton";
 import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
