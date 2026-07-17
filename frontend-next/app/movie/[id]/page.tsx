@@ -488,6 +488,7 @@ export default function MovieDetailPage() {
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
                           allowFullScreen
                           loading="lazy"
+                          sandbox="allow-scripts allow-same-origin allow-presentation"
                         />
                       </div>
                     ) : (

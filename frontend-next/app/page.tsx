@@ -111,7 +111,7 @@ async function RegionalBentoGridWrapper() {
       {REGION_CARDS.map((r) => {
         const topMovie = r.movies?.[0];
         return (
-          <a
+          <Link
             key={r.key}
             href={`/cinema/${r.key}`}
             className={`group relative rounded-2xl border ${r.border} bg-gradient-to-br ${r.accent} p-6 overflow-hidden flex flex-col justify-between h-[240px] hover:border-white/20 transition-all hover:scale-[1.01] shadow-md`}
@@ -141,7 +141,7 @@ async function RegionalBentoGridWrapper() {
                 Explore →
               </span>
             </div>
-          </a>
+          </Link>
         );
       })}
     </div>

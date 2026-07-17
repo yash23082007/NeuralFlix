@@ -11,22 +11,22 @@ export default function Loading() {
       className="min-h-screen pb-12 flex flex-col items-center mx-auto"
     >
       {/* Hero Backdrop Skeleton */}
-      <div className="w-full h-[55vh] skeleton relative border-b border-[var(--border-subtle)]">
+      <div className="w-full h-[60vh] skeleton relative border-b border-[var(--border-subtle)]">
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-primary)] via-[var(--surface-primary)]/40 to-transparent" />
       </div>
       
       {/* Content Skeleton */}
-      <div className="w-full max-w-[1400px] flex flex-col md:flex-row gap-8 md:gap-12 mt-[-20vh] relative z-10 px-5 sm:px-8 md:px-12">
+      <div className="w-full relative z-20 mx-auto max-w-7xl px-5 sm:px-8 md:px-12 -mt-48 md:-mt-64 flex flex-col lg:flex-row gap-10">
          {/* Poster */}
          <motion.div 
            initial={{ y: 20, opacity: 0 }}
            animate={{ y: 0, opacity: 1 }}
            transition={{ delay: 0.1 }}
-           className="w-48 md:w-72 aspect-[2/3] skeleton rounded-xl md:rounded-2xl shadow-poster border border-[var(--border-default)] shrink-0" 
+           className="w-full lg:w-72 aspect-[2/3] skeleton rounded-xl md:rounded-2xl shadow-poster border border-[var(--border-default)] shrink-0" 
          />
          
          {/* Details */}
-         <div className="flex-1 space-y-6 pt-2 md:pt-24">
+         <div className="flex-1 pt-4 lg:pt-12 space-y-6">
             <motion.div 
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}

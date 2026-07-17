@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Sparkles, Star, Film, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,6 +20,44 @@ interface Movie {
 export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featuredMovie: Movie; sideMovies: Movie[]; catalogSize: string | number }) {
   const [trailerOpen, setTrailerOpen] = useState(false);
 
+  useEffect(() => {
+    if (!trailerOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setTrailerOpen(false);
+      }
+      if (e.key === "Tab") {
+        const modal = document.getElementById("trailer-modal-container");
+        if (!modal) return;
+        const focusable = modal.querySelectorAll("button, iframe");
+        if (focusable.length === 0) return;
+        const first = focusable[0] as HTMLElement;
+        const last = focusable[focusable.length - 1] as HTMLElement;
+        
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+    
+    setTimeout(() => {
+      const closeBtn = document.getElementById("close-trailer-btn");
+      if (closeBtn) closeBtn.focus();
+    }, 100);
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [trailerOpen]);
+
   const title = featuredMovie?.title || "Discover Global Cinema";
   const year = featuredMovie?.year || 2024;
   const rating = featuredMovie?.rating || 9.1;
@@ -30,7 +68,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
   const overview = featuredMovie?.overview || "Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.";
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--surface-primary)]">
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--surface-primary)] pt-16">
       {/* Background with 50% opacity */}
       <div className="absolute inset-0 z-0">
         {backdrop ? (
@@ -127,6 +165,10 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
             onClick={() => setTrailerOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            id="trailer-modal-container"
+            aria-label={`${title} Official Trailer`}
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -136,8 +178,10 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
               onClick={(e) => e.stopPropagation()}
             >
               <button
+                id="close-trailer-btn"
                 onClick={() => setTrailerOpen(false)}
                 className="absolute top-4 right-4 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                aria-label="Close trailer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -148,6 +192,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-presentation"
               />
             </motion.div>
           </motion.div>
