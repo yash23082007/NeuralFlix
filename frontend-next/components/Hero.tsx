@@ -14,6 +14,7 @@ interface Movie {
   genres?: string[];
   director?: string;
   trailer_key?: string;
+  overview?: string;
 }
 
 export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featuredMovie: Movie; sideMovies: Movie[]; catalogSize: string | number }) {
