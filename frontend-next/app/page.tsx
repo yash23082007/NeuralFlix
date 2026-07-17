@@ -28,10 +28,13 @@ import { CATALOG_DISPLAY_SIZE } from "../lib/constants";
 export const dynamic = "force-dynamic";
 
 async function HeroSectionWrapper() {
-  const [trending, mlOverview] = await Promise.all([
+  const results = await Promise.allSettled([
     getTrendingAll(),
     getMlOverview()
   ]);
+
+  const trending = results[0].status === "fulfilled" ? results[0].value : [];
+  const mlOverview = results[1].status === "fulfilled" ? results[1].value : null;
 
   const featuredMovie = (trending?.[0] || {
     title: "Discover Global Cinema",
@@ -76,14 +79,7 @@ async function AnimeRow() {
 }
 
 async function RegionalBentoGridWrapper() {
-  const [
-    hollywood,
-    bollywood,
-    korean,
-    japanese,
-    french,
-    tamil
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     getByRegion("hollywood"),
     getByRegion("bollywood"),
     getByRegion("korean"),
@@ -91,6 +87,15 @@ async function RegionalBentoGridWrapper() {
     getByRegion("french"),
     getByRegion("tamil"),
   ]);
+
+  const [
+    hollywood,
+    bollywood,
+    korean,
+    japanese,
+    french,
+    tamil
+  ] = results.map(r => r.status === "fulfilled" ? r.value : []);
 
   const REGION_CARDS = [
     { key: "hollywood", name: "Hollywood", movies: hollywood, desc: "Blockbusters & auteur cinema", accent: "from-amber-600/20 to-yellow-600/10", border: "border-yellow-500/20" },

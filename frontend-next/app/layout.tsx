@@ -73,6 +73,8 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${outfit.variable}`}
     >
       <head>
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="preconnect" href="https://api.themoviedb.org" />
         <meta name="theme-color" content="#FAFAF7" />
         <script
           type="application/ld+json"

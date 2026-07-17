@@ -13,7 +13,7 @@ const nextConfig = {
       { protocol: "https", hostname: "images-na.ssl-images-amazon.com", pathname: "/**" },
     ],
     formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 3600,
+    minimumCacheTTL: 86400,
   },
   
   // Performance
