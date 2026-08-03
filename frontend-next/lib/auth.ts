@@ -37,6 +37,14 @@ export function getUser(): AuthUser | null {
   }
 }
 
+/**
+ * Check if user exists in local cache (display-only).
+ * Use checkAuth() for a real server-side validation.
+ */
+export function isAuthenticated(): boolean {
+  return !!getUser();
+}
+
 import { useUserStore } from "../store/userStore";
 
 /**
