@@ -30,6 +30,22 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false
+      - key: LITE_MODE
+        value: "true"
+      - key: ENABLE_EXPERIMENTAL_ML
+        value: "false"
+      - key: ENABLE_NCF
+        value: "false"
+      - key: ENABLE_SASREC
+        value: "false"
+      - key: ENABLE_GNN
+        value: "false"
+      - key: ENABLE_BANDIT
+        value: "false"
+      - key: ENABLE_VECTOR_SEARCH
+        value: "false"
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
 databases:
   - name: movie-recs-db
