@@ -281,7 +281,9 @@ def init_engines():
 
     # Check if we can use Postgres
     use_postgres = False
-    if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+    is_demo = os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() == "true"
+    
+    if DATABASE_URL and DATABASE_URL.startswith("postgresql") and not is_demo:
         try:
             # Sync connection check with 3s timeout
             temp_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 3})

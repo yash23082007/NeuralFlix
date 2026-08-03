@@ -13,6 +13,10 @@ _redis_client = None
 
 async def get_redis():
     global _redis_client
+    is_demo = os.getenv("NEURALFLIX_DEMO_MODE", "false").lower() == "true"
+    if is_demo:
+        return None
+
     if _redis_client is None:
         try:
             import redis.asyncio as aioredis
