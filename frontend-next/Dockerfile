@@ -1,5 +1,5 @@
 # ── NeuralFlix Frontend — Multi-stage Production Build ──────
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies
 FROM base AS deps

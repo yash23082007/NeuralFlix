@@ -135,7 +135,7 @@ graph TD
 ## 🚀 Local Installation & Setup
 
 ### 1. Prerequisites
-- **Node.js v20+**
+- **Node.js v22+**
 - **Python 3.11+**
 - **PostgreSQL** (Optional, falls back to SQLite natively)
 

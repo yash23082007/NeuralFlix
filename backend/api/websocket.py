@@ -29,10 +29,6 @@ async def get_websocket_user_id(websocket: WebSocket) -> str:
     token = websocket.cookies.get("access_token")
 
     if not token:
-        # Try query param as fallback for non-browser clients
-        token = websocket.query_params.get("token")
-
-    if not token:
         await websocket.close(code=1008)
         raise WebSocketException(code=1008)
 
