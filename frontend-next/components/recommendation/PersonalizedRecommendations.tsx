@@ -25,8 +25,8 @@ export default function PersonalizedRecommendations() {
             <Sparkles className="absolute inset-0 m-auto h-4 w-4 text-[var(--accent-sage)] animate-pulse" />
           </div>
           <div className="space-y-1 text-center">
-            <p className="text-sm font-semibold text-[var(--text-primary)] font-sans">Analyzing your taste profile</p>
-            <p className="text-xs text-[var(--text-tertiary)] font-sans">Consulting Neural Recommendation Engine...</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] font-sans">NeuralFlix is waking up the discovery engine</p>
+            <p className="text-xs text-[var(--text-tertiary)] font-sans">Loading catalog and personalized discovery... This can take up to 30 seconds.</p>
           </div>
         </div>
       </div>
@@ -37,10 +37,10 @@ export default function PersonalizedRecommendations() {
     return (
       <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 px-4 text-center">
         <p className="text-sm font-medium text-[var(--text-secondary)] font-sans">
-          No recommendations available yet.
+          Could not reach NeuralFlix Engine.
         </p>
         <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-md font-sans">
-          Sign in and rate at least a few films to initialize your personalized machine learning recommendation model.
+          The backend service might be offline. Please try again in a few moments.
         </p>
       </div>
     );

@@ -25,21 +25,28 @@ async def lifespan(app: FastAPI):
     app.state.redis = await get_redis()
     log.info("Redis connection established")
     
-    # 2. Initialize Database and Indexes
+    # 2. Initialize Database and Indexes in background to prevent boot blocking
     from database import init_db, auto_seed_if_empty
-    try:
-        await init_db()
-        await auto_seed_if_empty()
-    except Exception as e:
-        log.warning("failed_to_initialize_db_indexes", error=str(e))
+    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
+    
+    async def init_db_background():
+        try:
+            await init_db()
+            if not LITE_MODE:
+                await auto_seed_if_empty()
+        except Exception as e:
+            log.warning("failed_to_initialize_db_indexes", error=str(e))
+            
+    asyncio.create_task(init_db_background())
         
-    # 3. Load ContentBasedEngine TF-IDF matrix
+    # 3. Load ContentBasedEngine TF-IDF matrix in background
     from ml.content_based import content_engine, auto_build_if_missing
-    try:
-        asyncio.create_task(auto_build_if_missing())
-        log.info("Content similarity index background build started")
-    except Exception as e:
-        log.warning("failed_to_start_content_index_build", error=str(e))
+    if not LITE_MODE:
+        try:
+            asyncio.create_task(auto_build_if_missing())
+            log.info("Content similarity index background build started")
+        except Exception as e:
+            log.warning("failed_to_start_content_index_build", error=str(e))
         
     # 4. Load NCF pre-trained weights if explicitly enabled
     ENABLE_NCF = os.getenv("ENABLE_NCF", "false").lower() == "true"
@@ -169,14 +176,50 @@ async def websocket_recommendations(websocket: WebSocket):
 
 
 # ─── Health Endpoints ─────────────────────────────────────
-@app.get("/v1/metrics/health")
-def health_check():
-    return {"status": "healthy", "version": "3.0.0", "engine": "NeuralFlix ML Engine"}
+@app.get("/health/live")
+def liveness_check():
+    return {"status": "alive"}
 
+@app.get("/health/ready")
+async def readiness_check():
+    db_status = "unknown"
+    redis_status = "unknown"
+    
+    # Check Redis
+    try:
+        if app.state.redis:
+            await app.state.redis.ping()
+            redis_status = "connected"
+    except Exception:
+        redis_status = "disconnected"
+        
+    # Check DB
+    try:
+        from database import get_db
+        async for session in get_db():
+            from sqlalchemy import text
+            await session.execute(text("SELECT 1"))
+            db_status = "connected"
+            break
+    except Exception:
+        db_status = "disconnected"
+
+    return {
+        "status": "ready",
+        "database": db_status,
+        "redis": redis_status,
+        "recommendation_mode": "content-diversity-reranker-v1",
+        "version": "3.0.0",
+        "mode": "production" if os.getenv("LITE_MODE") != "true" else "lite"
+    }
+
+@app.get("/v1/metrics/health")
+async def health_check():
+    return await readiness_check()
 
 @app.get("/health")
-def docker_health_check():
-    return health_check()
+async def docker_health_check():
+    return await readiness_check()
 
 
 @app.get("/")

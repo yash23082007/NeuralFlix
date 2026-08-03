@@ -208,6 +208,46 @@ def _build_explanation(movie: dict, user_history: list, profile: dict) -> str:
 
 _ranker_instance = None
 
+# ─── Onboarding / Cold-Start Recommendations ───────────────
+@router.get("/onboarding")
+async def get_onboarding_recommendations(limit: int = 10):
+    """
+    Returns curated editorial collections for new or unauthenticated users.
+    Ensures the user never sees an empty recommendation screen.
+    """
+    try:
+        from routes.movies import get_trending_movies
+        trending = await get_trending_movies(limit=limit)
+        
+        recs = []
+        for m in trending.get("results", []):
+            recs.append({
+                "movie": m,
+                "score": 1.0,
+                "rankingVersion": "editorial-cold-start-v1",
+                "reasons": [
+                    {
+                        "type": "editorial",
+                        "label": "Highly acclaimed and broadly appealing to start your journey.",
+                        "evidence": ["Trending", "Popular"]
+                    }
+                ],
+                "freshness": {
+                    "metadataUpdatedAt": m.get("updated_at", "2026-08-01T00:00:00Z"),
+                    "ageHours": 0
+                }
+            })
+            
+        return {
+            "recommendations": recs[:limit],
+            "version": "3.0.0",
+            "mode": "onboarding"
+        }
+    except Exception as e:
+        logger.error(f"Error serving onboarding fallback: {e}")
+        return {"recommendations": [], "error": "Fallback failed"}
+
+
 def _get_ranker():
     global _ranker_instance
     if _ranker_instance is None:
