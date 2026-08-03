@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
 import httpx
@@ -109,6 +110,8 @@ async def fetch_tmdb_providers(
                                 "type": category,
                                 "region": region,
                                 "display_priority": p.get("display_priority", 999),
+                                "source": "tmdb",
+                                "checkedAt": datetime.now(timezone.utc).isoformat(),
                             })
 
             # Sort each category by display priority
@@ -196,6 +199,7 @@ async def fetch_watchmode_sources(imdb_id: str, region: str = "US") -> List[Dict
                         "format": s.get("format"),
                         "price": s.get("price"),
                         "source": "watchmode",
+                        "checkedAt": datetime.now(timezone.utc).isoformat(),
                     }
 
             result = list(unique.values())
@@ -241,12 +245,34 @@ async def get_streaming_availability(
     # Merge Watchmode deep links into TMDB provider data
     wm_by_name = {s["name"].lower(): s for s in watchmode_result} if watchmode_result else {}
 
+    now_ts = time.time()
+    
     for category in ["stream", "rent", "buy", "ads"]:
         for provider in tmdb_result.get(category, []):
             wm_match = wm_by_name.get(provider["name"].lower())
             if wm_match:
                 provider["deep_link"] = wm_match.get("url")
                 provider["price"] = wm_match.get("price")
+                
+            # If loaded from cache, ageHours might be > 0
+            try:
+                checked_time = datetime.fromisoformat(provider.get("checkedAt", datetime.now(timezone.utc).isoformat()))
+                age_hours = (datetime.now(timezone.utc) - checked_time).total_seconds() / 3600
+            except Exception:
+                age_hours = 0
+                
+            provider["ageHours"] = round(age_hours, 1)
+            
+            if age_hours < 24:
+                status = "fresh"
+            elif age_hours < 72:
+                status = "aging"
+            elif age_hours >= 72:
+                status = "stale"
+            else:
+                status = "unknown"
+                
+            provider["availabilityStatus"] = status
 
     # Build summary for quick display on cards
     stream_names = [p["name"] for p in tmdb_result.get("stream", [])[:5]]
@@ -259,6 +285,8 @@ async def get_streaming_availability(
             "has_stream": len(tmdb_result.get("stream", [])) > 0,
             "has_rent": len(tmdb_result.get("rent", [])) > 0,
             "has_buy": len(tmdb_result.get("buy", [])) > 0,
+            "ageHours": 0 if not tmdb_result.get("stream") else tmdb_result["stream"][0].get("ageHours", 0),
+            "availabilityStatus": "unknown" if not tmdb_result.get("stream") else tmdb_result["stream"][0].get("availabilityStatus", "unknown")
         },
     }
 
