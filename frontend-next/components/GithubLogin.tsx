@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Github } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { setToken, setUser } from "../lib/auth";
 
 export default function GithubLogin() {
   const router = useRouter();

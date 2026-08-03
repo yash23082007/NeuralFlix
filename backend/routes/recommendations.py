@@ -8,13 +8,17 @@ from typing import List, Optional
 logger = logging.getLogger("RECOMMENDATIONS_ROUTE")
 router = APIRouter()
 
-LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
+ENABLE_NCF = os.getenv("ENABLE_NCF", "false").lower() == "true"
+ENABLE_SASREC = os.getenv("ENABLE_SASREC", "false").lower() == "true"
+ENABLE_GNN = os.getenv("ENABLE_GNN", "false").lower() == "true"
+ENABLE_BANDIT = os.getenv("ENABLE_BANDIT", "false").lower() == "true"
+ENABLE_EXPERIMENTAL_ML = os.getenv("ENABLE_EXPERIMENTAL_ML", "false").lower() == "true"
 
 recommender = None
 ncf_model = None
 from utils.recommendation_engine import hybrid_recommendation
 
-if not LITE_MODE:
+if ENABLE_NCF or ENABLE_SASREC or ENABLE_EXPERIMENTAL_ML:
     try:
         from ml.hybrid_recommender import HybridRecommender, content_engine, ncf_model as ncf, sasrec_model, gnn_model
         ncf_model = ncf
@@ -311,7 +315,7 @@ async def get_user_recommendations(
         except Exception as exc:
             logger.error(f"Failed to fetch onboarding profile for cold start user {user_id}: {exc}")
 
-    if not rec_pairs and not LITE_MODE and recommender:
+    if not rec_pairs and (ENABLE_NCF or ENABLE_SASREC or ENABLE_EXPERIMENTAL_ML) and recommender:
         # Run hybrid pipeline recommendation (CPU-bound, wrap in to_thread)
         def _run_recommender():
             return recommender.recommend(
@@ -404,23 +408,24 @@ async def get_user_recommendations(
     except Exception as e:
         logger.warning(f"Skipping diversity pipeline: {e}")
 
-    # Stage 3: Thompson sampling exploration bandit
-    try:
-        from ml.exploration_bandit import ThompsonSamplingBandit
-        from utils.recommendation_engine import get_popularity_baseline
-        bandit = ThompsonSamplingBandit(epsilon=0.15)
-        # Fetch fresh popular content as exploration items
-        explore_pool = await get_popularity_baseline(limit=top_k)
-        movies = bandit.recommend_with_exploration(
-            exploit_candidates=movies,
-            explore_candidates=explore_pool,
-            top_k=top_k
-        )
-    except Exception as e:
-        logger.warning(f"Skipping bandit pipeline: {e}")
+    # Stage 3: Thompson sampling exploration bandit (feature-gated)
+    if ENABLE_BANDIT:
+        try:
+            from ml.exploration_bandit import ThompsonSamplingBandit
+            from utils.recommendation_engine import get_popularity_baseline
+            bandit = ThompsonSamplingBandit(epsilon=0.15)
+            # Fetch fresh popular content as exploration items
+            explore_pool = await get_popularity_baseline(limit=top_k)
+            movies = bandit.recommend_with_exploration(
+                exploit_candidates=movies,
+                explore_candidates=explore_pool,
+                top_k=top_k
+            )
+        except Exception as e:
+            logger.warning(f"Skipping bandit pipeline: {e}")
 
-    # Stage 4: BERT Sentiment Reranker (if not LITE_MODE)
-    if not LITE_MODE:
+    # Stage 4: BERT Sentiment Reranker (feature-gated)
+    if ENABLE_EXPERIMENTAL_ML:
         try:
             from ml.sentiment_reranker import SentimentReranker
             sentiment_model = SentimentReranker()

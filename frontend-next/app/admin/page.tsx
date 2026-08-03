@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getUser, getAuthHeaders } from "../../lib/auth";
+import { getUser, authFetch } from "../../lib/auth";
 import { 
   Users, 
   Film, 
@@ -35,9 +35,7 @@ export default function AdminDashboard() {
     try {
       // Mock stats for now, but trying to fetch from real endpoints if possible
       // In a real app, you'd have an /api/admin/stats endpoint
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/movies/stats`, {
-        headers: getAuthHeaders()
-      });
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/movies/stats`);
       
       if (res.ok) {
         const data = await res.json();

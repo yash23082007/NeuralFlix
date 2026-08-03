@@ -41,9 +41,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("failed_to_start_content_index_build", error=str(e))
         
-    # 4. Load NCF pre-trained weights if they exist (only if not LITE_MODE)
-    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
-    if not LITE_MODE:
+    # 4. Load NCF pre-trained weights if explicitly enabled
+    ENABLE_NCF = os.getenv("ENABLE_NCF", "false").lower() == "true"
+    ENABLE_EXPERIMENTAL_ML = os.getenv("ENABLE_EXPERIMENTAL_ML", "false").lower() == "true"
+    if ENABLE_NCF or ENABLE_EXPERIMENTAL_ML:
         try:
             import torch
             from ml.hybrid_recommender import ncf_model
@@ -60,7 +61,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             log.warning("failed_to_initialize_ml", error=str(e))
     else:
-        log.info("LITE_MODE enabled: Bypassing heavy PyTorch ML models to save memory.")
+        log.info("Experimental ML disabled: Production path uses content-based + popularity baselines.")
 
     yield
     
@@ -137,10 +138,9 @@ CORS_ORIGINS = os.getenv(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$|^https://.*\.vercel\.app$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -161,9 +161,10 @@ except ImportError as exc:
 
 
 # ─── WebSocket Endpoint ────────────────────────────────────
-@app.websocket("/ws/recommendations/{user_id}")
-async def websocket_recommendations(websocket: WebSocket, user_id: int):
-    from api.websocket import handle_websocket
+@app.websocket("/ws/recommendations")
+async def websocket_recommendations(websocket: WebSocket):
+    from api.websocket import get_websocket_user_id, handle_websocket
+    user_id = await get_websocket_user_id(websocket)
     await handle_websocket(websocket, user_id)
 
 
@@ -186,12 +187,11 @@ def root():
         "description": "Global cinema discovery and ML recommendation platform",
         "endpoints": {
             "health": "/v1/metrics/health",
-            "movies": "/api/movies",
-            "search": "/api/search",
-            "recommendations": "/api/recommendations",
-            "ml": "/api/ml/overview",
+            "movies": "/api/v1/movies",
+            "search": "/api/v1/search",
+            "recommendations": "/api/v1/recommendations",
             "events": "/api/v1/events",
-            "websocket": "/ws/recommendations/{user_id}",
+            "websocket": "/ws/recommendations",
             "docs": "/docs",
         },
     }
@@ -206,8 +206,8 @@ if HAS_ROUTES:
     # ML & Personalization
     app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["Recommendations"])
     
-    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
-    if not LITE_MODE:
+    ENABLE_EXPERIMENTAL_ML = os.getenv("ENABLE_EXPERIMENTAL_ML", "false").lower() == "true"
+    if ENABLE_EXPERIMENTAL_ML:
         app.include_router(ml.router, prefix="/api/v1/ml", tags=["ML Engine"])
     
     # Infrastructure & Engagement
@@ -225,7 +225,37 @@ if HAS_ROUTES:
     # Enhanced Data Layer (Streaming, Ratings, Trakt Trending)
     app.include_router(enhanced_data.router, prefix="/api/v1/data", tags=["Enhanced Data"])
 
-# V2 Feedback route integration removed to clean up architecture.
+    # ─── New Feature Routes ─────────────────────────────────────
+    try:
+        from routes.taste_controls import router as taste_controls_router
+        app.include_router(taste_controls_router, prefix="/api/v1/users", tags=["Taste Controls"])
+    except ImportError as exc:
+        log.warning("taste_controls_routes_not_loaded", error=str(exc))
+
+    try:
+        from routes.why_recommended import router as why_recommended_router
+        app.include_router(why_recommended_router, prefix="/api/v1/recommendations", tags=["Why Recommended"])
+    except ImportError as exc:
+        log.warning("why_recommended_routes_not_loaded", error=str(exc))
+
+    try:
+        from routes.feedback import router as feedback_router
+        app.include_router(feedback_router, prefix="/api/v1/recommendations", tags=["Feedback"])
+    except ImportError as exc:
+        log.warning("feedback_routes_not_loaded", error=str(exc))
+
+    try:
+        from routes.cinema_trails import router as cinema_trails_router
+        app.include_router(cinema_trails_router, prefix="/api/v1/cinema-trails", tags=["Cinema Trails"])
+    except ImportError as exc:
+        log.warning("cinema_trails_routes_not_loaded", error=str(exc))
+
+    try:
+        from routes.discovery_passport import router as discovery_passport_router
+        app.include_router(discovery_passport_router, prefix="/api/v1/users", tags=["Discovery Passport"])
+    except ImportError as exc:
+        log.warning("discovery_passport_routes_not_loaded", error=str(exc))
+
 
 # ─── Seed Endpoint (manual trigger) ──────────────────────────
 @app.post("/api/v1/seed")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, Depends, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from pydantic import BaseModel, EmailStr
@@ -11,15 +11,19 @@ import os
 import uuid
 import httpx
 
+from core.security import get_current_user_id, JWT_SECRET, ALGORITHM
+
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-in-prod")
-ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
+
+# Cookie configuration — configurable for dev vs production
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "none")
 
 class RegisterSchema(BaseModel):
     email: EmailStr
@@ -69,6 +73,35 @@ class UserSchema(BaseModel):
     is_admin: bool = False
     created_at: datetime
 
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
+    """Set HttpOnly cookies for both access and refresh tokens."""
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=3600,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=604800,
+        path="/",
+    )
+
+
+def _clear_auth_cookies(response: Response):
+    """Clear both auth cookies."""
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(request: Request, body: RegisterSchema):
@@ -96,19 +129,11 @@ async def login(request: Request, response: Response, body: LoginSchema):
     
     user_id = user["id"]
     access_token = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
-    refresh_token = create_token({"sub": user_id, "type": "refresh"}, 60 * 24 * 7) # 7 days
+    refresh_token = create_token({"sub": user_id, "type": "refresh"}, 60 * 24 * 7)  # 7 days
     
-    response.set_cookie(
-        "refresh_token", 
-        refresh_token, 
-        httponly=True, 
-        secure=True, 
-        samesite="none", 
-        max_age=604800
-    )
+    _set_auth_cookies(response, access_token, refresh_token)
     
     return {
-        "access_token": access_token, 
         "token_type": "bearer",
         "user": {
             "id": user["id"],
@@ -118,24 +143,9 @@ async def login(request: Request, response: Response, body: LoginSchema):
         }
     }
 
-@router.post("/init-admin")
-async def init_admin():
-    """Internal utility to ensure an admin account exists for the demo."""
-    admin_email = "admin@neuralflix.ai"
-    existing = await users_collection.find_one({"email": admin_email})
-    if existing:
-        return {"message": "Admin already exists"}
-        
-    user_doc = {
-        "id": "admin-id-001",
-        "email": admin_email,
-        "name": "NeuralFlix Admin",
-        "hashed_password": get_password_hash("Admin@2025!"),
-        "is_admin": True,
-        "created_at": datetime.utcnow()
-    }
-    await users_collection.insert_one(user_doc)
-    return {"message": "Admin created: admin@neuralflix.ai / Admin@2025!"}
+# NOTE: POST /init-admin has been removed.
+# Use backend/scripts/create_admin.py instead:
+#   ADMIN_EMAIL=... ADMIN_PASSWORD=... python scripts/create_admin.py
 
 @router.post("/google")
 async def google_login(request: Request, response: Response, body: GoogleLoginSchema):
@@ -152,7 +162,7 @@ async def google_login(request: Request, response: Response, body: GoogleLoginSc
             "id": str(uuid.uuid4()),
             "email": email,
             "name": name,
-            "hashed_password": "", # No password for Google users
+            "hashed_password": "",  # No password for Google users
             "is_admin": False,
             "created_at": datetime.utcnow(),
             "auth_type": "google"
@@ -163,17 +173,9 @@ async def google_login(request: Request, response: Response, body: GoogleLoginSc
     access_token = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
     refresh_token = create_token({"sub": user_id, "type": "refresh"}, 60 * 24 * 7)
     
-    response.set_cookie(
-        "refresh_token", 
-        refresh_token, 
-        httponly=True, 
-        secure=True, 
-        samesite="none", 
-        max_age=604800
-    )
+    _set_auth_cookies(response, access_token, refresh_token)
     
     return {
-        "access_token": access_token, 
         "token_type": "bearer",
         "user": {
             "id": user["id"],
@@ -242,17 +244,9 @@ async def github_login(request: Request, response: Response, body: GithubLoginSc
     jwt_access_token = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
     jwt_refresh_token = create_token({"sub": user_id, "type": "refresh"}, 60 * 24 * 7)
     
-    response.set_cookie(
-        "refresh_token", 
-        jwt_refresh_token, 
-        httponly=True, 
-        secure=True, 
-        samesite="none", 
-        max_age=604800
-    )
+    _set_auth_cookies(response, jwt_access_token, jwt_refresh_token)
     
     return {
-        "access_token": jwt_access_token, 
         "token_type": "bearer",
         "user": {
             "id": user["id"],
@@ -264,12 +258,12 @@ async def github_login(request: Request, response: Response, body: GithubLoginSc
 
 
 @router.post("/refresh")
-async def refresh_token(request: Request):
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
+async def refresh_token(request: Request, response: Response):
+    token = request.cookies.get("refresh_token")
+    if not token:
         raise HTTPException(status_code=401, detail="No refresh token")
     try:
-        payload = jwt.decode(refresh_token, JWT_SECRET, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type")
         user_id = payload.get("sub")
@@ -279,49 +273,42 @@ async def refresh_token(request: Request):
             raise HTTPException(status_code=401, detail="User not found")
             
         new_access = create_token({"sub": user_id, "type": "access", "is_admin": user.get("is_admin", False)}, 60)
-        return {"access_token": new_access, "token_type": "bearer"}
+        
+        # Set the new access token as HttpOnly cookie
+        response.set_cookie(
+            key="access_token",
+            value=new_access,
+            httponly=True,
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            max_age=3600,
+            path="/",
+        )
+        
+        return {"token_type": "bearer", "message": "Token refreshed"}
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
 
 @router.get("/me")
-async def get_current_user(request: Request):
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    token = auth_header[7:]
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        user = await users_collection.find_one({"id": user_id}, {"hashed_password": 0, "_id": 0})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+async def get_current_user(user_id: str = Depends(get_current_user_id)):
+    user = await users_collection.find_one({"id": user_id}, {"hashed_password": 0, "_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("refresh_token")
+    _clear_auth_cookies(response)
     return {"message": "Logged out"}
 
 
 @router.put("/me")
-async def update_profile(request: Request, body: dict):
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    token = auth_header[7:]
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
+async def update_profile(request: Request, body: dict, user_id: str = Depends(get_current_user_id)):
+    allowed_keys = {"name", "avatar_url", "preferred_language", "region"}
+    updates = {k: v for k, v in body.items() if k in allowed_keys}
+    if updates:
+        await users_collection.update_one({"id": user_id}, {"$set": updates})
         
-        allowed_keys = {"name", "avatar_url", "preferred_language", "region"}
-        updates = {k: v for k, v in body.items() if k in allowed_keys}
-        if updates:
-            await users_collection.update_one({"id": user_id}, {"$set": updates})
-            
-        return {"message": "Profile updated"}
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token or update failed")
+    return {"message": "Profile updated"}

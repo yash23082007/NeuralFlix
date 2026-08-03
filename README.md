@@ -2,12 +2,11 @@
   <img src="https://raw.githubusercontent.com/yash23082007/NeuralFlix/main/frontend-next/public/favicon.ico" alt="NeuralFlix Logo" width="120" height="120" />
   
   # NeuralFlix 🎬
-  **The Premium Hybrid ML Recommendation & Cinematic Discovery Platform**
+  **Explainable Global Cinema Discovery Platform**
 
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
   [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
   [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind%20v4-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-  [![PyTorch](https://img.shields.io/badge/ML-PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
   [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
   [![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black?style=for-the-badge&logo=vercel)](https://neural-flix.vercel.app/)
   [![Deployed on Render](https://img.shields.io/badge/Deployed-Render-46E3B7?style=for-the-badge&logo=render)](https://neuralflix.onrender.com)
@@ -15,7 +14,9 @@
 
 <br />
 
-> **NeuralFlix** is a premium, state-of-the-art cinematic discovery engine designed to bridge the gap between regional global cinema and mainstream Hollywood blockbusters. It combines a stunning **"Liquid Glass"** visual interface with a high-performance **PyTorch Hybrid Recommendation Engine** to deliver hyper-personalized movie feeds in real-time.
+> **NeuralFlix** helps users discover global cinema through transparent, user-controlled recommendations.
+>
+> Users can tune familiar/adventurous, local/global, light/challenging, fast/slow-burn, and popular/hidden-gem preferences. Every recommendation includes explicit reasons and freshness metadata.
 
 ---
 
@@ -26,24 +27,43 @@
 | **Frontend UI** | [https://neural-flix.vercel.app/](https://neural-flix.vercel.app/) | 🟢 Live (Vercel) |
 | **Backend API** | [https://neuralflix.onrender.com/health](https://neuralflix.onrender.com/health) | 🟢 Live (Render) |
 
-> ⚠️ **Cloud Performance Note:** To maintain blazing fast inference speeds on Free Tier cloud infrastructure (512MB RAM), the deep learning models (NCF & SASRec) have been tightly optimized. The active vector matrices are computed on-the-fly, intelligently constrained to a curated **10,000 movie catalog**, enabling enterprise-grade ML pipelines on zero-cost hardware.
-
 ---
 
 ## ✨ Core Features
 
-### 🎨 Immersive User Interface (Liquid Glass Design)
-- **3D WebGL Canvas**: Dynamic ambient particles, 3D card tilting, and pulsing interactive recommendation orbs built natively with Three.js.
-- **Taste DNA**: Custom canvas radar charts visualizing your genre and regional preferences in real-time.
-- **Interactive World Map**: A beautiful vector map for geographical cinema exploration (e.g., jump from Korean Thrillers to Bollywood Dramas in a click).
-- **Mood Discovery Engine**: Real-time sliders map human emotions (*Melancholic, Adrenaline, Mind-Bending*) directly into 384-dimensional dense semantic vectors.
+### 🔐 Security
+- **HttpOnly cookie authentication** — no JWT in localStorage or client-written cookies
+- **Server-side admin authorization** — no frontend-only admin checks
+- **Authenticated WebSocket** — identity derived from server-verified cookie, not URL parameter
+- **Explicit CORS** — no wildcard origins
 
-### 🧠 Advanced Hybrid ML Engine
-- **Neural Collaborative Filtering (NCF)**: Dual-stream PyTorch network utilizing Generalized Matrix Factorization (GMF) and Multi-Layer Perceptrons (MLP).
-- **Sequential Transformers (SASRec)**: Self-attention sequence modeling dynamically updates recommendations based on real-time navigation paths.
-- **Content-Based Filtering**: Cosine similarity index computed over high-dimensional TF-IDF/SentenceTransformer matrices.
-- **Cold Start Bandit**: Tiered onboarding states (*Cold Start, Warming, Active*) powered by Thompson Sampling and Epsilon-Greedy policies for explore/exploit balance.
-- **On-The-Fly Semantic Search**: Computes high-dimensional cosine similarity vectors in sub-milliseconds without hoarding instance memory.
+### 🎯 Taste Constellation (User Controls)
+- **Five dual-axis sliders**: Familiar↔Adventurous, Local↔Global, Light↔Challenging, Fast↔Slow-burn, Popular↔Hidden gems
+- **Diversity boost** toggle for broadening recommendations
+- **Explicit control** — preferences are never inferred without disclosure
+
+### 💡 Explainable Recommendations
+- **"Why This"** — every recommendation includes structured, inspectable reasons (genre overlap, language match, diversity boost, etc.)
+- **"Why Not This"** — users can dismiss recommendations with explicit feedback (already watched, too slow, wrong language, etc.)
+- **Ranking transparency** — ranking version and catalog freshness metadata included
+
+### 🗺️ Cinema Trails
+- **Curated discovery journeys** across global cinema (e.g., Hindi parallel cinema → Iranian social realism)
+- **Transition reasons** explain the thematic connection between consecutive films
+
+### 📊 Discovery Passport
+- **Private discovery history** — languages explored, countries, new directors, hidden gems
+- **Comfort/discovery ratio** — honest breakdown without gamification
+- **Privacy controls** — opt-in tracking, export, delete
+
+### 📡 Availability Freshness
+- **Timestamped streaming availability** — every platform entry includes `checkedAt` and source
+- **Freshness indicators** — fresh (<24h), aging (24–72h), stale (>72h), unknown
+
+### 📈 Recommendation Evaluation
+- **Time-aware evaluation** — temporal train/test split (never random shuffle for sequential data)
+- **Baselines** — popularity, genre overlap, content similarity
+- **Diversity metrics** — genre, language, country diversity alongside relevance (Recall@10, NDCG@10, MRR)
 
 ---
 
@@ -51,13 +71,20 @@
 
 ```mermaid
 graph TD
-    User([Client / Browser]) -->|HTTPS| Vercel[Next.js 15 Frontend on Vercel]
+    User([Client / Browser]) -->|HTTPS + HttpOnly Cookies| Vercel[Next.js 15 Frontend on Vercel]
     Vercel -->|REST API / WebSockets| Render[FastAPI Backend on Render]
     
-    subgraph "Machine Learning Engine"
+    subgraph "Recommendation Engine (Production)"
         Render --> CBF[Content-Based TF-IDF]
-        Render --> NCF[NCF Deep Learning Model]
-        Render --> SAS[SASRec Sequential Transformer]
+        Render --> TR[Taste-Control Reranker]
+        Render --> DIV[Diversity Filter]
+    end
+
+    subgraph "Experimental ML (Feature-Gated)"
+        Render -.->|ENABLE_NCF| NCF[NCF Deep Learning]
+        Render -.->|ENABLE_SASREC| SAS[SASRec Sequential]
+        Render -.->|ENABLE_GNN| GNN[Graph Neural Network]
+        Render -.->|ENABLE_BANDIT| BAN[Thompson Sampling Bandit]
     end
 
     subgraph "Data Storage"
@@ -67,22 +94,41 @@ graph TD
     end
 ```
 
+### Production vs Experimental
+
+| Component | Status | Requires PyTorch | Feature Flag |
+| :--- | :---: | :---: | :--- |
+| Content-Based TF-IDF | ✅ Production | No | Always on |
+| Taste-Control Reranker | ✅ Production | No | Always on |
+| Popularity Baseline | ✅ Production | No | Always on |
+| Diversity Filter | ✅ Production | No | Always on |
+| NCF (Neural Collaborative Filtering) | 🧪 Experimental | Yes | `ENABLE_NCF` |
+| SASRec (Sequential Transformer) | 🧪 Experimental | Yes | `ENABLE_SASREC` |
+| GNN (Graph Neural Network) | 🧪 Experimental | Yes | `ENABLE_GNN` |
+| Thompson Sampling Bandit | 🧪 Experimental | No | `ENABLE_BANDIT` |
+| Qdrant/FAISS Vector Search | 🧪 Experimental | No | `ENABLE_VECTOR_SEARCH` |
+| BERT Sentiment Reranker | 🧪 Experimental | Yes | `ENABLE_EXPERIMENTAL_ML` |
+
+> ⚠️ **Default production path runs without PyTorch.** Experimental models require explicit opt-in via environment flags and documented evaluation reports.
+
 ---
 
 ## 🔌 API Reference Guide
 
-The backend exposes a highly optimized REST API featuring live model tuning, websockets, and diagnostics.
-
-| Endpoint | Method | Description |
-| :--- | :---: | :--- |
-| `/api/v1/auth/register` | `POST` | Securely register a new user profile. |
-| `/api/v1/movies` | `GET` | Retrieve paginated cinematic catalog with dynamic filtering. |
-| `/api/v1/recommendations/personalized` | `GET` | Core feed blending Collaborative Filtering & Semantic models. |
-| `/api/v1/search/mood` | `GET` | Converts emotional slider values into target semantic vectors. |
-| `/api/v1/events/watch` | `POST` | Logs watch event occurrences in real-time. |
-| `/api/v1/events/rate` | `POST` | Logs user rating inputs for movies. |
-| `/ws/recommendations/{id}` | `WS` | Open WebSocket for real-time tracking and live feed updates. |
-| `/v1/metrics/health` | `GET` | Advanced observability telemetry and system diagnostic dump. |
+| Endpoint | Method | Auth | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/v1/auth/register` | `POST` | — | Register a new user |
+| `/api/v1/auth/login` | `POST` | — | Login (sets HttpOnly cookies) |
+| `/api/v1/auth/me` | `GET` | 🔒 | Get current user profile |
+| `/api/v1/movies` | `GET` | — | Paginated catalog with filtering |
+| `/api/v1/recommendations/user/{id}` | `GET` | 🔒 | Personalized recommendations |
+| `/api/v1/recommendations/{movie_id}/why` | `GET` | 🔒 | Structured recommendation reasons |
+| `/api/v1/recommendations/feedback` | `POST` | 🔒 | Submit "Why Not This" feedback |
+| `/api/v1/users/me/taste-controls` | `PUT` | 🔒 | Update taste constellation sliders |
+| `/api/v1/cinema-trails` | `GET` | — | List curated cinema trails |
+| `/api/v1/users/me/discovery-passport` | `GET` | 🔒 | Private discovery statistics |
+| `/ws/recommendations` | `WS` | 🔒 | Real-time recommendations (cookie auth) |
+| `/v1/metrics/health` | `GET` | — | System health check |
 
 ---
 
@@ -97,13 +143,28 @@ The backend exposes a highly optimized REST API featuring live model tuning, web
 Create a `.env` file in the `backend` folder based on `.env.example`:
 
 ```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/neuralflix
-SECRET_KEY=your_secure_jwt_secret
+# Required
+JWT_SECRET=your_secure_jwt_secret
 TMDB_API_KEY=your_tmdb_developer_key
+
+# Database (optional — falls back to SQLite)
+DATABASE_URL=postgresql://user:password@localhost:5432/neuralflix
+
+# Auth cookies
+COOKIE_SECURE=false        # true in production
+COOKIE_SAMESITE=lax        # none in production (cross-origin)
+
+# Feature flags (all default to false)
+ENABLE_EXPERIMENTAL_ML=false
+ENABLE_NCF=false
+ENABLE_SASREC=false
+ENABLE_GNN=false
+ENABLE_BANDIT=false
+ENABLE_VECTOR_SEARCH=false
+
+# Demo mode (skips PostgreSQL/Redis)
 NEURALFLIX_DEMO_MODE=true
 ```
-
-> 💡 **Demo Mode:** Setting `NEURALFLIX_DEMO_MODE=true` skips PostgreSQL/Redis requirements and forces the app to run on a local SQLite file database with in-memory caching.
 
 ### 3. Start the Backend (FastAPI)
 ```bash
@@ -119,7 +180,13 @@ pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 4. Start the Frontend (Next.js)
+### 4. Create Admin User (one-time)
+```bash
+cd backend
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=your_secure_password python scripts/create_admin.py
+```
+
+### 5. Start the Frontend (Next.js)
 ```bash
 cd frontend-next
 npm install
@@ -130,13 +197,36 @@ Navigate to `http://localhost:3000` to experience NeuralFlix locally!
 
 ---
 
+## 📖 Documentation
+
+| Document | Description |
+| :--- | :--- |
+| [Architecture](docs/architecture.md) | System overview, component diagram, data flow |
+| [Auth & Security](docs/auth-security.md) | Cookie-based auth design, CORS, token lifecycle |
+| [WebSocket Security](docs/websocket-security.md) | WebSocket authentication protocol |
+| [Recommendation Evaluation](docs/recommendation-evaluation.md) | Metrics, baselines, methodology |
+| [Model Card](docs/model-card.md) | Each model's purpose, training data, limitations |
+| [Data Freshness](docs/data-freshness.md) | Availability sources, staleness policy |
+| [Privacy Model](docs/privacy-model.md) | Data collection, user controls, opt-in/opt-out |
+| [Deployment Runbook](docs/deployment-runbook.md) | Environment setup, secrets, deployment checklist |
+| [Limitations](docs/limitations.md) | Known limitations, honest capability assessment |
+| [Non-Goals](docs/non-goals.md) | What NeuralFlix explicitly does not do |
+
+---
+
 ## 📈 Observability & Diagnostics
 
-Built-in `Structlog` and custom middleware measure strict API latencies. Current optimized targets aim for **< 200ms** latency even during complex PyTorch tensor inferences.
+Built-in `Structlog` and custom middleware measure strict API latencies. Current optimized targets aim for **< 200ms** latency.
 
-* Run `python scripts/verify_e2e.py` from the `backend` directory to run end-to-end telemetry and validation checks on the running instance.
+```bash
+# Run evaluation pipeline
+cd backend && python -m evaluation.evaluate
+
+# Run end-to-end verification
+cd backend && python scripts/verify_e2e.py
+```
 
 ## 📄 License & Attributions
 * **License**: MIT License.
-* **Metadata & APIs**: TMDB, Trakt.tv, Trakt.tv, Watchmode.
+* **Metadata & APIs**: TMDB, Trakt.tv, Watchmode.
 * *Engineered for the love of global cinema. 🎬*

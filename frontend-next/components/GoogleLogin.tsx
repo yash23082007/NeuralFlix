@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { setToken, setUser } from "../lib/auth";
+import { setUser } from "../lib/auth";
 import { Cpu, ShieldAlert } from "lucide-react";
 
 interface GoogleLoginProps {
@@ -63,6 +63,7 @@ export default function GoogleLogin({ className }: GoogleLoginProps) {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id_token: response.credential }),
       });
 
@@ -72,7 +73,6 @@ export default function GoogleLogin({ className }: GoogleLoginProps) {
       }
 
       const data = await res.json();
-      setToken(data.access_token);
       setUser(data.user);
       router.push("/");
       router.refresh();

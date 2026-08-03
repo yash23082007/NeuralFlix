@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, Film, Sparkles, Check } from "lucide-react";
 import { motion } from "framer-motion";
-import { setToken, setUser } from "../../lib/auth";
+import { setUser } from "../../lib/auth";
 import GoogleLogin from "../../components/GoogleLogin";
 import GithubLogin from "../../components/GithubLogin";
 
@@ -62,6 +62,7 @@ export default function LoginPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ code }),
         }
       );
@@ -70,7 +71,6 @@ export default function LoginPage() {
         throw new Error(data.detail || "GitHub login failed");
       }
       const data = await res.json();
-      setToken(data.access_token);
       setUser(data.user);
       router.push("/");
     } catch (err: any) {
@@ -90,6 +90,7 @@ export default function LoginPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ email, password }),
         }
       );
@@ -98,13 +99,7 @@ export default function LoginPage() {
         throw new Error(data.detail || "Invalid email or password");
       }
       const data = await res.json();
-      setToken(data.access_token);
       setUser(data.user || { email });
-      
-      if (rememberMe) {
-        // Extend token cookie maxAge if rememberMe selected
-        document.cookie = `neuralflix_access_token=${data.access_token}; path=/; max-age=604800; SameSite=Lax; Secure`;
-      }
       
       router.push("/");
     } catch (err: any) {
