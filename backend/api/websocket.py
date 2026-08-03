@@ -29,25 +29,21 @@ async def get_websocket_user_id(websocket: WebSocket) -> str:
     token = websocket.cookies.get("access_token")
 
     if not token:
-        await websocket.close(code=1008)
         raise WebSocketException(code=1008)
 
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
 
         if payload.get("type") != "access":
-            await websocket.close(code=1008)
             raise WebSocketException(code=1008)
 
         user_id = payload.get("sub")
         if not user_id:
-            await websocket.close(code=1008)
             raise WebSocketException(code=1008)
 
         return user_id
 
     except JWTError:
-        await websocket.close(code=1008)
         raise WebSocketException(code=1008)
 
 

@@ -1,29 +1,33 @@
 import pytest
-from unittest.mock import MagicMock
-import asyncio
+from fastapi.testclient import TestClient
+from fastapi import WebSocketDisconnect
+import sys
+import os
 
-def test_websocket_missing_token():
-    """Verify WebSocket rejects connection if cookie token is missing."""
-    from fastapi import WebSocket, WebSocketException
-    
-    ws = MagicMock(spec=WebSocket)
-    ws.cookies = {}
-    
-    from api.websocket import get_websocket_user_id
-    
-    with pytest.raises(WebSocketException) as excinfo:
-        asyncio.run(get_websocket_user_id(ws))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from main import app
+from core.security import JWT_SECRET, ALGORITHM
+from jose import jwt
+
+client = TestClient(app)
+
+def test_websocket_without_cookie_is_rejected():
+    with pytest.raises(WebSocketDisconnect) as excinfo:
+        with client.websocket_connect("/ws/recommendations"):
+            pass
     assert excinfo.value.code == 1008
-    
-def test_websocket_invalid_token():
-    """Verify WebSocket rejects connection if token is invalid/tampered."""
-    from fastapi import WebSocket, WebSocketException
-    
-    ws = MagicMock(spec=WebSocket)
-    ws.cookies = {"access_token": "invalid_jwt_token"}
-    
-    from api.websocket import get_websocket_user_id
-    
-    with pytest.raises(WebSocketException) as excinfo:
-        asyncio.run(get_websocket_user_id(ws))
+
+def test_websocket_invalid_cookie_is_rejected():
+    with pytest.raises(WebSocketDisconnect) as excinfo:
+        with client.websocket_connect("/ws/recommendations", cookies={"access_token": "invalid"}):
+            pass
     assert excinfo.value.code == 1008
+
+def test_websocket_valid_cookie_succeeds():
+    to_encode = {"sub": "test-user", "type": "access"}
+    token = jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
+    
+    with client.websocket_connect("/ws/recommendations", cookies={"access_token": token}) as websocket:
+        # Just connecting and then closing is enough to prove it accepted the connection
+        websocket.close()

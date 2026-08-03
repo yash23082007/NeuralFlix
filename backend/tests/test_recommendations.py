@@ -49,3 +49,35 @@ def test_taste_controls_influence_score():
     
     assert res1[0]["id"] == 1, "Global/Hidden gem profile should rank Korean indie higher"
     assert res2[0]["id"] == 2, "Popular profile should rank English blockbuster higher"
+
+def test_recommendation_api_excludes_watched_and_rejected_movies():
+    from fastapi.testclient import TestClient
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    from main import app
+    from core.security import JWT_SECRET, ALGORITHM
+    from jose import jwt
+
+    client = TestClient(app)
+    
+    to_encode = {"sub": "test-user", "type": "access"}
+    token = jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
+    
+    response = client.get(
+        "/api/v1/recommendations/user/test-user?limit=10",
+        cookies={"access_token": token}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    movies = data.get("results", [])
+
+    ids = [movie.get("tmdb_id") for movie in movies if movie.get("tmdb_id")]
+
+    assert len(ids) == len(set(ids)), "IDs should be unique"
+
+    for movie in movies:
+        assert "reasons" in movie, "reasons should be present"
+        assert "rankingVersion" in movie, "rankingVersion should be present"
+        assert "freshness" in movie, "freshness should be present"

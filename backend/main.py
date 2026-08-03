@@ -142,13 +142,27 @@ CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://neural-flix.vercel.app",
 ).split(",")
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://neural-flix.vercel.app",
+    "https://neuralflix.onrender.com"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def verify_csrf_origin(request: Request, call_next):
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        origin = request.headers.get("origin")
+        if origin and origin not in ALLOWED_ORIGINS:
+            return JSONResponse(status_code=403, content={"detail": "CSRF origin rejected"})
+    return await call_next(request)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 

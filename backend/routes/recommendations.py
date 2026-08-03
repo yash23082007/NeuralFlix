@@ -2,8 +2,9 @@ import asyncio
 import json
 import os
 import logging
-from fastapi import APIRouter, HTTPException, Query, Request, Path
+from fastapi import APIRouter, HTTPException, Query, Request, Path, Depends
 from typing import List, Optional
+from core.security import get_current_user_id
 
 logger = logging.getLogger("RECOMMENDATIONS_ROUTE")
 router = APIRouter()
@@ -264,8 +265,11 @@ async def get_user_recommendations(
     genres: Optional[str] = Query(None),
     mood: Optional[str] = Query(None),
     sort: Optional[str] = Query("score"),
-    language: Optional[str] = Query(None)
+    language: Optional[str] = Query(None),
+    auth_user_id: str = Depends(get_current_user_id)
 ):
+    if user_id != auth_user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this user's recommendations")
     """
     Get personalized recommendations using the Hybrid ML model.
     Checks Redis cache first before running the deep learning pipeline.
