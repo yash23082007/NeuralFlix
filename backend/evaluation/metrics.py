@@ -7,7 +7,7 @@ def recall_at_k(recommended: List[int], ground_truth: Set[int], k: int) -> float
     if not ground_truth:
         return 0.0
     rec_k = set(recommended[:k])
-    hits = len(rec_k.intersection(ground_truth))
+    hits = len(rec_k.intersection(ground_truth))#include will be needed to metrics to 
     return hits / len(ground_truth)
 
 
