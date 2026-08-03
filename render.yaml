@@ -46,6 +46,8 @@ services:
         value: "false"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: NEURALFLIX_DEMO_MODE
+        value: "true"
 
 databases:
   - name: movie-recs-db
