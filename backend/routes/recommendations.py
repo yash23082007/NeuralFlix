@@ -218,7 +218,7 @@ async def get_onboarding_recommendations(request: Request, limit: int = 10):
     """
     try:
         from routes.movies import get_trending_movies
-        trending = await get_trending_movies(request=request, limit=limit)
+        trending = await get_trending_movies(request=request, page=1, limit=limit)
         
         recs = []
         for m in trending.get("results", []):
