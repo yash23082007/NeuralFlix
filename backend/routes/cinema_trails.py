@@ -13,21 +13,77 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 
 router = APIRouter()
-
-# Load curated trails from static JSON
-_TRAILS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "cinema_trails.json")
 _trails_cache: Optional[list] = None
+
+# Built-in curated fallback trails
+DEFAULT_TRAILS = [
+    {
+        "id": "hindi-parallel-to-iranian-realism",
+        "title": "From Hindi Parallel Cinema to Iranian Social Realism",
+        "description": "Explore quiet realism, moral ambiguity, and ordinary people under societal pressure.",
+        "region": "global",
+        "themeTags": ["Social Realism", "Morality", "Quiet Realism", "Parallel Cinema"],
+        "movies": [
+            {"tmdb_id": 353569, "title": "Masaan", "year": 2015, "language": "hi", "genres": ["Drama"]},
+            {"tmdb_id": 257094, "title": "Court", "year": 2014, "language": "mr", "genres": ["Drama"]},
+            {"tmdb_id": 64688, "title": "A Separation", "year": 2011, "language": "fa", "genres": ["Drama", "Mystery"]},
+            {"tmdb_id": 39397, "title": "Taste of Cherry", "year": 1997, "language": "fa", "genres": ["Drama"]},
+            {"tmdb_id": 390051, "title": "The Salesman", "year": 2016, "language": "fa", "genres": ["Drama", "Thriller"]}
+        ],
+        "transitionReasons": [
+            "Masaan and Court both examine how archaic social institutions press against personal grief in modern India.",
+            "Court and A Separation shift from institutional critique to intimate moral ambiguity within domestic space.",
+            "A Separation and Taste of Cherry move deeper into minimalist Iranian realism and contemplative pacing.",
+            "Taste of Cherry and The Salesman bridge existential reflection with intense psychological tension."
+        ],
+        "isEditorial": True,
+        "updatedAt": "2026-08-01T00:00:00Z"
+    },
+    {
+        "id": "korean-thriller-to-nordic-noir",
+        "title": "Korean Thrillers to Nordic Noir",
+        "description": "From explosive revenge & suspense in Seoul to freezing psychological tension in Scandinavia.",
+        "region": "global",
+        "themeTags": ["Suspense", "Noir", "Psychological Thriller", "Atmospheric"],
+        "movies": [
+            {"tmdb_id": 496243, "title": "Parasite", "year": 2019, "language": "ko", "genres": ["Thriller", "Drama"]},
+            {"tmdb_id": 491584, "title": "Burning", "year": 2018, "language": "ko", "genres": ["Mystery", "Drama"]},
+            {"tmdb_id": 447332, "title": "The Quiet Girl", "year": 2022, "language": "ga", "genres": ["Drama"]}
+        ],
+        "transitionReasons": [
+            "Parasite and Burning explore class resentment veiled beneath razor-sharp suspense.",
+            "Burning transitions into slow-burn atmospheric mystery spanning global boundaries."
+        ],
+        "isEditorial": True,
+        "updatedAt": "2026-08-01T00:00:00Z"
+    }
+]
 
 
 def _load_trails() -> list:
     global _trails_cache
-    if _trails_cache is not None:
+    if _trails_cache:
         return _trails_cache
-    try:
-        with open(_TRAILS_PATH, "r", encoding="utf-8") as f:
-            _trails_cache = json.load(f)
-    except FileNotFoundError:
-        _trails_cache = []
+
+    candidate_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "data", "cinema_trails.json"),
+        os.path.join(os.path.dirname(__file__), "data", "cinema_trails.json"),
+        "data/cinema_trails.json",
+        "backend/data/cinema_trails.json",
+    ]
+
+    for path in candidate_paths:
+        try:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    if loaded:
+                        _trails_cache = loaded
+                        return _trails_cache
+        except Exception:
+            pass
+
+    _trails_cache = DEFAULT_TRAILS
     return _trails_cache
 
 
