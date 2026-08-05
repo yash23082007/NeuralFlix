@@ -377,16 +377,23 @@ async def get_user_recommendations(
             rec_pairs = [(m.get("tmdb_id"), m.get("rec_score", 0.5)) for m in fallback]
 
     if not rec_pairs:
-        # Final fallback: popularity baseline
+        # Final fallback: popularity baseline or static SAMPLE_MOVIES
         from utils.recommendation_engine import get_popularity_baseline
         fallback = await get_popularity_baseline(limit=top_k)
-        rec_pairs = [(m.get("tmdb_id"), 0.5) for m in fallback]
+        if fallback:
+            rec_pairs = [(m.get("tmdb_id"), 0.5) for m in fallback]
+        else:
+            from database import SAMPLE_MOVIES
+            rec_pairs = [(m.get("tmdb_id"), 0.8) for m in SAMPLE_MOVIES[:top_k]]
 
     # 6. Fetch enriched metadata
     rec_ids = [r[0] for r in rec_pairs if r[0] is not None]
     score_map = {r[0]: r[1] for r in rec_pairs}
 
     movies = await _fetch_movies_from_db(rec_ids)
+    if not movies:
+        from database import SAMPLE_MOVIES
+        movies = [dict(m) for m in SAMPLE_MOVIES[:top_k]]
     
     # Enrich and align score mapping
     for m in movies:

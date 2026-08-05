@@ -355,6 +355,11 @@ async def get_trending_movies(
         except Exception as e:
             logger.error(f"Error fetching from TMDB trending: {e}")
 
+    if not movies:
+        from database import SAMPLE_MOVIES
+        movies = [serialize_movie(m) for m in SAMPLE_MOVIES[:limit]]
+        total = len(SAMPLE_MOVIES)
+
     return {
         "page": page,
         "total": total,
