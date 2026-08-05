@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUserStore } from '../store/userStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://neuralflix.onrender.com';
 
 export function useRecommendations(topK: number = 20) {
   const userId = useUserStore((state) => state.userId);

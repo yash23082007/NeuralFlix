@@ -29,7 +29,7 @@ const nextConfig = {
   
   // Allow the backend API URL at build time
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "https://neuralflix.onrender.com",
   },
   
   // Rewrites so /api/* doesn't conflict with Next.js API routes
