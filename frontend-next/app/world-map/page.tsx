@@ -1,5 +1,5 @@
 import Link from "next/link";
-import CinemaWorldMap from "../../components/CinemaWorldMap";
+import CinemaWorldMapWrapper from "../../components/CinemaWorldMapWrapper";
 
 export const metadata = {
   title: "Regional Signal Map | NeuralFlix ML",
@@ -31,7 +31,7 @@ export default function WorldMapPage() {
           </p>
         </div>
 
-        <CinemaWorldMap />
+        <CinemaWorldMapWrapper />
 
         <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
           {QUICK_LINKS.map((region) => (

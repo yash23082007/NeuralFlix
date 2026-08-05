@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "./tokens.css";
 
+:root {
+  --font-inter: Arial, Helvetica, system-ui, sans-serif;
+  --font-outfit: Inter, Arial, Helvetica, system-ui, sans-serif;
+  --font-playfair: Georgia, "Times New Roman", serif;
+}
+
 /* ─── Tailwind Theme Mapping ─── */
 @theme {
   --color-background: var(--surface-primary);

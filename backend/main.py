@@ -18,65 +18,29 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("NeuralFlix ML Engine starting up")
+    startup_deadline = float(os.getenv("STARTUP_TASK_TIMEOUT_SECONDS", "2.0"))
+    lite_mode = os.getenv("LITE_MODE", "true").lower() == "true"
+    demo_mode = os.getenv("NEURALFLIX_DEMO_MODE", "true").lower() == "true"
+    log.info("NeuralFlix ML Engine starting up", lite_mode=lite_mode, demo_mode=demo_mode)
     
-    # 1. Establish Redis connection
-    from cache.redis_client import get_redis
-    app.state.redis = await get_redis()
-    log.info("Redis connection established")
+    # 1. Establish Redis lazily and never block health endpoints on cache availability.
+    app.state.redis = None
+    if not demo_mode:
+        try:
+            from cache.redis_client import get_redis
+            app.state.redis = await asyncio.wait_for(get_redis(), timeout=startup_deadline)
+            if app.state.redis:
+                log.info("Redis connection established")
+        except Exception as e:
+            log.warning("redis_unavailable_during_startup", error=str(e))
     
-    # 2. Initialize Database and Indexes in background to prevent boot blocking
-    from database import init_db, auto_seed_if_empty
-    LITE_MODE = os.getenv("LITE_MODE", "false").lower() == "true"
-    
-    async def init_db_background():
-        try:
-            await init_db()
-            if not LITE_MODE:
-                await auto_seed_if_empty()
-        except Exception as e:
-            log.warning("failed_to_initialize_db_indexes", error=str(e))
-            
-    asyncio.create_task(init_db_background())
-        
-    # 3. Load ContentBasedEngine TF-IDF matrix in background
-    from ml.content_based import content_engine, auto_build_if_missing
-    if not LITE_MODE:
-        try:
-            asyncio.create_task(auto_build_if_missing())
-            log.info("Content similarity index background build started")
-        except Exception as e:
-            log.warning("failed_to_start_content_index_build", error=str(e))
-        
-    # 4. Load NCF pre-trained weights if explicitly enabled
-    ENABLE_NCF = os.getenv("ENABLE_NCF", "false").lower() == "true"
-    ENABLE_EXPERIMENTAL_ML = os.getenv("ENABLE_EXPERIMENTAL_ML", "false").lower() == "true"
-    if ENABLE_NCF or ENABLE_EXPERIMENTAL_ML:
-        try:
-            import torch
-            from ml.hybrid_recommender import ncf_model
-            if ncf_model is not None:
-                weights_path = "models/ncf_weights.pt"
-                if os.path.exists(weights_path):
-                    try:
-                        ncf_model.load_state_dict(torch.load(weights_path, map_location="cpu"))
-                        log.info("Pre-trained NCF weights loaded successfully")
-                    except Exception as e:
-                        log.warning("failed_to_load_ncf_weights", error=str(e))
-                else:
-                    log.warning("ncf_weights_not_found_using_random_initialization")
-        except Exception as e:
-            log.warning("failed_to_initialize_ml", error=str(e))
-    else:
-        log.info("Experimental ML disabled: Production path uses content-based + popularity baselines.")
-
     yield
     
-    # 5. Shutdown: Close Redis
+    # Shutdown: Close Redis
     if app.state.redis:
         await app.state.redis.close()
         
-    # 6. Shutdown: Close TMDB SHARED_CLIENT
+    # Shutdown: Close TMDB SHARED_CLIENT
     try:
         from utils.tmdb_api import SHARED_CLIENT
         if SHARED_CLIENT and not SHARED_CLIENT.is_closed:
@@ -191,47 +155,53 @@ async def websocket_recommendations(websocket: WebSocket):
 
 # ─── Health Endpoints ─────────────────────────────────────
 @app.get("/health/live")
-def liveness_check():
-    return {"status": "alive"}
+async def health_live():
+    return {
+        "status": "alive",
+        "service": "neuralflix-api",
+        "version": "3.0.0"
+    }
 
-@app.get("/health/ready")
-async def readiness_check():
-    db_status = "unknown"
-    redis_status = "unknown"
-    
-    # Check Redis
-    try:
-        if app.state.redis:
-            await app.state.redis.ping()
-            redis_status = "connected"
-    except Exception:
-        redis_status = "disconnected"
-        
-    # Check DB
+async def ping_database():
     try:
         from database import get_db
         async for session in get_db():
             from sqlalchemy import text
-            await session.execute(text("SELECT 1"))
-            db_status = "connected"
-            break
+            await asyncio.wait_for(session.execute(text("SELECT 1")), timeout=1.0)
+            return True
     except Exception:
-        db_status = "disconnected"
+        return False
+    return False
 
+async def ping_redis():
+    try:
+        if app.state.redis:
+            await asyncio.wait_for(app.state.redis.ping(), timeout=1.0)
+            return True
+    except Exception:
+        pass
+    return False
+
+async def catalog_is_available():
+    return await ping_database()
+
+@app.get("/health/ready")
+async def health_ready():
     return {
         "status": "ready",
-        "database": db_status == "connected",
-        "catalog": True,  # Assuming catalog is true if DB is connected, or hardcode for test
+        "database": await ping_database(),
+        "cache": await ping_redis(),
+        "catalog": await catalog_is_available(),
         "recommendation_mode": "content-diversity-reranker-v1"
     }
 
 @app.get("/v1/metrics/health")
 async def health_check():
-    return await readiness_check()
+    return await health_ready()
 
 @app.get("/health")
 async def docker_health_check():
-    return await readiness_check()
+    return await health_ready()
 
 
 @app.get("/")

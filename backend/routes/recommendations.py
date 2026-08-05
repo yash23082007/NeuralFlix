@@ -211,14 +211,14 @@ _ranker_instance = None
 
 # ─── Onboarding / Cold-Start Recommendations ───────────────
 @router.get("/onboarding")
-async def get_onboarding_recommendations(limit: int = 10):
+async def get_onboarding_recommendations(request: Request, limit: int = 10):
     """
     Returns curated editorial collections for new or unauthenticated users.
     Ensures the user never sees an empty recommendation screen.
     """
     try:
         from routes.movies import get_trending_movies
-        trending = await get_trending_movies(limit=limit)
+        trending = await get_trending_movies(request=request, limit=limit)
         
         recs = []
         for m in trending.get("results", []):

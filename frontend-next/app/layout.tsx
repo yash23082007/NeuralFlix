@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Outfit } from "next/font/google";
 import "../styles/globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,15 +7,6 @@ import { CommandPalette } from "../components/CommandPalette";
 import Providers from "../components/Providers";
 import AmbientBackground from "../components/AmbientBackground";
 import KeepAlive from "../components/KeepAlive";
-
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -70,7 +60,6 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${outfit.variable}`}
     >
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" />

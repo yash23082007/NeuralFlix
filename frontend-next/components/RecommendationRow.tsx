@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { MovieCard } from './MovieCard'
 
 const MovieCard3D = dynamic(() => import('./three/MovieCard3D'), { ssr: false })
 
@@ -25,6 +26,20 @@ interface RecommendationRowProps {
 
 export default function RecommendationRow({ title, subtitle, movies, showScore = true }: RecommendationRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [useLightCards, setUseLightCards] = useState(true)
+
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      deviceMemory?: number
+      hardwareConcurrency?: number
+    }
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const lowEnd =
+      reducedMotion ||
+      (nav.hardwareConcurrency ?? 8) <= 4 ||
+      (nav.deviceMemory ?? 8) <= 4
+    setUseLightCards(lowEnd)
+  }, [])
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -64,13 +79,19 @@ export default function RecommendationRow({ title, subtitle, movies, showScore =
         >
           {movies.map((movie) => (
             <div key={movie.tmdb_id} className="snap-start shrink-0">
-              <MovieCard3D
-                movie={{
-                  ...movie,
-                  match_score: movie.match_score ?? (movie.rating ? Math.round(movie.rating * 10) : 85),
-                  id: movie.tmdb_id,
-                }}
-              />
+              {useLightCards ? (
+                <div className="w-[180px] sm:w-[200px]">
+                  <MovieCard movie={movie} />
+                </div>
+              ) : (
+                <MovieCard3D
+                  movie={{
+                    ...movie,
+                    match_score: movie.match_score ?? (movie.rating ? Math.round(movie.rating * 10) : 85),
+                    id: movie.tmdb_id,
+                  }}
+                />
+              )}
             </div>
           ))}
         </div>
