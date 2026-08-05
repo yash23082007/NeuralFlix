@@ -34,6 +34,15 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             log.warning("redis_unavailable_during_startup", error=str(e))
     
+    # 2. Initialize database schema and seed sample catalog (sub-100ms)
+    try:
+        from database import init_db, auto_seed_if_empty
+        await init_db()
+        await auto_seed_if_empty()
+        log.info("Database schema and catalog verified")
+    except Exception as e:
+        log.warning("db_init_warning", error=str(e))
+
     yield
     
     # Shutdown: Close Redis
