@@ -308,23 +308,27 @@ async def get_trending_movies(
     limit: int = Query(20, ge=1, le=100),
 ):
     offset = (page - 1) * limit
-    if _has_pg:
-        try:
-            async for session in get_db():
-                stmt_total = select(func.count(PostgresMovie.id))
-                total = await session.scalar(stmt_total) or 0
-                stmt = select(PostgresMovie).order_by(PostgresMovie.popularity_score.desc()).limit(limit).offset(offset)
+    try:
+        from database import async_session_factory, Movie as SQLMovie
+        from sqlalchemy import select, func
+        async with async_session_factory() as session:
+            stmt_total = select(func.count(SQLMovie.id))
+            total_res = await session.execute(stmt_total)
+            total = total_res.scalar() or 0
+            if total > 0:
+                stmt = select(SQLMovie).order_by(SQLMovie.popularity_score.desc()).limit(limit).offset(offset)
                 result = await session.execute(stmt)
-                movies = result.scalars().all()
-                return {
-                    "page": page,
-                    "total": total,
-                    "total_pages": math.ceil(total / limit),
-                    "has_next": (offset + limit) < total,
-                    "results": [serialize_movie(m) for m in movies]
-                }
-        except Exception as e:
-            logger.error(f"SQL path in get_trending failed: {e}")
+                db_movies = result.scalars().all()
+                if db_movies:
+                    return {
+                        "page": page,
+                        "total": total,
+                        "total_pages": math.ceil(total / limit),
+                        "has_next": (offset + limit) < total,
+                        "results": [serialize_movie(m) for m in db_movies]
+                    }
+    except Exception as e:
+        logger.warning(f"Database query in get_trending failed: {e}")
 
     from database import movies_collection
     total = await movies_collection.count_documents({})
