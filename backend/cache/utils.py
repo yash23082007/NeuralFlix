@@ -21,7 +21,10 @@ def cache_response(expire: int = 600):
             if not request:
                 return await func(*args, **kwargs)
 
-            cache = getattr(request.app.state, "redis", None)
+            try:
+                cache = getattr(request.app.state, "redis", None) if hasattr(request, "app") and hasattr(request.app, "state") else None
+            except Exception:
+                cache = None
             if not cache:
                 return await func(*args, **kwargs)
 
