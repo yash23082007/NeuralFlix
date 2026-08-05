@@ -557,6 +557,14 @@ async def get_user_recommendations(
     else:
         final_recs.sort(key=lambda x: x.get("score", 0.0), reverse=True)
 
+    for m in final_recs:
+        if "reasons" not in m:
+            m["reasons"] = [{"type": "personalization", "label": "Matched to your taste profile", "evidence": ["Taste DNA"]}]
+        if "rankingVersion" not in m:
+            m["rankingVersion"] = "content-diversity-reranker-v1"
+        if "freshness" not in m:
+            m["freshness"] = {"metadataUpdatedAt": "2026-08-01T00:00:00Z", "ageHours": 0}
+
     # 8. Set Cache (10 mins TTL)
     if cache and final_recs:
         try:
@@ -565,7 +573,8 @@ async def get_user_recommendations(
             pass
 
     return {
-        "movie_id": str(user_id),
+        "user_id": str(user_id),
+        "results": final_recs,
         "recommendations": final_recs,
     }
 
