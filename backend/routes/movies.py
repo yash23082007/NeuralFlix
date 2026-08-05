@@ -308,59 +308,45 @@ async def get_trending_movies(
     limit: int = Query(20, ge=1, le=100),
 ):
     offset = (page - 1) * limit
+    db_movies = []
+    total = 0
+
     try:
         from database import async_session_factory, Movie as SQLMovie
         from sqlalchemy import select, func
-        async with async_session_factory() as session:
-            stmt_total = select(func.count(SQLMovie.id))
-            total_res = await session.execute(stmt_total)
-            total = total_res.scalar() or 0
-            if total > 0:
-                stmt = select(SQLMovie).order_by(SQLMovie.popularity_score.desc()).limit(limit).offset(offset)
-                result = await session.execute(stmt)
-                db_movies = result.scalars().all()
-                if db_movies:
-                    return {
-                        "page": page,
-                        "total": total,
-                        "total_pages": math.ceil(total / limit),
-                        "has_next": (offset + limit) < total,
-                        "results": [serialize_movie(m) for m in db_movies]
-                    }
+        if async_session_factory is not None:
+            async with async_session_factory() as session:
+                stmt_total = select(func.count(SQLMovie.id))
+                total_res = await session.execute(stmt_total)
+                total = total_res.scalar() or 0
+                if total > 0:
+                    stmt = select(SQLMovie).order_by(SQLMovie.popularity_score.desc()).limit(limit).offset(offset)
+                    result = await session.execute(stmt)
+                    db_movies = result.scalars().all()
+                    if db_movies:
+                        return {
+                            "page": page,
+                            "total": total,
+                            "total_pages": math.ceil(total / limit),
+                            "has_next": (offset + limit) < total,
+                            "results": [serialize_movie(m) for m in db_movies]
+                        }
     except Exception as e:
         logger.warning(f"Database query in get_trending failed: {e}")
 
-    from database import movies_collection
-    total = await movies_collection.count_documents({})
-    movies = await movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit).to_list(length=limit)
-
-    if total < 10:
-        try:
-            from utils.tmdb_api import fetch_trending, fetch_genre_list
-            tmdb_movies = await fetch_trending(time_window="day")
-            if tmdb_movies:
-                genre_map = await fetch_genre_list()
-                normalized_movies = []
-                for m in tmdb_movies:
-                    norm = _normalize_tmdb_helper(m, genre_map)
-                    try:
-                        await movies_collection.update_one({"tmdb_id": norm["tmdb_id"]}, {"$set": norm}, upsert=True)
-                    except Exception:
-                        pass
-                    normalized_movies.append(norm)
-                
-                seen = {str(item.get("tmdb_id")) for item in movies}
-                for item in normalized_movies:
-                    item_id = str(item.get("tmdb_id"))
-                    if item_id not in seen:
-                        movies.append(item)
-                        seen.add(item_id)
-                total = max(total, len(movies))
-        except Exception as e:
-            logger.error(f"Error fetching from TMDB trending: {e}")
+    # Fallback to Motor / static catalog
+    from database import movies_collection, SAMPLE_MOVIES
+    movies = []
+    try:
+        if hasattr(movies_collection, "count_documents"):
+            total = await movies_collection.count_documents({})
+            if total > 0:
+                cursor = movies_collection.find({}, {"_id": 0}).sort("popularity_score", -1).skip(offset).limit(limit)
+                movies = await cursor.to_list(length=limit)
+    except Exception as e:
+        logger.warning(f"MongoDB query in get_trending failed: {e}")
 
     if not movies:
-        from database import SAMPLE_MOVIES
         movies = [serialize_movie(m) for m in SAMPLE_MOVIES[:limit]]
         total = len(SAMPLE_MOVIES)
 
@@ -369,7 +355,7 @@ async def get_trending_movies(
         "total": total,
         "total_pages": math.ceil(total / limit) if limit > 0 else 1,
         "has_next": (offset + limit) < total,
-        "results": [serialize_movie(m) for m in movies[:limit]]
+        "results": movies[:limit]
     }
 
 
