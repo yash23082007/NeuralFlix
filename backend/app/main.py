@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — FastAPI Application
+NeuralFlix — FastAPI Application
 
 Clean entrypoint. No ML imports. No scattered try/except router loading.
 Boots in <2 seconds with SQLite, no external dependencies required.
@@ -130,6 +130,7 @@ from app.routers.users import router as users_router
 from app.routers.trails import router as trails_router
 from app.routers.availability import router as availability_router
 from app.routers.feedback import router as feedback_router
+from app.routers.home import router as home_router
 
 app.include_router(health_router)
 app.include_router(movies_router)
@@ -139,6 +140,7 @@ app.include_router(users_router)
 app.include_router(trails_router)
 app.include_router(availability_router)
 app.include_router(feedback_router)
+app.include_router(home_router)
 
 
 # ── Root ──────────────────────────────────────────────────────

@@ -1,205 +1,90 @@
-import {
-  ArrowRight,
-  Globe,
-  Star,
-  TrendingUp,
-  Layers,
-  Film,
-  Compass,
-  Sparkles,
-} from "lucide-react";
-import { Suspense } from "react";
+import { Compass, Sparkles, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import MovieRow from "../components/MovieRow";
-import RowSkeleton from "../components/RowSkeleton";
-import PersonalizedRecommendations from "../components/recommendation/PersonalizedRecommendations";
-import Hero from "../components/Hero";
-import MoodPickerStrip from "../components/recommendation/MoodPickerStrip";
-import {
-  getAnime,
-  getByRegion,
-  getMlOverview,
-  getTrendingAll,
-  getTopRated
-} from "../lib/api";
-
-import { CATALOG_DISPLAY_SIZE } from "../lib/constants";
+import { getHome } from "../lib/api";
 
 export const dynamic = "force-dynamic";
 
-async function HeroSectionWrapper() {
-  const results = await Promise.allSettled([
-    getTrendingAll(),
-    getMlOverview()
-  ]);
+export default async function Home() {
+  let homeData = {
+    featured: {},
+    trending: [],
+    topRated: [],
+    regions: {},
+    coldStartCollections: []
+  };
 
-  const trending = results[0].status === "fulfilled" ? results[0].value : [];
-  const mlOverview = results[1].status === "fulfilled" ? results[1].value : null;
-
-  const featuredMovie = (trending?.[0] || {
-    title: "Discover Global Cinema",
-    year: 2024,
-    rating: 9.1,
-    genres: ["Sci-Fi", "Drama"],
-    director: "NeuralFlix",
-    poster_url: null,
-  }) as any;
-
-  const sideMovies = [
-    (trending?.[1] || {
-      title: "World Cinema",
-      region: "Global",
-      poster_url: null,
-    }) as any,
-    (trending?.[2] || {
-      title: "Hidden Gems",
-      region: "Worldwide",
-      poster_url: null,
-    }) as any,
-  ];
-
-  const catalogSize = mlOverview?.catalog_size || CATALOG_DISPLAY_SIZE;
-
-  return <Hero featuredMovie={featuredMovie} sideMovies={sideMovies} catalogSize={catalogSize} />;
-}
-
-async function TrendingRow() {
-  const trending = await getTrendingAll();
-  return <MovieRow title="Trending Now" movies={trending} seeAllHref="/discover?sort=popularity" />;
-}
-
-async function TopRatedRow() {
-  const topRated = await getTopRated();
-  return <MovieRow title="Top Rated" movies={topRated} seeAllHref="/discover?sort=rating" />;
-}
-
-async function AnimeRow() {
-  const anime = await getAnime();
-  return <MovieRow title="Anime Spotlight" movies={anime} seeAllHref="/discover?genres=Animation" />;
-}
-
-async function RegionalBentoGridWrapper() {
-  const results = await Promise.allSettled([
-    getByRegion("hollywood"),
-    getByRegion("bollywood"),
-    getByRegion("korean"),
-    getByRegion("japanese"),
-    getByRegion("french"),
-    getByRegion("tamil"),
-  ]);
-
-  const [
-    hollywood,
-    bollywood,
-    korean,
-    japanese,
-    french,
-    tamil
-  ] = results.map(r => r.status === "fulfilled" ? r.value : []);
-
-  const REGION_CARDS = [
-    { key: "hollywood", name: "Hollywood", movies: hollywood, desc: "Blockbusters & auteur cinema", accent: "from-amber-600/20 to-yellow-600/10", border: "border-yellow-500/20" },
-    { key: "bollywood", name: "Bollywood", movies: bollywood, desc: "Hindi epics, dramas & musicals", accent: "from-orange-600/20 to-red-600/10", border: "border-orange-500/20" },
-    { key: "korean", name: "Korean Cinema", movies: korean, desc: "Tense thrillers & class dramas", accent: "from-blue-600/20 to-indigo-600/10", border: "border-blue-500/20" },
-    { key: "japanese", name: "Japanese Cinema", movies: japanese, desc: "Classic masterpieces & anime roots", accent: "from-red-600/20 to-rose-600/10", border: "border-red-500/20" },
-    { key: "french", name: "French Cinema", movies: french, desc: "Auteur art-house & romantic realism", accent: "from-purple-600/20 to-indigo-600/10", border: "border-purple-500/20" },
-    { key: "tamil", name: "Tamil Cinema", movies: tamil, desc: "Mass spectacles & high-octane drama", accent: "from-teal-600/20 to-emerald-600/10", border: "border-teal-500/20" },
-  ];
+  try {
+    const data = await getHome();
+    if (data) {
+      homeData = { ...homeData, ...data };
+    }
+  } catch (error) {
+    console.error("Failed to load home data:", error);
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {REGION_CARDS.map((r) => {
-        const topMovie = r.movies?.[0];
-        return (
-          <Link
-            key={r.key}
-            href={`/cinema/${r.key}`}
-            className={`group relative rounded-2xl border ${r.border} bg-gradient-to-br ${r.accent} p-6 overflow-hidden flex flex-col justify-between h-[240px] hover:border-white/20 transition-all hover:scale-[1.01] shadow-md`}
-          >
-            {topMovie?.backdrop_url && (
-              <img
-                src={topMovie.backdrop_url}
-                alt={r.name}
-                className="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-elevated)] via-[var(--surface-elevated)]/60 to-transparent" />
-            
-            <div className="relative z-10">
-              <span className="text-[10px] font-bold text-[var(--accent-warm)] uppercase tracking-wider">{r.name}</span>
-              <h3 className="text-xl font-bold text-[var(--text-primary)] mt-1 group-hover:text-[var(--accent-warm)] transition-colors">{r.name}</h3>
-              <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{r.desc}</p>
-            </div>
-
-            <div className="relative z-10 flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-              {topMovie && (
-                <span className="text-[10px] text-[var(--text-secondary)] truncate max-w-[70%]">
-                  Featured: <strong className="text-[var(--text-primary)]">{topMovie.title}</strong>
-                </span>
-              )}
-              <span className="text-xs font-bold text-[var(--accent-warm)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Explore →
-              </span>
-            </div>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-export default async function HomePage() {
-  return (
-    <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden page-enter">
-      {/* ── Hero Section (Full Viewport, 50% backdrop) ── */}
-      <Suspense fallback={<div className="h-screen bg-[var(--surface-primary)]" />}>
-        <HeroSectionWrapper />
-      </Suspense>
-
-      {/* ── Main Content ── */}
-      <div className="relative z-10 max-w-[1600px] mx-auto px-5 sm:px-8 md:px-12 py-20 space-y-24">
-        {/* Personalized "For You" */}
-        <section className="space-y-8">
-          <div className="rounded-2xl p-6 md:p-8 border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 backdrop-blur-sm">
-            <PersonalizedRecommendations />
+    <main className="min-h-screen pb-20">
+      {/* Hero Section */}
+      <section className="relative h-[60vh] lg:h-[80vh] flex items-center justify-center overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background z-10" />
+        <div className="absolute inset-0 bg-secondary/10" />
+        
+        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-sm font-medium mb-4">
+            <Sparkles className="w-4 h-4" />
+            Explainable Global Cinema Atlas
           </div>
-        </section>
-
-        {/* Trending Now */}
-        <Suspense fallback={<RowSkeleton label="Trending Now" />}>
-          <TrendingRow />
-        </Suspense>
-
-        {/* Regional Bento Grid */}
-        <section className="space-y-8">
-          <div>
-            <div className="flex items-center gap-2 text-[var(--accent-warm)] mb-2">
-              <Compass className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">World Cinema Matrix</span>
-            </div>
-            <h2 className="text-3xl font-bold text-[var(--text-primary)]">Regional Bento Grid</h2>
-            <p className="text-[var(--text-secondary)] text-sm mt-1">Exceptional cinema clusters mapped by origin and language family.</p>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white drop-shadow-lg">
+            Discover Your <span className="text-primary">Taste</span> in World Cinema
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+            NeuralFlix is not a black-box recommender. It is a deterministic engine where you control the weights, genres, and diversity.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <Link
+              href="/discover"
+              className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <Compass className="w-5 h-5" />
+              Start Discovery
+            </Link>
           </div>
+        </div>
+      </section>
 
-          <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="animate-pulse bg-[var(--surface-muted)] h-[240px] rounded-2xl" />)}</div>}>
-            <RegionalBentoGridWrapper />
-          </Suspense>
-        </section>
+      {/* Content Sections */}
+      <div className="max-w-[2000px] mx-auto px-4 md:px-8 xl:px-12 space-y-24 py-20">
+        
+        <MovieRow 
+          title="Trending Now" 
+          movies={homeData.trending || []} 
+          seeAllHref="/discover?sort=popularity" 
+        />
+        
+        <MovieRow 
+          title="Top Rated" 
+          movies={homeData.topRated || []} 
+          seeAllHref="/discover?sort=rating" 
+        />
+        
+        {/* Render Region rows if they exist */}
+        {Object.entries(homeData.regions || {}).map(([region, movies]) => (
+          <MovieRow 
+            key={region}
+            title={`${region.charAt(0).toUpperCase() + region.slice(1)} Cinema`}
+            movies={(movies as any) || []} 
+            seeAllHref={`/discover?region=${region}`} 
+          />
+        ))}
 
-        {/* Top Rated */}
-        <Suspense fallback={<RowSkeleton label="Top Rated" />}>
-          <TopRatedRow />
-        </Suspense>
-
-        {/* Anime Spotlight */}
-        <Suspense fallback={<RowSkeleton label="Anime Spotlight" />}>
-          <AnimeRow />
-        </Suspense>
-
-        {/* Mood Picker Strip */}
-        <MoodPickerStrip />
-
-
+        {/* Cold Start Collections */}
+        {homeData.coldStartCollections && homeData.coldStartCollections.length > 0 && (
+          <MovieRow 
+            title="Curated Collections" 
+            movies={homeData.coldStartCollections} 
+          />
+        )}
       </div>
     </main>
   );

@@ -131,6 +131,10 @@ export async function getMovieDetails(id: string, mediaType = "movie"): Promise<
   return await apiFetch<MovieDetail>(`/api/v1/movies/${id}?media_type=${mediaType}`);
 }
 
+export async function getHome(): Promise<any> {
+  return await apiFetch<any>("/api/v1/home");
+}
+
 export async function searchMovies(query: string, page = 1): Promise<Movie[]> {
   const data = await apiFetch<{ results: Movie[] }>(
     `/api/v1/search/movies?query=${encodeURIComponent(query)}&page=${page}`,

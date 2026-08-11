@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Movie Endpoints
+NeuralFlix — Movie Endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -11,6 +11,21 @@ from app.services.catalog_service import get_or_fetch_movie
 from app.services.tmdb_service import search_movies
 
 router = APIRouter(prefix="/api/v1/movies", tags=["Movies"])
+
+@router.get("/trending")
+async def get_trending():
+    """Return hardcoded trending seed data for the simplified initial boot."""
+    return {
+        "results": [
+            {
+                "tmdb_id": 1,
+                "title": "Example Movie",
+                "genres": ["Drama"],
+                "poster_url": None,
+                "cinema_region": "Indian"
+            }
+        ]
+    }
 
 
 @router.get("/{tmdb_id}", response_model=MovieDetail)
