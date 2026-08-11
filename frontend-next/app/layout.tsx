@@ -5,7 +5,6 @@ import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
 import Providers from "../components/Providers";
-import AmbientBackground from "../components/AmbientBackground";
 import KeepAlive from "../components/KeepAlive";
 
 export const metadata: Metadata = {
@@ -92,7 +91,6 @@ export default function RootLayout({
         <ThemeProvider>
           <Providers>
             <div className="app-shell relative min-h-screen flex flex-col">
-              <AmbientBackground />
               <Navbar />
               <CommandPalette />
               <KeepAlive />

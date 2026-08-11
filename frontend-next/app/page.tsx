@@ -23,7 +23,6 @@ import {
   getTopRated
 } from "../lib/api";
 
-import CinemaWorldMapWrapper from "../components/CinemaWorldMapWrapper";
 import { CATALOG_DISPLAY_SIZE } from "../lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -200,20 +199,7 @@ export default async function HomePage() {
         {/* Mood Picker Strip */}
         <MoodPickerStrip />
 
-        {/* Cinema World Map Preview */}
-        <section className="space-y-8">
-          <div>
-            <div className="flex items-center gap-2 text-[var(--accent-warm)] mb-2">
-              <Globe className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Spatial Embeddings</span>
-            </div>
-            <h2 className="text-3xl font-bold text-[var(--text-primary)]">Cinema Globe</h2>
-            <p className="text-[var(--text-secondary)] text-sm mt-1">Holographic coordinate projection of international film networks.</p>
-          </div>
-          <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 p-4 md:p-6 backdrop-blur-md relative overflow-hidden">
-            <CinemaWorldMapWrapper />
-          </div>
-        </section>
+
       </div>
     </main>
   );
