@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import MovieCard, { Movie } from "../../components/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
+import { useDiscoverMovies } from "../../hooks/useApi";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -72,14 +73,7 @@ function DiscoverContent() {
   const mediaTypeFilter = searchParams.get("media_type") || ""; // "movie", "tv", or ""
   const viewModeFilter = (searchParams.get("view") || "grid") as "grid" | "list";
 
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Unified router pushing update utility
@@ -98,69 +92,29 @@ function DiscoverContent() {
     router.push(pathname); // Clears all queries
   };
 
-  const fetchMovies = useCallback(async (pageNum: number, append = false) => {
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
+  const { data, isLoading: loading, fetchNextPage, hasNextPage, isFetchingNextPage: loadingMore } = useDiscoverMovies({
+    sort: sortFilter,
+    genre: genreFilter,
+    language: languageFilter,
+  });
 
-    try {
-      const params = new URLSearchParams();
-      if (genreFilter) params.set("genres", genreFilter);
-      if (languageFilter) params.set("language", languageFilter);
-      params.set("year_from", String(yearFromFilter));
-      params.set("year_to", String(yearToFilter));
-      params.set("min_rating", String(minRatingFilter));
-      params.set("sort", sortFilter);
-      if (mediaTypeFilter) params.set("media_type", mediaTypeFilter);
-      params.set("page", String(pageNum));
-      params.set("limit", "24");
-
-      const res = await fetch(`${API_BASE}/api/v1/movies/filter?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        const results = data.results || [];
-        setTotalResults(data.total || 0);
-        setTotalPages(data.total_pages || 1);
-
-        if (append) {
-          setMovies((prev) => {
-            const existingIds = new Set(prev.map((m) => m.tmdb_id));
-            const newMovies = results.filter((m: Movie) => !existingIds.has(m.tmdb_id));
-            return [...prev, ...newMovies];
-          });
-        } else {
-          setMovies(results);
-        }
-      }
-    } catch (err) {
-      console.error("Error discovering movies:", err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [genreFilter, languageFilter, yearFromFilter, yearToFilter, minRatingFilter, sortFilter, mediaTypeFilter]);
-
-  // Refetch when filters change
-  useEffect(() => {
-    setPage(1);
-    fetchMovies(1, false);
-  }, [genreFilter, languageFilter, yearFromFilter, yearToFilter, minRatingFilter, sortFilter, mediaTypeFilter, fetchMovies]);
+  const movies = data?.pages.flatMap((page) => page.results) || [];
+  const totalResults = movies.length;
 
   // Infinite Scroll Trigger
   useEffect(() => {
     if (!sentinelRef.current) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && page < totalPages && !loading && !loadingMore) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchMovies(nextPage, true);
+        if (entries[0].isIntersecting && hasNextPage && !loading && !loadingMore) {
+          fetchNextPage();
         }
       },
       { rootMargin: "300px" }
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [page, totalPages, loading, loadingMore, fetchMovies]);
+  }, [hasNextPage, loading, loadingMore, fetchNextPage]);
 
   // Toggle helper for multi-select genre list
   const toggleGenre = (genre: string) => {

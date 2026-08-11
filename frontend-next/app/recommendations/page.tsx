@@ -8,6 +8,7 @@ import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
 import { getUser, authFetch } from "../../lib/auth";
+import { useRecommendationsFeed, useTasteControls } from "../../hooks/useApi";
 
 interface Movie {
   tmdb_id: number;
@@ -28,149 +29,43 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function RecommendationsContent() {
   const searchParams = useSearchParams();
-  const [recommendations, setRecommendations] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [streaming, setStreaming] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [sortBy, setSortBy] = useState<"score" | "popularity" | "year">("score");
-  const [tasteProfile, setTasteProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const streaming = false; // Legacy websocket removed
 
-  // Initialize user ID from auth state or search params
-  useEffect(() => {
-    const user = getUser();
-    if (user?.id) {
-      setUserId(user.id);
-    } else {
-      const queryUserId = searchParams.get("user_id");
-      if (queryUserId) {
-        setUserId(queryUserId);
-      } else {
-        setLoading(false);
-        setProfileLoading(false);
-      }
-    }
-  }, [searchParams]);
+  // TanStack Hooks
+  const { 
+    data: tasteProfile, 
+    isLoading: profileLoading 
+  } = useTasteControls();
 
-  // Fetch user taste profile
-  useEffect(() => {
-    async function fetchTasteProfile() {
-      if (!userId) {
-        setProfileLoading(false);
-        return;
-      }
-      setProfileLoading(true);
-      try {
-        const res = await authFetch(`${API}/api/v1/users/${userId}/profile`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.profile) setTasteProfile(data.profile);
-        }
-      } catch (err) {
-        console.error("Error fetching taste profile:", err);
-      } finally {
-        setProfileLoading(false);
-      }
-    }
-    fetchTasteProfile();
-  }, [userId]);
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading: feedLoading,
+    refetch
+  } = useRecommendationsFeed();
 
-  const fetchRecommendations = useCallback(
-    async (pageNum: number, append = false) => {
-      if (!userId) return;
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ top_k: "20", page: String(pageNum) });
-        if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
-        if (selectedMood) params.set("mood", selectedMood);
-        if (selectedLanguage) params.set("language", selectedLanguage);
-        params.set("sort", sortBy);
-
-        const recsRes = await authFetch(`${API}/api/v1/recommendations/user/${userId}?` + params);
-        if (recsRes.ok) {
-          const recsData = await recsRes.json();
-          const movies = (recsData.recommendations || []).map((m: any) => ({
-            ...m,
-            rec_score: m.score != null ? m.score : 0.85,
-          }));
-          if (append) {
-            setRecommendations((prev) => [...prev, ...movies]);
-          } else {
-            setRecommendations(movies);
-          }
-          setHasMore(movies.length === 20);
-        }
-      } catch (err) {
-        console.error("Error fetching recommendations:", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [userId, selectedGenres, selectedMood, selectedLanguage, sortBy]
-  );
-
-  useEffect(() => {
-    setPage(1);
-    fetchRecommendations(1);
-  }, [selectedGenres, selectedMood, selectedLanguage, sortBy, fetchRecommendations]);
+  const recommendations = data?.pages.flatMap((page) => page.recommendations) || [];
 
   useEffect(() => {
     if (!sentinelRef.current) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((p) => p + 1);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loading]);
-
-  useEffect(() => {
-    if (page > 1) fetchRecommendations(page, true);
-  }, [page, fetchRecommendations]);
-
-  // Websocket telemetry updates
-  useEffect(() => {
-    if (!userId) return;
-    let ws: WebSocket | null = null;
-    try {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${API.replace(/^https?:\/\//, "")}/ws/recommendations/${userId}`;
-      ws = new WebSocket(wsUrl);
-      ws.onopen = () => setStreaming(true);
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "recommendations_update" && msg.data) {
-            setRecommendations(
-              msg.data.slice(0, 20).map((m: any) => ({
-                ...m,
-                rec_score: m.score != null ? m.score : 0.85,
-              }))
-            );
-          }
-        } catch (err) {
-          console.error("Error parsing WS message:", err);
-        }
-      };
-      ws.onclose = () => setStreaming(false);
-    } catch (err) {
-      console.error("Error connecting WS:", err);
-    }
-    return () => {
-      ws?.close();
-      setStreaming(false);
-    };
-  }, [userId]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((prev) =>
@@ -191,7 +86,11 @@ function RecommendationsContent() {
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } },
   };
 
-  if (!userId && !loading && !profileLoading) {
+  // Auth requirement check is handled by the hook returning an error or not running.
+  // We can just rely on user state from our context/auth helper.
+  const user = getUser();
+  
+  if (!user && !profileLoading && !feedLoading) {
     return (
       <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden pb-24 pt-28 flex items-center justify-center">
         <div className="absolute inset-0 z-0 pointer-events-none opacity-20" aria-hidden="true">
@@ -403,10 +302,7 @@ function RecommendationsContent() {
               Calculated Curation Output
             </h2>
             <button
-              onClick={() => {
-                setPage(1);
-                fetchRecommendations(1);
-              }}
+              onClick={() => refetch()}
               className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-[var(--accent-warm)] hover:text-[var(--accent-rose)] transition-colors duration-200 cursor-pointer uppercase font-sans"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Recalculate Matrix
@@ -414,7 +310,7 @@ function RecommendationsContent() {
           </div>
 
           <AnimatePresence mode="wait">
-            {loading && recommendations.length === 0 ? (
+            {feedLoading && recommendations.length === 0 ? (
               <div className="flex justify-center py-24">
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
@@ -452,7 +348,7 @@ function RecommendationsContent() {
 
           <div ref={sentinelRef} className="h-4" />
 
-          {loading && recommendations.length > 0 && (
+          {isFetchingNextPage && (
             <div className="flex justify-center py-6">
               <div className="w-6 h-6 border-2 border-[var(--accent-warm)] border-t-transparent rounded-full animate-spin" />
             </div>

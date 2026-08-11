@@ -38,6 +38,18 @@ async def get_or_fetch_movie(db: AsyncSession, tmdb_id: int) -> Optional[Movie]:
         
     parsed_data = parse_tmdb_movie(tmdb_data)
     
+    # Enrich with OMDb if we have an IMDb ID
+    if parsed_data.get("imdb_id"):
+        from app.services.omdb_service import fetch_omdb_ratings, parse_omdb_ratings
+        omdb_data = await fetch_omdb_ratings(parsed_data["imdb_id"])
+        if omdb_data:
+            ratings = parse_omdb_ratings(omdb_data)
+            parsed_data["imdb_rating"] = ratings.get("imdb_rating")
+            parsed_data["rt_rating"] = str(ratings.get("rotten_tomatoes")) if ratings.get("rotten_tomatoes") else None
+            parsed_data["metacritic"] = str(ratings.get("metacritic")) if ratings.get("metacritic") else None
+            from datetime import datetime
+            parsed_data["omdb_checked_at"] = datetime.utcnow()
+    
     # Save to DB
     new_movie = Movie(**parsed_data)
     db.add(new_movie)

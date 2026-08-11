@@ -96,12 +96,64 @@ async def update_taste_controls(
 
 
 @router.get("/me/watchlist")
-async def get_watchlist(current_user: User = Depends(get_current_user)):
+async def get_watchlist(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Get user's watchlist."""
-    return {"watchlist": []}  # Stub for now
+    from app.models.recommendation_feedback import WatchlistItem
+    from app.models.movie import Movie
+    
+    result = await db.execute(
+        select(Movie).join(WatchlistItem, WatchlistItem.movie_id == Movie.id)
+        .where(WatchlistItem.user_id == current_user.id)
+        .order_by(WatchlistItem.added_at.desc())
+    )
+    movies = result.scalars().all()
+    
+    return {"watchlist": movies}
 
 
 @router.post("/me/watchlist")
-async def add_to_watchlist(movie_id: int, current_user: User = Depends(get_current_user)):
-    """Add a movie to user's watchlist."""
-    return {"status": "success"}  # Stub for now
+async def add_to_watchlist(tmdb_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Add a movie to user's watchlist using TMDB ID."""
+    from app.services.catalog_service import get_or_fetch_movie
+    from app.models.recommendation_feedback import WatchlistItem
+    
+    movie = await get_or_fetch_movie(db, tmdb_id)
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+        
+    result = await db.execute(
+        select(WatchlistItem)
+        .where(WatchlistItem.user_id == current_user.id)
+        .where(WatchlistItem.movie_id == movie.id)
+    )
+    if result.scalar_one_or_none():
+        return {"status": "success", "message": "Already in watchlist"}
+        
+    item = WatchlistItem(user_id=current_user.id, movie_id=movie.id)
+    db.add(item)
+    await db.commit()
+    return {"status": "success"}
+
+@router.delete("/me/watchlist/{tmdb_id}")
+async def remove_from_watchlist(tmdb_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Remove a movie from user's watchlist."""
+    from app.models.movie import Movie
+    from app.models.recommendation_feedback import WatchlistItem
+    
+    result = await db.execute(select(Movie.id).where(Movie.tmdb_id == tmdb_id))
+    movie_id = result.scalar_one_or_none()
+    
+    if not movie_id:
+        return {"status": "success"}
+        
+    result = await db.execute(
+        select(WatchlistItem)
+        .where(WatchlistItem.user_id == current_user.id)
+        .where(WatchlistItem.movie_id == movie_id)
+    )
+    item = result.scalar_one_or_none()
+    if item:
+        await db.delete(item)
+        await db.commit()
+        
+    return {"status": "success"}
