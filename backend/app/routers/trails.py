@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Trails Router
+NeuralFlix — Trails Router
 """
 
 import json

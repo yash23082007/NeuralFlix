@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Auth Endpoints
+NeuralFlix — Auth Endpoints
 """
 
 import uuid

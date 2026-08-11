@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Curated Seed IDs
+NeuralFlix — Curated Seed IDs
 
 Used for cold-start database seeding.
 Only IDs are stored. Metadata is fetched dynamically from TMDB.

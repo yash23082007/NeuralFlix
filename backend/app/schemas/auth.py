@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Auth Schemas
+NeuralFlix — Auth Schemas
 """
 
 from typing import Optional

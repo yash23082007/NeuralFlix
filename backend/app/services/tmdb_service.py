@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — TMDB API Service
+NeuralFlix — TMDB API Service
 
 Lightweight client for TMDB API. Fetches movie details and populates
 the local database schema. Uses tenacity for robust retries.

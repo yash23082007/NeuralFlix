@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Seed Service
+NeuralFlix — Seed Service
 
 Handles cold-start database population using curated TMDB IDs.
 """

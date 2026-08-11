@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Cache Service
+NeuralFlix — Cache Service
 
 Optional Redis caching wrapper. Falls back to in-memory dict gracefully.
 No endpoints should ever fail if Redis goes down.

@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Movie Model
+NeuralFlix — Movie Model
 
 Source of truth for movie metadata. Populated from TMDB, enriched by OMDb.
 JSON for genres/keywords/cast/platforms — works identically on SQLite and PostgreSQL.

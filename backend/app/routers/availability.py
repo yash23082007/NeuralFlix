@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Availability Router
+NeuralFlix — Availability Router
 """
 
 from fastapi import APIRouter

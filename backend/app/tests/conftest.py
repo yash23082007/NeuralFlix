@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Test Configuration
+NeuralFlix — Test Configuration
 
 In-memory SQLite for all tests. No external dependencies.
 """

@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Feedback Router
+NeuralFlix — Feedback Router
 """
 
 from fastapi import APIRouter, Depends

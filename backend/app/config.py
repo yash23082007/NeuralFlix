@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Application Configuration
+NeuralFlix — Application Configuration
 
 Uses pydantic-settings to load from environment variables and .env files.
 All configuration is centralized here — no scattered os.getenv() calls.

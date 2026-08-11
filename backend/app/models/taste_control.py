@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Taste Control Model
+NeuralFlix — Taste Control Model
 
 Five sliders that control the recommendation engine:
   Familiar ↔ Adventurous  (discovery: 0-100)

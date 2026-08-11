@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Explanation Service
+NeuralFlix — Explanation Service
 
 Generates human-readable explanations for why a movie was recommended.
 No ML black-boxes — 100% deterministic and transparent.

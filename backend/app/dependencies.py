@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Dependencies
+NeuralFlix — Dependencies
 
 Shared FastAPI dependencies (auth, current user, etc.).
 """

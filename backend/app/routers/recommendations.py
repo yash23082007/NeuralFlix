@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Recommendations Router
+NeuralFlix — Recommendations Router
 """
 
 from typing import List

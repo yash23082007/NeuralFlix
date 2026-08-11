@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Health Endpoint Tests
+NeuralFlix — Health Endpoint Tests
 
 Verifies:
 - /health/live always returns 200

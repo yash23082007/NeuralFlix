@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Recommendation Feedback, Watchlist, Rating, Impression Models
+NeuralFlix — Recommendation Feedback, Watchlist, Rating, Impression Models
 
 Four models that capture user interaction with the recommendation system:
 - RecommendationFeedback: "Not for me" + reason

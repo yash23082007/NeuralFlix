@@ -1,1 +1,1 @@
-# NeuralFlix v4 — Explainable Global Cinema Atlas
+# NeuralFlix — Explainable Global Cinema Atlas

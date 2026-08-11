@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Catalog Service
+NeuralFlix — Catalog Service
 
 Coordinates fetching movies from TMDB and persisting them in the database.
 Handles the "fetch if missing" logic for the catalog.

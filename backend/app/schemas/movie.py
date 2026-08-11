@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Movie Schemas
+NeuralFlix — Movie Schemas
 """
 
 from typing import List, Optional

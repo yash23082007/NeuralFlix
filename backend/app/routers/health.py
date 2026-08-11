@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Health Endpoints
+NeuralFlix — Health Endpoints
 
 /health/live   — always 200, proves the process is running
 /health/ready  — checks database, optional Redis, reports recommendation mode

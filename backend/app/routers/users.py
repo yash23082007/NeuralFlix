@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Users Router
+NeuralFlix — Users Router
 """
 
 from typing import Any

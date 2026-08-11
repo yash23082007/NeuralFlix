@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Database Engine and Session Factory
+NeuralFlix — Database Engine and Session Factory
 
 Supports SQLite (local dev) and PostgreSQL (Supabase production).
 Uses SQLAlchemy 2.0 async engine with aiosqlite or asyncpg.

@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Recommendation Service
+NeuralFlix — Recommendation Service
 
 Deterministic scoring engine based on Taste Constellation.
 No matrix factorization, no deep learning. 100% transparent scoring.

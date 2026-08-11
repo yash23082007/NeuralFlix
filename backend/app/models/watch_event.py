@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — Watch Event Model
+NeuralFlix — Watch Event Model
 
 Tracks when a user watches a movie. Used for recommendation history
 and future evaluation metrics.

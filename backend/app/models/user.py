@@ -1,5 +1,5 @@
 """
-NeuralFlix v4 — User Model
+NeuralFlix — User Model
 
 SQLAlchemy 2.0 typed model. JSON for array/dict columns.
 """
