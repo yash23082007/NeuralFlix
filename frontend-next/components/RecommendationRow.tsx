@@ -79,19 +79,9 @@ export default function RecommendationRow({ title, subtitle, movies, showScore =
         >
           {movies.map((movie) => (
             <div key={movie.tmdb_id} className="snap-start shrink-0">
-              {useLightCards ? (
-                <div className="w-[180px] sm:w-[200px]">
-                  <MovieCard movie={movie} />
-                </div>
-              ) : (
-                <MovieCard3D
-                  movie={{
-                    ...movie,
-                    match_score: movie.match_score ?? (movie.rating ? Math.round(movie.rating * 10) : 85),
-                    id: movie.tmdb_id,
-                  }}
-                />
-              )}
+              <div className="w-[180px] sm:w-[200px]">
+                <MovieCard movie={movie} />
+              </div>
             </div>
           ))}
         </div>
