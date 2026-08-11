@@ -125,10 +125,20 @@ async def csrf_origin_validation(request: Request, call_next):
 from app.routers.health import router as health_router
 from app.routers.movies import router as movies_router
 from app.routers.auth import router as auth_router
+from app.routers.recommendations import router as recs_router
+from app.routers.users import router as users_router
+from app.routers.trails import router as trails_router
+from app.routers.availability import router as availability_router
+from app.routers.feedback import router as feedback_router
 
 app.include_router(health_router)
 app.include_router(movies_router)
 app.include_router(auth_router)
+app.include_router(recs_router)
+app.include_router(users_router)
+app.include_router(trails_router)
+app.include_router(availability_router)
+app.include_router(feedback_router)
 
 
 # ── Root ──────────────────────────────────────────────────────
