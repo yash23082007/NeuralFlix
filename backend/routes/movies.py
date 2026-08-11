@@ -337,6 +337,7 @@ async def get_trending_movies(
     # Fallback to Motor / static catalog
     from database import movies_collection, SAMPLE_MOVIES
     movies = []
+    total = 0
     try:
         if hasattr(movies_collection, "count_documents"):
             total = await movies_collection.count_documents({})
@@ -345,6 +346,47 @@ async def get_trending_movies(
                 movies = await cursor.to_list(length=limit)
     except Exception as e:
         logger.warning(f"MongoDB query in get_trending failed: {e}")
+
+    # Real-time TMDB API Fetching fallback
+    if total < 10:
+        try:
+            from utils.tmdb_api import fetch_trending, fetch_genre_list
+            tmdb_movies = await fetch_trending(time_window="day")
+            if tmdb_movies:
+                genre_map = await fetch_genre_list()
+                normalized_movies = []
+                for m in tmdb_movies:
+                    from utils.omdb_integration import fetch_omdb_details_by_title
+                    # Attempt OMDb enrichment for IMDB deep data (Ratings, Awards) if API key present
+                    omdb_data = await fetch_omdb_details_by_title(m.get("title", ""), m.get("release_date", "")[:4])
+                    norm = {
+                        "tmdb_id": m.get("id"),
+                        "title": m.get("title") or m.get("name"),
+                        "overview": m.get("overview", ""),
+                        "year": int(m.get("release_date", "0000").split("-")[0]) if m.get("release_date") else None,
+                        "rating": m.get("vote_average", 0.0),
+                        "votes": m.get("vote_count", 0),
+                        "popularity_score": m.get("popularity", 0.0),
+                        "genres": [genre_map.get(gid, str(gid)) for gid in m.get("genre_ids", [])],
+                    }
+                    if omdb_data:
+                        norm["omdb_rating"] = omdb_data.get("imdbRating")
+                        norm["omdb_awards"] = omdb_data.get("Awards")
+                    try:
+                        await movies_collection.update_one({"tmdb_id": norm["tmdb_id"]}, {"$set": norm}, upsert=True)
+                    except Exception:
+                        pass
+                    normalized_movies.append(norm)
+                
+                seen = {str(item.get("tmdb_id")) for item in movies}
+                for item in normalized_movies:
+                    item_id = str(item.get("tmdb_id"))
+                    if item_id not in seen:
+                        movies.append(item)
+                        seen.add(item_id)
+                total = max(total, len(movies))
+        except Exception as e:
+            logger.error(f"Error fetching from TMDB/OMDb trending: {e}")
 
     if not movies:
         movies = [serialize_movie(m) for m in SAMPLE_MOVIES[:limit]]

@@ -1,7 +1,8 @@
 import os
 import pytest
 
-# Force DEMO_MODE and LITE_MODE during test runs so pytest never blocks on remote PostgreSQL/Redis timeouts
-os.environ["NEURALFLIX_DEMO_MODE"] = "true"
-os.environ["LITE_MODE"] = "true"
+# Disable DEMO_MODE/LITE_MODE so tests hit the real PostgreSQL and Redis (with timeouts)
+os.environ.pop("NEURALFLIX_DEMO_MODE", None)
+os.environ.pop("LITE_MODE", None)
 os.environ["ENABLE_EXPERIMENTAL_ML"] = "false"
+                                        
