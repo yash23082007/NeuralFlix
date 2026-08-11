@@ -1,0 +1,16 @@
+[
+  {
+    "id": "trail_directors_cut",
+    "name": "The Director's Cut",
+    "description": "A journey through visionary directors and their masterpieces.",
+    "theme": "Auteur Cinema",
+    "movie_ids": [238, 680, 11216]
+  },
+  {
+    "id": "trail_world_tour",
+    "name": "Global Cinema Tour",
+    "description": "Experience storytelling from different cultures.",
+    "theme": "World Cinema",
+    "movie_ids": [496243, 129, 375022]
+  }
+]
