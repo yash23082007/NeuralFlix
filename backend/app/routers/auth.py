@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from passlib.context import CryptContext
 from jose import jwt
+import bcrypt
 
 from app.config import get_settings
 from app.database import get_db
@@ -18,16 +18,16 @@ from app.models.taste_control import TasteControl
 from app.schemas.auth import UserCreate, UserLogin, UserResponse
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: timedelta):

@@ -33,11 +33,11 @@ async def submit_general_feedback(
         feedback = RecommendationFeedback(
             user_id=current_user.id,
             movie_id=movie_id,
-            action=action
+            feedback_type=action
         )
         db.add(feedback)
     else:
-        feedback.action = action
+        feedback.feedback_type = action
         
     await db.commit()
     return {"status": "success", "action": action}
