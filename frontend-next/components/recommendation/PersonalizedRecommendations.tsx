@@ -25,8 +25,8 @@ export default function PersonalizedRecommendations() {
             <Sparkles className="absolute inset-0 m-auto h-4 w-4 text-[var(--accent-sage)] animate-pulse" />
           </div>
           <div className="space-y-1 text-center">
-            <p className="text-sm font-semibold text-[var(--text-primary)] font-sans">NeuralFlix is waking up the discovery engine</p>
-            <p className="text-xs text-[var(--text-tertiary)] font-sans">Loading catalog and personalized discovery... This can take up to 30 seconds.</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] font-sans">NeuralFlix is calculating your atlas routes</p>
+            <p className="text-xs text-[var(--text-tertiary)] font-sans">Finding deterministic paths based on your Taste Constellation...</p>
           </div>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function PersonalizedRecommendations() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-sage)] bg-[var(--accent-sage)]/10 px-2 py-0.5 rounded-full border border-[var(--accent-sage)]/20">
-                  ML Model
+                  Deterministic Engine
                 </span>
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-sage)] animate-pulse" />
               </div>

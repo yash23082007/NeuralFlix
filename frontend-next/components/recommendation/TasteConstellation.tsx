@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sliders, Sparkles, RefreshCw, Undo2, Map, Mountain, Zap, Shield, HelpCircle } from "lucide-react";
+import { Sliders, Sparkles, RefreshCw, Undo2, Map, Mountain, Zap, Shield, HelpCircle, Compass } from "lucide-react";
 import { authFetch } from "../../lib/auth";
 
 export interface TasteControls {
@@ -79,7 +79,7 @@ export default function TasteConstellation() {
   };
 
   const sliders = [
-    { key: "discovery", labelLeft: "Familiar", labelRight: "Adventurous", icon: CompassIcon },
+    { key: "discovery", labelLeft: "Familiar", labelRight: "Adventurous", icon: Compass },
     { key: "global", labelLeft: "Local", labelRight: "Global", icon: Map },
     { key: "challenge", labelLeft: "Light", labelRight: "Challenging", icon: Mountain },
     { key: "pace", labelLeft: "Fast-Paced", labelRight: "Slow-Burn", icon: Zap },
