@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import MovieCard from "./MovieCard";
 import ScrollReveal from "../ScrollReveal";
-import { Movie } from "../lib/api";
+import { Movie } from "../../lib/types";
 
 interface MovieRowProps {
   title: string;

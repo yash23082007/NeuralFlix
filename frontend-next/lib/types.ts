@@ -19,6 +19,9 @@ export interface Movie {
   cinema_region?: string | null;
   explanation?: string | null;
   popularity_score?: number | null;
+  overview?: string | null;
+  _id?: string | number | null;
+  media_type?: string | null;
 }
 
 export interface CastMember {
@@ -29,7 +32,6 @@ export interface CastMember {
 
 export interface MovieDetail extends Movie {
   tagline?: string | null;
-  overview?: string | null;
   runtime?: number | null;
   director?: string | null;
   cast?: CastMember[];

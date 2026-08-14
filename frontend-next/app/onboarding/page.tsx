@@ -111,12 +111,6 @@ export default function OnboardingPage() {
     );
   };
 
-  const toggleLanguage = (code: string) => {
-    setSelectedLanguages(prev =>
-      prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
-    );
-  };
-
   const handleFinish = async () => {
     setSaving(true);
     const user = getUser();

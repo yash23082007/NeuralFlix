@@ -1,0 +1,20 @@
+name: Dependency Audit
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Audit NPM
+        run: |
+          cd frontend-next
+          npm audit
+      - name: Audit Python
+        run: |
+          cd backend
+          pip install safety
+          safety check -r requirements.txt

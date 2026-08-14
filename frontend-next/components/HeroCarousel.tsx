@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play, Star } from "lucide-react";
-import { Movie } from "../lib/api";
+import { Movie } from "../lib/types";
 
 export default function HeroCarousel({ movies }: { movies: Movie[] }) {
   const [current, setCurrent] = useState(0);
@@ -88,7 +88,7 @@ export default function HeroCarousel({ movies }: { movies: Movie[] }) {
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <Link
-              href={`/movie/${movie.tmdb_id || movie._id}?type=${movie.media_type || "movie"}`}
+              href={`/movie/${movie.tmdb_id}?type=movie`}
               className="group inline-flex items-center gap-2.5 rounded-xl bg-[var(--accent-warm)] px-7 py-3.5 text-sm font-semibold text-black shadow-glow transition-all hover:brightness-110 active:scale-[0.98]"
             >
               <Play className="h-4 w-4 fill-current transition-transform group-hover:scale-110" />

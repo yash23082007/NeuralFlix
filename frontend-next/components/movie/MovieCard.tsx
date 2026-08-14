@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Film, Heart, Play, Plus, Star } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Movie } from "../lib/api";
+import { Movie } from "../../lib/types";
 
-export type { Movie } from "../lib/api";
+export type { Movie } from "../../lib/types";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada",

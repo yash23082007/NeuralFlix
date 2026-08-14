@@ -17,8 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getUser, isAuthenticated, logout } from "../lib/auth";
-import ThemeToggle from "./ThemeToggle";
+import { getUser, isAuthenticated, logout } from "../../lib/auth";
+import ThemeToggle from "../ThemeToggle";
 
 const CINEMA_REGIONS = [
   { name: "Indian", href: "/cinema/indian", code: "IN", accent: "text-orange-400" },

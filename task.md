@@ -13,20 +13,20 @@
 - `[x]` 12. Fix onboarding build-breaking bugs
 - `[x]` 13. Run lint + build verification
 
-# Phase 2 — Frontend Restructuring (IN PROGRESS)
-- `[/]` 1. Move components to proper directories
-- `[ ]` 2. Split useApi.ts into useQuery hooks
-- `[ ]` 3. Create missing UI components (TrailerModal, ColdStartGrid)
-- `[ ]` 4. Create trails/ pages
-- `[ ]` 5. Store refactor (uiStore, tasteStore)
+# Phase 2 — Frontend Restructuring (COMPLETED)
+- `[x]` 1. Move components to proper directories
+- `[x]` 2. Split useApi.ts into useQuery hooks
+- `[x]` 3. Create missing UI components (TrailerModal, ColdStartGrid)
+- `[x]` 4. Create trails/ pages
+- `[x]` 5. Store refactor (uiStore, tasteStore)
 
-# Phase 3 — Backend Hardening
-- `[ ]` 1. Create core/ directory (security, errors, constants)
-- `[ ]` 2. Create missing models & schemas
-- `[ ]` 3. Create missing services
-- `[ ]` 4. Scripts & Seed data
+# Phase 3 — Backend Hardening (COMPLETED)
+- `[x]` 1. Create core/ directory (security, errors, constants)
+- `[x]` 2. Create missing models & schemas
+- `[x]` 3. Create missing services
+- `[x]` 4. Scripts & Seed data
 
-# Phase 4 — Documentation & CI
-- `[ ]` 1. Move infrastructure files
-- `[ ]` 2. Add workflows
-- `[ ]` 3. Create docs & evaluation framework
+# Phase 4 — Documentation & CI (COMPLETED)
+- `[x]` 1. Move infrastructure files
+- `[x]` 2. Add workflows
+- `[x]` 3. Create docs & evaluation framework

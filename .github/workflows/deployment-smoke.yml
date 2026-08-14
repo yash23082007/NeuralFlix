@@ -1,0 +1,16 @@
+name: Deployment Smoke Test
+
+on:
+  deployment_status:
+
+jobs:
+  smoke-test:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Backend Health
+        run: |
+          curl -f ${{ github.event.deployment_status.environment_url }}/api/v1/health || exit 1
+      - name: Check Frontend Load
+        run: |
+          curl -f ${{ github.event.deployment_status.environment_url }} || exit 1

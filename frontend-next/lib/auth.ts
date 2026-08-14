@@ -45,7 +45,7 @@ export function isAuthenticated(): boolean {
   return !!getUser();
 }
 
-import { useUserStore } from "../store/userStore";
+import { useUserStore } from "../store/tasteStore";
 
 /**
  * Cache user info locally for display.
