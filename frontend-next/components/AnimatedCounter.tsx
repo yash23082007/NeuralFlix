@@ -1,8 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
 interface AnimatedCounterProps {
@@ -32,7 +30,6 @@ export default function AnimatedCounter({
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setCount(Math.floor(eased * value));
       if (progress < 1) {

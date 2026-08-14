@@ -1,17 +1,16 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Film, ListFilter, Trash2, ArrowLeft, RefreshCw, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Film, ListFilter, Trash2, ArrowLeft, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import MovieCard from "../../components/movie/MovieCard";
+import { Movie, AuthUser } from "../../lib/types";
 
 export default function WatchlistPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [watchlist, setWatchlist] = useState<any[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [watchlist, setWatchlist] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters & Sorting
@@ -48,6 +47,7 @@ export default function WatchlistPage() {
   const handleRemove = async (movieId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
+      if (!user?.id) return;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await authFetch(`${API}/api/v1/users/${user.id}/watchlist/${movieId}`, {
         method: "DELETE"
@@ -157,10 +157,10 @@ export default function WatchlistPage() {
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {filtered.map((movie) => (
-                <div key={movie.tmdb_id || movie._id} className="relative group">
+                <div key={movie.tmdb_id} className="relative group">
                   <MovieCard movie={movie} />
                   <button
-                    onClick={(e) => handleRemove(String(movie.tmdb_id || movie._id), e)}
+                    onClick={(e) => handleRemove(String(movie.tmdb_id), e)}
                     className="absolute top-2.5 right-2.5 p-2 rounded-xl bg-black/80 hover:bg-[var(--accent-rose)] border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100 z-30"
                     title="Remove from Watchlist"
                   >

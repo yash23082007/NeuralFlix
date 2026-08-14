@@ -14,26 +14,25 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     - name: Install dependencies
       run: |
         cd backend
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio httpx
     - name: Run tests
       run: |
         cd backend
-        pytest
+        pytest app/tests/
   
   lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Node.js
+    - name: Set up Node.js 22
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '22'
     - name: Install dependencies
       run: |
         cd frontend-next
@@ -42,3 +41,8 @@ jobs:
       run: |
         cd frontend-next
         npm run lint
+    - name: Run Clean Build
+      run: |
+        cd frontend-next
+        npm run build
+

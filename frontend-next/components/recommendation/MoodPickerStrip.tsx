@@ -1,9 +1,7 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles, Brain, Flame, Smile, ShieldAlert, Heart, Activity } from "lucide-react";
+import { Brain, Flame, Smile, ShieldAlert, Heart, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MOODS = [

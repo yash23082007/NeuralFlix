@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,13 +12,10 @@ import {
   Film,
   Globe,
   Heart,
-  Play,
   Plus,
   Share2,
   Star,
-  Tv,
-  User,
-  X
+  User
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MovieRow from "../../../components/movie/MovieRow";
@@ -28,7 +23,7 @@ import RatingPanel from "../../../components/movie/RatingPanel";
 import AvailabilityPanel from "../../../components/movie/AvailabilityPanel";
 import Loading from "./loading";
 import { getUser, authFetch, isAuthenticated } from "../../../lib/auth";
-
+import { Movie } from "../../../lib/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -56,14 +51,14 @@ interface MovieDetail {
   cast?: CastMember[];
   trailer_key?: string;
   platforms?: string[];
-  similar?: any[];
+  similar?: Movie[];
   imdb_id?: string;
   media_type?: string;
   deep_metadata?: {
-    box_office?: any;
-    trivia?: any;
-    awards?: any;
-    parents_guide?: any;
+    box_office?: Record<string, unknown> | string;
+    trivia?: string[] | string;
+    awards?: Record<string, unknown> | string;
+    parents_guide?: Record<string, unknown> | string;
   };
 }
 
@@ -81,7 +76,7 @@ export default function MovieDetailPage() {
   const type = searchParams.get("type") || "movie";
 
   const [movie, setMovie] = useState<MovieDetail | null>(null);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "trailer" | "cast" | "info">("overview");
   const [watchlistActive, setWatchlistActive] = useState(false);
@@ -176,13 +171,13 @@ export default function MovieDetailPage() {
           if (watchlistRes.ok) {
             const watchlistData = await watchlistRes.json();
             const results = watchlistData.results || [];
-            const inWatchlist = results.some((m: any) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
+            const inWatchlist = results.some((m: Movie) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
             setWatchlistActive(inWatchlist);
           }
           if (favoritesRes.ok) {
             const favoritesData = await favoritesRes.json();
             const results = favoritesData.results || [];
-            const inFavorites = results.some((m: any) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
+            const inFavorites = results.some((m: Movie) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
             setFavoriteActive(inFavorites);
           }
           if (ratingsRes.ok) {
@@ -510,7 +505,7 @@ export default function MovieDetailPage() {
                     exit={{ opacity: 0, y: -10 }}
                     className="grid gap-3 grid-cols-2 md:grid-cols-3"
                   >
-                    {movie.cast.map((member, i) => (
+                    {movie.cast.map((member) => (
                       <div
                         key={member.name}
                         className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-3 hover:border-white/20 transition-all duration-200"

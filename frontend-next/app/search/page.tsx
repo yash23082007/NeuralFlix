@@ -1,12 +1,10 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import MovieCard from "../../components/movie/MovieCard";
-import { Search, Film, Sparkles, X, Clock, ArrowRight, Filter, ChevronRight } from "lucide-react";
+import { Search, Film, Sparkles, X, Clock, Filter } from "lucide-react";
+import { Movie } from "../../lib/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -29,7 +27,7 @@ function SearchContent() {
   const [sort, setSort] = useState<string>("relevance");
   const [selectedGenreFacet, setSelectedGenreFacet] = useState<string>("");
 
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -332,7 +330,7 @@ function SearchContent() {
                 ) : filteredResults.length > 0 ? (
                   <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5">
                     {filteredResults.map((movie) => (
-                      <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
+                      <MovieCard key={movie.tmdb_id} movie={movie} />
                     ))}
                   </div>
                 ) : searched ? (

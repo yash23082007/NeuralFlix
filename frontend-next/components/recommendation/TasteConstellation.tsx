@@ -1,9 +1,7 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sliders, Sparkles, RefreshCw, Undo2, Map, Mountain, Zap, Shield, HelpCircle, Compass } from "lucide-react";
+import { Sliders, Sparkles, RefreshCw, Undo2, Map, Mountain, Zap, Shield, Compass } from "lucide-react";
 import { authFetch } from "../../lib/auth";
 
 export interface TasteControls {
@@ -59,8 +57,12 @@ export default function TasteConstellation() {
       if (!res.ok) {
         throw new Error("Failed to save preferences");
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to save preferences");
+      }
     } finally {
       setSaving(false);
     }
@@ -117,7 +119,7 @@ export default function TasteConstellation() {
             {saving && <span className="text-[10px] font-bold text-accent animate-pulse uppercase tracking-wider">Syncing...</span>}
             <button 
               onClick={handleReset}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:text-text-primary"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:text-text-primary cursor-pointer"
             >
               <Undo2 className="h-3.5 w-3.5" />
               Reset
@@ -177,25 +179,5 @@ export default function TasteConstellation() {
         </div>
       </div>
     </div>
-  );
-}
-
-function CompassIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-    </svg>
   );
 }

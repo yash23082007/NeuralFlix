@@ -1,12 +1,11 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, Film, Sparkles, Check } from "lucide-react";
+import { Eye, EyeOff, LogIn, Film, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { setUser } from "../../lib/auth";
 import GoogleLogin from "../../components/GoogleLogin";
 import GithubLogin from "../../components/GithubLogin";
@@ -41,10 +40,10 @@ export default function LoginPage() {
         if (res.ok) {
           const data = await res.json();
           const movies = (data.results || [])
-            .filter((m: any) => m.poster_url)
-            .map((m: any) => ({
+            .filter((m: { poster_url?: string }) => Boolean(m.poster_url))
+            .map((m: { tmdb_id: number; poster_url?: string }) => ({
               tmdb_id: m.tmdb_id,
-              poster_url: m.poster_url
+              poster_url: m.poster_url as string
             }));
           setCollageMovies(movies.slice(0, 18));
         }
@@ -75,8 +74,12 @@ export default function LoginPage() {
       const data = await res.json();
       setUser(data.user);
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("GitHub login failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -104,8 +107,12 @@ export default function LoginPage() {
       setUser(data.user || { email });
       
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Invalid email or password");
+      }
     } finally {
       setLoading(false);
     }
@@ -124,17 +131,18 @@ export default function LoginPage() {
                 colIndex === 1 ? "animate-scroll-slow-reverse" : "animate-scroll-slow"
               }`}
             >
-              {(collageMovies.length > 0 ? collageMovies : Array.from({ length: 6 })).map((m: any, i) => (
+              {(collageMovies.length > 0 ? collageMovies : Array.from({ length: 6 })).map((m: CollageMovie | undefined, i: number) => (
                 <div
                   key={i}
-                  className="aspect-[2/3] w-full rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden shadow-card transition-transform duration-500 hover:scale-105"
+                  className="aspect-[2/3] w-full rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden shadow-card transition-transform duration-500 hover:scale-105 relative"
                 >
                   {m?.poster_url ? (
-                    <img
+                    <Image
                       src={m.poster_url}
                       alt="Cinema Poster"
-                      className="w-full h-full object-cover"
-                      loading="lazy"
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -152,8 +160,6 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-radial-gradient z-10" />
 
         {/* Brand info overlays */}
-
-
         <div className="relative z-20 space-y-6 max-w-xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -290,4 +296,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

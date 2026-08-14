@@ -1,10 +1,8 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ChevronLeft, ArrowRight, Check, Loader2, Sparkles, Film, Heart } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Loader2, Sparkles, Film, Heart } from "lucide-react";
 import Image from "next/image";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -246,7 +244,7 @@ export default function OnboardingPage() {
                       }`}
                     >
                       {/* Image background */}
-                      <img src={g.image} alt={g.name} className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:scale-110 transition-transform duration-500" />
+                      <Image src={g.image} alt={g.name} fill className="object-cover opacity-20 group-hover:scale-110 transition-transform duration-500" unoptimized />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
                       
                       <span className="text-2xl filter drop-shadow-md z-20 mb-2">{g.icon}</span>
@@ -331,11 +329,12 @@ export default function OnboardingPage() {
                         }`}
                       >
                         {movie.poster_url ? (
-                          <img
+                          <Image
                             src={movie.poster_url}
                             alt={movie.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            unoptimized
                           />
                         ) : (
                           <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center p-4">

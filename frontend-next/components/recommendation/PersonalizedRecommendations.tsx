@@ -1,15 +1,14 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { useRecommendations } from "../../hooks/useRecommendations";
+import { useRecommendationFeed } from "../../hooks/useRecommendations";
 import { Sparkles } from "lucide-react";
-import MovieCard from "../MovieCard";
+import MovieCard from "../movie/MovieCard";
 import { motion } from "framer-motion";
 import ScrollReveal from "../ScrollReveal";
+import { Movie } from "../../lib/types";
 
 export default function PersonalizedRecommendations() {
-  const { data, isLoading, error } = useRecommendations(8);
+  const { data, isLoading, error } = useRecommendationFeed();
 
   if (isLoading) {
     return (
@@ -97,16 +96,16 @@ export default function PersonalizedRecommendations() {
             viewport={{ once: true, margin: "-100px" }}
             className="flex gap-5 overflow-x-auto pb-6 pt-2 px-4 -mx-4 snap-x scroll-smooth no-scrollbar"
           >
-            {recs.map((movie: any) => (
+            {recs.map((movie: Movie & { score?: number }) => (
               <motion.div 
-                key={movie.tmdb_id || movie._id} 
+                key={movie.tmdb_id} 
                 variants={itemVariants}
                 className="snap-start shrink-0 w-[200px]"
               >
                 <MovieCard
                   movie={{
                     ...movie,
-                    rec_score: movie.score,
+                    rec_score: movie.rec_score || movie.score,
                   }}
                 />
               </motion.div>

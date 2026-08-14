@@ -1,21 +1,21 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Film, Clock, Star, BarChart3, Brain, CalendarDays, Activity, Globe, Compass, RefreshCw, Trash2, Heart, User, Settings, Save, List, ShieldCheck } from "lucide-react";
+import { Film, Clock, Star, BarChart3, Brain, CalendarDays, Globe, RefreshCw, Trash2, Heart, User, Settings, Save, List, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/movie/MovieCard";
+import { Movie, AuthUser } from "../../lib/types";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUserState] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [watchlist, setWatchlist] = useState<any[]>([]);
-  const [favorites, setFavorites] = useState<any[]>([]);
+  const [user, setUserState] = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [history, setHistory] = useState<Movie[]>([]);
+  const [watchlist, setWatchlist] = useState<Movie[]>([]);
+  const [favorites, setFavorites] = useState<Movie[]>([]);
   const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   
   // Settings form
@@ -108,27 +108,26 @@ export default function ProfilePage() {
       });
       if (res.ok) {
         setSettingsMessage("Profile updated successfully!");
-        // Update user state in storage
         const updatedUser = { ...user, name: editName };
         localStorage.setItem("neuralflix_user", JSON.stringify(updatedUser));
-        setUserState(updatedUser);
+        setUserState(updatedUser as AuthUser);
       } else {
         setSettingsMessage("Failed to update profile settings.");
       }
-    } catch (err) {
+    } catch {
       setSettingsMessage("An error occurred during update.");
     }
   };
 
-  const handleRemoveFromWatchlist = async (movieId: string) => {
+  const handleRemoveFromWatchlist = async (movieId: number) => {
     try {
+      if (!user?.id) return;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await authFetch(`${API}/api/v1/users/${user.id}/watchlist/${movieId}`, {
         method: "DELETE"
       });
       if (res.ok) {
-        setWatchlist((prev) => prev.filter((m) => String(m.tmdb_id) !== String(movieId)));
-        // Refresh stats
+        setWatchlist((prev) => prev.filter((m) => Number(m.tmdb_id) !== Number(movieId)));
         const statsRes = await authFetch(`${API}/api/v1/users/${user.id}/stats`);
         if (statsRes.ok) setStats(await statsRes.json());
       }
@@ -137,21 +136,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleToggleFavorite = async (movieId: string) => {
+  const handleToggleFavorite = async (movieId: number) => {
     try {
+      if (!user?.id) return;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await authFetch(`${API}/api/v1/users/${user.id}/favorites/${movieId}`, {
         method: "POST"
       });
       if (res.ok) {
-        setFavorites((prev) => prev.filter((m) => String(m.tmdb_id) !== String(movieId)));
+        setFavorites((prev) => prev.filter((m) => Number(m.tmdb_id) !== Number(movieId)));
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Compute ratings distribution
   const ratingsDistribution = Array.from({ length: 10 }).map((_, i) => {
     const star = i + 1;
     const count = Object.values(userRatings).filter((r) => Math.round(r) === star).length;
@@ -159,7 +158,6 @@ export default function ProfilePage() {
   });
   const maxRatingCount = Math.max(...ratingsDistribution.map((d) => d.count), 1);
 
-  // Avatar Initials
   const getInitials = (nameStr: string) => {
     if (!nameStr) return "U";
     return nameStr.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -178,7 +176,7 @@ export default function ProfilePage() {
         <header className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 pb-8 border-b border-zinc-900">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
             <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] flex items-center justify-center text-black text-3xl font-black shadow-[0_0_24px_rgba(232,168,73,0.3)]">
-              {user ? getInitials(user.name || user.email) : "?"}
+              {user ? getInitials(user.name || user.email || "") : "?"}
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
@@ -255,7 +253,7 @@ export default function ProfilePage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as "history" | "watchlist" | "favorites" | "ratings" | "settings")}
                     className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider pb-1 relative cursor-pointer whitespace-nowrap transition-colors ${
                       active ? "text-[var(--accent-warm)]" : "text-zinc-500 hover:text-zinc-300"
                     }`}
@@ -289,9 +287,9 @@ export default function ProfilePage() {
                             key={i}
                             className="flex gap-4 p-4 rounded-xl border border-zinc-900 bg-zinc-950/40 hover:border-zinc-800 transition-all"
                           >
-                            <div className="h-16 w-12 rounded-md bg-zinc-900 overflow-hidden flex-shrink-0">
+                            <div className="h-16 w-12 rounded-md bg-zinc-900 overflow-hidden flex-shrink-0 relative">
                               {m.poster_url ? (
-                                <img src={m.poster_url} alt={m.title} className="h-full w-full object-cover" />
+                                <Image src={m.poster_url} alt={m.title} fill className="object-cover" unoptimized />
                               ) : (
                                 <div className="h-full w-full flex items-center justify-center">
                                   <Film className="h-4 w-4 text-zinc-700" />
@@ -497,4 +495,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

@@ -1,11 +1,11 @@
-/* eslint-disable */
-// @ts-nocheck
-export default function RowSkeleton({ label }: { label: string }) {
+export default function RowSkeleton({ label }: { label?: string }) {
   return (
     <section className="space-y-5">
       <div className="flex items-center gap-3">
         <div className="h-5 w-[3px] rounded-full bg-[var(--surface-muted)]" />
-        <div className="skeleton h-5 w-40 rounded-lg" />
+        <div className="skeleton h-5 w-40 rounded-lg">
+          {label && <span className="sr-only">{label}</span>}
+        </div>
       </div>
       <div className="flex gap-5 overflow-hidden">
         {Array.from({ length: 7 }).map((_, i) => (

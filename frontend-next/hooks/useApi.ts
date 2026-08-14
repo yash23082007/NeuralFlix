@@ -1,7 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authFetch, getUser } from "../lib/auth";
+import type { TasteControls } from "../lib/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://neuralflix.onrender.com";
 
@@ -44,20 +43,18 @@ export function useDiscoverMovies(params: {
   return useInfiniteQuery({
     queryKey: ["discover", params],
     queryFn: async ({ pageParam = 1 }) => {
-      // V4 only supports trending or region for discovery, we fallback to trending
       let url = `${API}/api/v1/movies/trending`;
       if (params.region) {
         url = `${API}/api/v1/movies/region/${params.region}`;
       }
       
-      const res = await fetch(url);
+      const res = await fetch(`${url}?page=${pageParam}`);
       if (!res.ok) throw new Error("Failed to fetch discover feed");
       const data = await res.json();
       return data;
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      // Trending doesn't paginate in V4 mock, so just return undefined
+    getNextPageParam: () => {
       return undefined;
     },
   });
@@ -100,7 +97,7 @@ export function useUpdateTasteControls() {
   const user = getUser();
   
   return useMutation({
-    mutationFn: async (controls: any) => {
+    mutationFn: async (controls: TasteControls) => {
       const res = await authFetch(`${API}/api/v1/users/me/taste-controls`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

@@ -1,11 +1,10 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Sparkles, Film, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
-import MovieCard from "../MovieCard";
+import { Sparkles, AlertCircle } from "lucide-react";
+import MovieCard from "../movie/MovieCard";
+import { Movie } from "../../lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -33,7 +32,7 @@ const LANGUAGES = [
 export function MoodSelector() {
   const [selectedMood, setSelectedMood] = useState<string | null>("intense");
   const [selectedLang, setSelectedLang] = useState<string>("");
-  const [movies, setMovies] = useState<any[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -60,7 +59,6 @@ export function MoodSelector() {
     fetchMoodMovies();
   }, [selectedMood]);
 
-  // Filter movies by language and limit to 20 results
   const filteredMovies = movies
     .filter((m) => !selectedLang || m.language === selectedLang)
     .slice(0, 20);
@@ -96,7 +94,6 @@ export function MoodSelector() {
                   : "border-zinc-900 bg-zinc-950/60 text-zinc-400 hover:border-zinc-800"
               }`}
             >
-              {/* Dynamic light rays if active */}
               {active && (
                 <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none animate-pulse" />
               )}
@@ -171,7 +168,7 @@ export function MoodSelector() {
               className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
             >
               {filteredMovies.map((movie) => (
-                <MovieCard key={movie.tmdb_id || movie._id} movie={movie} />
+                <MovieCard key={movie.tmdb_id} movie={movie} />
               ))}
             </motion.div>
           ) : selectedMood ? (
@@ -193,4 +190,3 @@ export function MoodSelector() {
     </div>
   );
 }
-

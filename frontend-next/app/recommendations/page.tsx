@@ -1,42 +1,24 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { SlidersHorizontal, Sparkles, RefreshCw, Cpu, Activity, ListFilter, Sliders } from "lucide-react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { Sparkles, RefreshCw, Cpu, Activity, ListFilter, Sliders } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/movie/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
-import { getUser, authFetch } from "../../lib/auth";
+import { getUser } from "../../lib/auth";
 import { useRecommendationsFeed, useTasteControls } from "../../hooks/useApi";
-
-interface Movie {
-  tmdb_id: number;
-  title: string;
-  poster_url?: string;
-  genres?: string[];
-  rating?: number;
-  rec_score?: number;
-  popularity_score?: number;
-  year?: number;
-  language?: string;
-  cinema_region?: string;
-}
 
 const GENRES = ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance", "Thriller", "Animation", "Documentary"];
 const MOODS = ["Exciting", "Chill", "Thoughtful", "Funny", "Intense", "Romantic"];
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function RecommendationsContent() {
-  const searchParams = useSearchParams();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [sortBy, setSortBy] = useState<"score" | "popularity" | "year">("score");
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const streaming = false; // Legacy websocket removed
+  const streaming = false;
 
   // TanStack Hooks
   const { 
@@ -88,8 +70,6 @@ function RecommendationsContent() {
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } },
   };
 
-  // Auth requirement check is handled by the hook returning an error or not running.
-  // We can just rely on user state from our context/auth helper.
   const user = getUser();
   
   if (!user && !profileLoading && !feedLoading) {
@@ -252,7 +232,7 @@ function RecommendationsContent() {
                   <div className="relative">
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
+                      onChange={(e) => setSortBy(e.target.value as "score" | "popularity" | "year")}
                       className="w-full max-w-xs px-4 py-2.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/60 text-[var(--text-primary)] font-sans uppercase tracking-wider focus:outline-none focus:border-[var(--accent-warm)] transition-colors cursor-pointer appearance-none"
                     >
                       <option value="score">Hybrid Neural Match Score</option>
@@ -332,7 +312,7 @@ function RecommendationsContent() {
                 className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
               >
                 {recommendations.slice(0, 20).map((movie) => (
-                  <motion.div key={movie.tmdb_id || (movie as any)._id} variants={itemVariants}>
+                  <motion.div key={movie.tmdb_id} variants={itemVariants}>
                     <MovieCard movie={movie} />
                   </motion.div>
                 ))}

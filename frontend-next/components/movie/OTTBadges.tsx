@@ -1,7 +1,4 @@
-/* eslint-disable */
-// @ts-nocheck
 import React from 'react';
-import Image from 'next/image';
 
 const STREAMING_PLATFORMS: Record<string, {name: string, color: string, src: string}> = {
   "netflix": { name: "Netflix", color: "#E50914", src: "/logos/netflix.svg" },
@@ -18,7 +15,6 @@ interface OTTBadgesProps {
 }
 
 export function OTTBadges({ platforms, ottGlobal, userRegion = "IN" }: OTTBadgesProps) {
-  // Extract platforms based on global JSONB map or fallback to localized array
   let available: string[] = [];
   
   if (ottGlobal && ottGlobal[userRegion]) {

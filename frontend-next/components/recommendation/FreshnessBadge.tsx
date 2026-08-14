@@ -1,8 +1,4 @@
-/* eslint-disable */
-// @ts-nocheck
 import { Clock, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
-
-
 
 export type FreshnessStatus = "fresh" | "aging" | "stale" | "unknown";
 
@@ -74,7 +70,7 @@ export default function FreshnessBadge({
       else timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
       
       tooltipText = `Checked ${timeAgo} via ${source.toUpperCase()}`;
-    } catch (e) {
+    } catch {
       // fallback
     }
   }

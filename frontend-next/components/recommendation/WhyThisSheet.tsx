@@ -1,11 +1,9 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { X, Info, Sparkles, Map, Heart, Zap, Globe, Clock, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authFetch } from "../../lib/auth";
-import FreshnessBadge, { FreshnessStatus } from "./FreshnessBadge";
+import FreshnessBadge from "./FreshnessBadge";
 
 interface Reason {
   type: string;
@@ -50,8 +48,12 @@ export default function WhyRecommendedSheet({ movieId, isOpen, onClose }: WhyRec
       if (!res.ok) throw new Error("Failed to load explanation");
       const json = await res.json();
       setData(json);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to load explanation");
+      }
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function WhyRecommendedSheet({ movieId, isOpen, onClose }: WhyRec
   return (
     <>
       <div 
-        className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm transition-opacity cursor-pointer"
         onClick={onClose}
       />
       
@@ -86,7 +88,7 @@ export default function WhyRecommendedSheet({ movieId, isOpen, onClose }: WhyRec
           </h2>
           <button 
             onClick={onClose}
-            className="rounded-full p-2 text-text-muted hover:bg-background hover:text-text-primary transition-colors"
+            className="rounded-full p-2 text-text-muted hover:bg-background hover:text-text-primary transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>

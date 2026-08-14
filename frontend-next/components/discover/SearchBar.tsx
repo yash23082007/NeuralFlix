@@ -1,10 +1,9 @@
-/* eslint-disable */
-// @ts-nocheck
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, X, ArrowRight, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -67,8 +66,8 @@ export default function SearchBar() {
       if (!res.ok) throw new Error('Search failed')
       const data = await res.json()
       setSuggestions(data.results || [])
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
         setSuggestions([])
       }
     } finally {
@@ -156,7 +155,7 @@ export default function SearchBar() {
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--surface-hover)] transition-colors text-left"
                 >
                   {m.poster_url ? (
-                    <img src={m.poster_url} alt="" className="w-8 h-12 rounded object-cover" />
+                    <Image src={m.poster_url} alt={m.title} width={32} height={48} className="w-8 h-12 rounded object-cover" unoptimized />
                   ) : (
                     <div className="w-8 h-12 rounded bg-[var(--surface-muted)] flex items-center justify-center">
                       <Search className="w-4 h-4 text-[var(--text-tertiary)]" />

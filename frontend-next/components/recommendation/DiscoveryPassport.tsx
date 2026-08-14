@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
@@ -40,8 +38,12 @@ export default function DiscoveryPassport() {
       if (res.ok) {
         setData(await res.json());
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to load passport");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to load passport");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,7 +117,7 @@ export default function DiscoveryPassport() {
         <button
           onClick={handleOptIn}
           disabled={actionLoading}
-          className="rounded-xl premium-gradient px-8 py-3 font-bold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50"
+          className="rounded-xl premium-gradient px-8 py-3 font-bold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50 cursor-pointer"
         >
           {actionLoading ? "Enabling..." : "Enable Discovery Tracking"}
         </button>
@@ -143,7 +145,7 @@ export default function DiscoveryPassport() {
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             Export JSON
@@ -151,14 +153,14 @@ export default function DiscoveryPassport() {
           <button
             onClick={handleOptOut}
             disabled={actionLoading}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent cursor-pointer"
           >
             Pause Tracking
           </button>
           <button
             onClick={handleDelete}
             disabled={actionLoading}
-            className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -203,7 +205,7 @@ export default function DiscoveryPassport() {
           </div>
           <p className="mt-4 text-xs text-text-muted leading-relaxed">
             * This is an honest reflection of your viewing habits, not a score to maximize. 
-            "Comfort zone" refers to popular, same-language films, while "Discovery" refers to international or hidden gem selections.
+            &quot;Comfort zone&quot; refers to popular, same-language films, while &quot;Discovery&quot; refers to international or hidden gem selections.
           </p>
         </div>
       </div>

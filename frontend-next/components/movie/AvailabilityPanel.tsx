@@ -1,21 +1,33 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Tv, ExternalLink, Monitor, ShoppingCart, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  getStreamingAvailability,
-  type StreamingAvailability,
-  type StreamingProvider,
-} from "../../lib/api";
+import { getStreamingAvailability } from "../../lib/api";
 
-/**
- * Streaming Provider Panel — Reconstructed with premium bento tabs and micro-animations.
- * Shows provider logos organized by type: Stream / Rent / Buy / Free.
- */
+export interface StreamingProvider {
+  name: string;
+  logo_url?: string;
+  deep_link?: string;
+  region?: string;
+  price?: string;
+}
+
+export interface StreamingAvailability {
+  summary: {
+    total_providers: number;
+  };
+  providers: {
+    stream?: StreamingProvider[];
+    rent?: StreamingProvider[];
+    buy?: StreamingProvider[];
+    ads?: StreamingProvider[];
+    tmdb_link?: string;
+    [key: string]: unknown;
+  };
+}
+
 export default function StreamingPanel({
   tmdbId,
   imdbId,
@@ -33,13 +45,13 @@ export default function StreamingPanel({
     async function load() {
       setLoading(true);
       try {
-        const result = await getStreamingAvailability(tmdbId, imdbId, mediaType);
+        const result = (await getStreamingAvailability(tmdbId)) as unknown as StreamingAvailability;
         setData(result);
         if (result?.providers) {
-          if (result.providers.stream?.length > 0) setActiveTab("stream");
-          else if (result.providers.rent?.length > 0) setActiveTab("rent");
-          else if (result.providers.buy?.length > 0) setActiveTab("buy");
-          else if (result.providers.ads?.length > 0) setActiveTab("ads");
+          if ((result.providers.stream?.length ?? 0) > 0) setActiveTab("stream");
+          else if ((result.providers.rent?.length ?? 0) > 0) setActiveTab("rent");
+          else if ((result.providers.buy?.length ?? 0) > 0) setActiveTab("buy");
+          else if ((result.providers.ads?.length ?? 0) > 0) setActiveTab("ads");
         }
       } catch (err) {
         console.error("Error loading streaming availability:", err);
@@ -166,16 +178,10 @@ export default function StreamingPanel({
 }
 
 function ProviderCard({ provider }: { provider: StreamingProvider }) {
-  const Wrapper = provider.deep_link ? "a" : "div";
-  const linkProps = provider.deep_link
-    ? { href: provider.deep_link, target: "_blank", rel: "noopener noreferrer" }
-    : {};
+  const isLink = Boolean(provider.deep_link);
 
-  return (
-    <Wrapper
-      {...(linkProps as any)}
-      className="group flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/40 px-3.5 py-3 transition-all duration-300 hover:border-[var(--accent-warm)]/30 hover:bg-[var(--accent-warm)]/5 hover:shadow-md h-full"
-    >
+  const content = (
+    <div className="group flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/40 px-3.5 py-3 transition-all duration-300 hover:border-[var(--accent-warm)]/30 hover:bg-[var(--accent-warm)]/5 hover:shadow-md h-full cursor-pointer">
       {provider.logo_url ? (
         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl shadow-sm border border-[var(--border-subtle)]">
           <Image
@@ -211,14 +217,20 @@ function ProviderCard({ provider }: { provider: StreamingProvider }) {
       {provider.deep_link && (
         <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       )}
-    </Wrapper>
+    </div>
   );
+
+  if (isLink && provider.deep_link) {
+    return (
+      <a href={provider.deep_link} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    );
+  }
+
+  return content;
 }
 
-/**
- * Inline Streaming Badges — For MovieCard display.
- * Shows up to 3 provider logos in a compact horizontal strip.
- */
 export function StreamingBadges({
   providers,
 }: {
@@ -226,7 +238,6 @@ export function StreamingBadges({
 }) {
   if (!providers || providers.length === 0) return null;
 
-  // Map common provider names to abbreviated labels
   const SHORT_NAMES: Record<string, string> = {
     "Netflix": "N",
     "Amazon Prime Video": "Prime",

@@ -1,10 +1,8 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Cpu, Award, Hourglass, Calendar, Compass, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { Cpu, Award, Hourglass, Calendar, Compass } from "lucide-react";
 
 interface TasteProfile {
   top_genres?: [string, number][];
@@ -16,26 +14,26 @@ interface TasteProfile {
 }
 
 interface TasteDNAProps {
-  profile: TasteProfile | null;
+  profile: TasteProfile | Record<string, unknown> | null;
   loading?: boolean;
 }
 
 export default function TasteDNA({ profile, loading }: TasteDNAProps) {
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
 
-  const normalizeProfile = (raw: any): TasteProfile => {
-    const toTuples = (obj: any): [string, number][] => {
+  const normalizeProfile = (raw: Record<string, unknown> | TasteProfile): TasteProfile => {
+    const toTuples = (obj: unknown): [string, number][] => {
       if (!obj) return [];
-      if (Array.isArray(obj)) return obj;
-      return Object.entries(obj).sort(([, a], [, b]) => (b as number) - (a as number)) as [string, number][];
+      if (Array.isArray(obj)) return obj as [string, number][];
+      return Object.entries(obj as Record<string, number>).sort(([, a], [, b]) => (b as number) - (a as number)) as [string, number][];
     };
     return {
       top_genres: toTuples(raw?.top_genres),
       preferred_decades: toTuples(raw?.preferred_decades),
       top_directors: toTuples(raw?.top_directors),
       language_preferences: toTuples(raw?.language_preferences),
-      avg_runtime_preference: raw?.avg_runtime_preference,
-      rating_threshold: raw?.rating_threshold,
+      avg_runtime_preference: raw?.avg_runtime_preference as number | undefined,
+      rating_threshold: raw?.rating_threshold as number | undefined,
     };
   };
 

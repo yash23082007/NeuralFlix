@@ -20,6 +20,7 @@ export interface Movie {
   explanation?: string | null;
   popularity_score?: number | null;
   overview?: string | null;
+  runtime?: number | null;
   _id?: string | number | null;
   media_type?: string | null;
 }

@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,11 +11,12 @@ interface GoogleLoginProps {
 
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     google: any;
   }
 }
 
-export default function GoogleLogin({ className }: GoogleLoginProps) {
+export default function GoogleLogin({ className = "" }: GoogleLoginProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +57,7 @@ export default function GoogleLogin({ className }: GoogleLoginProps) {
     }
   }, []);
 
-  const handleCredentialResponse = async (response: any) => {
+  const handleCredentialResponse = async (response: { credential?: string }) => {
     setLoading(true);
     setError("");
     try {
@@ -78,8 +77,12 @@ export default function GoogleLogin({ className }: GoogleLoginProps) {
       setUser(data.user);
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Google login failed");
+      }
     } finally {
       setLoading(false);
     }

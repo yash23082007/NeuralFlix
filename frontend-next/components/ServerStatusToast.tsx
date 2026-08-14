@@ -1,10 +1,8 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Server, Zap, RefreshCcw, AlertTriangle } from "lucide-react";
+import { Zap, RefreshCcw, AlertTriangle } from "lucide-react";
 
 export default function ServerStatusToast() {
   const [status, setStatus] = useState<"hidden" | "waking" | "online" | "error">("hidden");
@@ -14,7 +12,6 @@ export default function ServerStatusToast() {
     let wakeTimeout: NodeJS.Timeout;
 
     const checkHealth = async () => {
-      // If health check takes >2s, assume it's waking up
       wakeTimeout = setTimeout(() => {
         if (isMounted && status !== "online") {
           setStatus("waking");
@@ -23,7 +20,7 @@ export default function ServerStatusToast() {
 
       try {
         const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${API}/health`);
+        const res = await fetch(`${API}/health/live`);
         if (res.ok && isMounted) {
           clearTimeout(wakeTimeout);
           if (status === "waking") {
@@ -37,10 +34,9 @@ export default function ServerStatusToast() {
         } else {
           throw new Error("Bad health response");
         }
-      } catch (err) {
+      } catch {
         if (isMounted) {
           setStatus("error");
-          // Try again in 10s
           setTimeout(checkHealth, 10000);
         }
       }

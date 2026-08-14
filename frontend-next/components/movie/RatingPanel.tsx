@@ -1,17 +1,31 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, ThumbsUp, Award, TrendingUp, Cpu, Gauge } from "lucide-react";
+import { Star, ThumbsUp, Award, TrendingUp, Gauge } from "lucide-react";
 import { motion } from "framer-motion";
-import { getAggregatedRatings, type AggregatedRatings } from "../../lib/api";
+import { getAggregatedRatings } from "../../lib/api";
 
-/**
- * Reconstructed Multi-Source Rating Panel.
- * Renders Metacritic, IMDb, RT, and TMDB readouts with modern cinematic styling
- * alongside a high-fidelity weighted NeuralFlix composite dial.
- */
+export interface RatingSource {
+  label: string;
+  votes?: number;
+  sentiment?: string;
+  color?: string;
+}
+
+export interface AggregatedRatings {
+  total_sources: number;
+  composite_score: number;
+  awards?: string;
+  box_office?: string;
+  ratings: {
+    imdb?: RatingSource;
+    rotten_tomatoes?: RatingSource;
+    metacritic?: RatingSource;
+    tmdb?: RatingSource;
+    [key: string]: RatingSource | undefined;
+  };
+}
+
 export default function MultiRatingPanel({
   tmdbId,
   imdbId,
@@ -28,8 +42,8 @@ export default function MultiRatingPanel({
     async function load() {
       setLoading(true);
       try {
-        const result = await getAggregatedRatings(tmdbId, imdbId, mediaType);
-        setData(result);
+        const result = await getAggregatedRatings(tmdbId, imdbId);
+        setData(result as unknown as AggregatedRatings);
       } catch (err) {
         console.error("Error loading aggregated ratings:", err);
       } finally {

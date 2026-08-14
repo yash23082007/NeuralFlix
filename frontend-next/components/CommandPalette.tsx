@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import * as React from "react";
@@ -7,13 +5,25 @@ import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
 import { Compass, FilmIcon, Globe2, SearchIcon, TrendingUp, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface SearchResultItem {
+  tmdb_id?: number;
+  _id?: string;
+  title: string;
+  poster_url?: string;
+  year?: number;
+  release_date?: string;
+  language?: string;
+  vote_average?: number;
+}
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<any[]>([]);
+  const [results, setResults] = React.useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
 
@@ -126,7 +136,6 @@ export function CommandPalette() {
                   </div>
                 )}
 
-
                 {!query && (
                   <div className="space-y-2">
                     <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">
@@ -148,7 +157,7 @@ export function CommandPalette() {
                           icon: TrendingUp,
                           color: "text-[var(--accent-rose)]",
                         },
-                      ].map((item, index) => {
+                      ].map((item) => {
                         const Icon = item.icon;
                         return (
                           <Command.Item
@@ -176,7 +185,7 @@ export function CommandPalette() {
                       Films Found
                     </div>
                     <div className="space-y-1">
-                      {results.map((movie, index) => (
+                      {results.map((movie) => (
                         <Command.Item
                           key={movie.tmdb_id || movie._id}
                           onSelect={() => {
@@ -187,10 +196,12 @@ export function CommandPalette() {
                         >
                           <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-md bg-[var(--surface-muted)] shadow-md">
                             {movie.poster_url ? (
-                              <img
+                              <Image
                                 src={movie.poster_url}
                                 alt={movie.title}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
+                                unoptimized
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">

@@ -1,34 +1,22 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
-import { useEffect, useState, useRef, useCallback, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Compass,
   Film,
-  Globe2,
   SlidersHorizontal,
   Grid,
   List,
-  Calendar,
   Star,
   RefreshCw,
-  X,
-  Sparkles,
-  Heart,
-  ChevronUp,
-  LayoutGrid,
-  Tv,
-  Filter,
-  Check
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import MovieCard, { Movie } from "../../components/movie/MovieCard";
+import Image from "next/image";
+import MovieCard from "../../components/movie/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
 import { useDiscoverMovies } from "../../hooks/useApi";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const GENRES = [
   "Action", "Comedy", "Drama", "Horror", "Romance", "Science Fiction",
@@ -428,10 +416,12 @@ function DiscoverContent() {
                     >
                       <div className="relative w-20 aspect-[2/3] rounded-xl overflow-hidden shrink-0 border border-[var(--border-default)]">
                         {movie.poster_url ? (
-                          <img
+                          <Image
                             src={movie.poster_url}
                             alt={movie.title}
-                            className="object-cover w-full h-full"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-full bg-[var(--surface-muted)] flex items-center justify-center p-2 text-center text-[8px]">

@@ -1,14 +1,33 @@
 import { getTrail, getMovieDetails } from "../../../lib/api";
 import { MovieCard } from "../../../components/movie/MovieCard";
+import type { CinemaTrail, MovieDetail } from "../../../lib/types";
 
 export default async function TrailDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const trail = await getTrail(resolvedParams.id);
+  let trail: CinemaTrail | null = null;
+  let movies: MovieDetail[] = [];
   
-  // Fetch movie details for each movie in the trail
-  const movies = await Promise.all(
-    trail.movies.map((movie: { tmdb_id: number }) => getMovieDetails(movie.tmdb_id))
-  );
+  try {
+    trail = await getTrail(resolvedParams.id);
+    if (trail?.movies) {
+      movies = await Promise.all(
+        trail.movies.map((movie: { tmdb_id: number }) => getMovieDetails(movie.tmdb_id))
+      );
+    }
+  } catch (error) {
+    console.error("Failed to load trail detail:", error);
+  }
+
+  if (!trail) {
+    return (
+      <main className="min-h-screen pt-24 pb-20 px-4 max-w-7xl mx-auto text-center">
+        <h1 className="text-3xl font-bold mb-4">Trail Not Found</h1>
+        <p className="text-[var(--text-muted)]">
+          The requested cinema trail could not be loaded at this time.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen pt-24 pb-20 px-4 max-w-7xl mx-auto">
@@ -25,7 +44,7 @@ export default async function TrailDetailPage({ params }: { params: Promise<{ id
         
         <div className="space-y-24">
           {movies.map((movie, idx) => (
-            <div key={movie.tmdb_id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+            <div key={movie.tmdb_id || idx} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
               <div className="w-full md:w-1/2 flex justify-center">
                 <div className="w-64 relative">
                   {/* Node point */}

@@ -1,10 +1,9 @@
-/* eslint-disable */
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Sparkles, Star, Film, Eye, X } from "lucide-react";
+import { Play, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface Movie {
   tmdb_id?: number;
@@ -19,7 +18,7 @@ interface Movie {
   overview?: string;
 }
 
-export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featuredMovie: Movie; sideMovies: Movie[]; catalogSize: string | number }) {
+export default function Hero({ featuredMovie, catalogSize }: { featuredMovie?: Movie; sideMovies?: Movie[]; catalogSize?: string | number }) {
   const [trailerOpen, setTrailerOpen] = useState(false);
 
   useEffect(() => {
@@ -61,23 +60,23 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
   }, [trailerOpen]);
 
   const title = featuredMovie?.title || "Discover Global Cinema";
-  const year = featuredMovie?.year || 2024;
-  const rating = featuredMovie?.rating || 9.1;
-  const genres = featuredMovie?.genres || ["Sci-Fi", "Drama"];
-  const director = featuredMovie?.director || "NeuralFlix";
   const backdrop = featuredMovie?.backdrop_url || featuredMovie?.poster_url || "";
   const trailerKey = featuredMovie?.trailer_key;
   const overview = featuredMovie?.overview || "Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.";
+  const displayCatalogSize = catalogSize || "930K+";
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--surface-primary)] pt-16">
       {/* Background with 50% opacity */}
       <div className="absolute inset-0 z-0">
         {backdrop ? (
-          <img
+          <Image
             className="w-full h-full object-cover opacity-50 filter brightness-[0.7] scale-105"
             alt="Hero Background"
             src={backdrop}
+            fill
+            unoptimized
+            priority
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[var(--surface-overlay)] via-[var(--surface-primary)] to-[var(--surface-primary)]" />
@@ -133,7 +132,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
           <div className="pt-6 border-t border-[var(--border-subtle)] max-w-xl">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] p-4 rounded-2xl backdrop-blur-md">
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
-                <p className="text-lg font-bold text-white font-mono">930K+</p>
+                <p className="text-lg font-bold text-white font-mono">{displayCatalogSize}</p>
                 <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Films</p>
               </div>
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
@@ -154,7 +153,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
 
         {/* Right Collage (Floating Thumbnails) */}
         <div className="lg:col-span-5 hidden lg:flex justify-center items-center relative h-[480px]">
-          <img src="/hero_art.png" alt="Cinema Art" className="max-w-[400px] w-full h-auto drop-shadow-2xl opacity-90 hover:opacity-100 transition-opacity duration-500" />
+          <Image src="/hero_art.png" alt="Cinema Art" width={400} height={400} className="max-w-[400px] w-full h-auto drop-shadow-2xl opacity-90 hover:opacity-100 transition-opacity duration-500" unoptimized />
         </div>
       </div>
 
