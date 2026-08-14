@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../components/shared/Navbar";
+import Footer from "../components/shared/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
-import { CommandPalette } from "../components/CommandPalette";
+
 import Providers from "../components/Providers";
 import KeepAlive from "../components/KeepAlive";
 
@@ -92,7 +92,7 @@ export default function RootLayout({
           <Providers>
             <div className="app-shell relative min-h-screen flex flex-col">
               <Navbar />
-              <CommandPalette />
+
               <KeepAlive />
 
               <main className="flex-grow z-10 relative">

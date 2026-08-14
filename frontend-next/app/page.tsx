@@ -1,9 +1,12 @@
-import { Compass, Sparkles, TrendingUp, Star } from "lucide-react";
+import { Compass, Sparkles } from "lucide-react";
+import { Movie } from "../lib/types";
 import Link from "next/link";
-import MovieRow from "../components/MovieRow";
+import MovieRow from "../components/movie/MovieRow";
 import { getHome } from "../lib/api";
 
-export const dynamic = "force-dynamic";
+import { BackendWakingState } from "../components/shared/BackendWakingState";
+
+export const revalidate = 300;
 
 export default async function Home() {
   let homeData = {
@@ -14,6 +17,8 @@ export default async function Home() {
     coldStartCollections: []
   };
 
+  let fetchFailed = false;
+
   try {
     const data = await getHome();
     if (data) {
@@ -21,6 +26,15 @@ export default async function Home() {
     }
   } catch (error) {
     console.error("Failed to load home data:", error);
+    fetchFailed = true;
+  }
+
+  if (fetchFailed) {
+    return (
+      <main className="min-h-screen pb-20 pt-20">
+        <BackendWakingState />
+      </main>
+    );
   }
 
   return (
@@ -73,7 +87,7 @@ export default async function Home() {
           <MovieRow 
             key={region}
             title={`${region.charAt(0).toUpperCase() + region.slice(1)} Cinema`}
-            movies={(movies as any) || []} 
+            movies={(movies as Movie[]) || []}
             seeAllHref={`/discover?region=${region}`} 
           />
         ))}

@@ -156,10 +156,3 @@ export async function authFetch(url: string, options: RequestInit = {}) {
   return res;
 }
 
-/**
- * @deprecated Use authFetch() instead. Kept for backward compatibility during migration.
- * Returns empty object since tokens are now in HttpOnly cookies.
- */
-export function getAuthHeaders(): Record<string, string> {
-  return {};
-}

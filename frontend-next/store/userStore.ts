@@ -1,11 +1,12 @@
 import { create } from 'zustand';
+import { TasteProfile } from '../lib/types';
 
 interface UserState {
   userId: string | null;
   setUserId: (id: string | null) => void;
   clearUserId: () => void;
-  tasteProfile: any | null;
-  setTasteProfile: (profile: any) => void;
+  tasteProfile: TasteProfile | null;
+  setTasteProfile: (profile: TasteProfile) => void;
 }
 
 const getStoredUserId = (): string | null => {

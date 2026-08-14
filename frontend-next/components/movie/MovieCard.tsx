@@ -17,7 +17,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 function getMovieHref(movie: Movie) {
-  return `/movie/${movie.tmdb_id || movie._id}?type=${movie.media_type || "movie"}`;
+  return `/movie/${movie.tmdb_id}`;
 }
 
 export function MovieCard({ movie, priority = false }: { movie: Movie; priority?: boolean }) {
@@ -25,7 +25,7 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
   const [isHovered, setIsHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
-  const score = movie.rec_score || movie.popularity_score;
+  const score = movie.rec_score;
   const scoreWidth = score != null && score <= 1 ? score * 100 : Math.min((score || 0) * 5, 100);
 
   const handleMouseLeave = () => {
@@ -33,16 +33,18 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
   };
 
   return (
-    <Link href={getMovieHref(movie)} className="group block perspective-1000">
+    <div className="group block perspective-1000">
       <motion.div
         whileHover={{ scale: 1.02 }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
         className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-poster transition-all duration-500 group-hover:shadow-xl group-hover:border-[var(--border-default)]"
       >
+        <Link href={getMovieHref(movie)} className="absolute inset-0 z-10" aria-label={`View ${movie.title || 'Untitled'}`} />
+
         {/* Shimmer until loaded */}
         {!imgLoaded && movie.poster_url && movie.poster_url !== "null" && movie.poster_url !== "undefined" && !imgError && (
-          <div className="absolute inset-0 skeleton" />
+          <div className="absolute inset-0 skeleton z-0" />
         )}
 
         {movie.poster_url && movie.poster_url !== "null" && movie.poster_url !== "undefined" && !imgError ? (
@@ -162,7 +164,7 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
           </div>
         )}
       </div>
-    </Link>
+    </div>
   );
 }
 

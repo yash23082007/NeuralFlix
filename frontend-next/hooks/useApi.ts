@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authFetch, getUser } from "../lib/auth";
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Film, Github, Globe2, Mail, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import ScrollReveal from "./ScrollReveal";
+import ScrollReveal from "../ScrollReveal";
 
 const CINEMA_LINKS = [
   { name: "Indian Cinema", href: "/cinema/indian" },

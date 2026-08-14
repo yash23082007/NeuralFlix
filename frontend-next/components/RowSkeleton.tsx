@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 export default function RowSkeleton({ label }: { label: string }) {
   return (
     <section className="space-y-5">

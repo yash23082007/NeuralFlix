@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import MovieCard from "./MovieCard";
-import ScrollReveal from "./ScrollReveal";
+import ScrollReveal from "../ScrollReveal";
 import { Movie } from "../lib/api";
 
 interface MovieRowProps {
