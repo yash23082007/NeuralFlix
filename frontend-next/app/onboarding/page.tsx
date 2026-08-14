@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Check, ChevronRight, ChevronLeft, Loader2, Film, Heart, Languages, RefreshCw, Compass } from "lucide-react";
+import { ChevronRight, ChevronLeft, ArrowRight, Check, Loader2, Sparkles, Film, Heart } from "lucide-react";
+import Image from "next/image";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import TasteDNA from "../../components/TasteDNA";
+import { Movie, TasteProfile } from "../../lib/types";
 
 const AVAILABLE_GENRES = [
   { name: "Action", icon: "💥", image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=300&q=80" },
@@ -45,16 +47,15 @@ const AVAILABLE_LANGUAGES = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [movies, setMovies] = useState<any[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMovies, setSelectedMovies] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [step, setStep] = useState(1); // 1: Welcome, 2: Genres, 3: Movies, 4: Languages, 5: Done (Radar)
+  const [step, setStep] = useState(1); 
   
-  // Custom temporary profile for Step 5
-  const [tempProfile, setTempProfile] = useState<any>(null);
+  const [tempProfile, setTempProfile] = useState<TasteProfile | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -108,6 +109,12 @@ export default function OnboardingPage() {
     );
   };
 
+  const toggleLanguage = (code: string) => {
+    setSelectedLanguages(prev =>
+      prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
+    );
+  };
+
   const handleFinish = async () => {
     setSaving(true);
     const user = getUser();
@@ -141,7 +148,7 @@ export default function OnboardingPage() {
     }
   };
 
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0, scale: 0.98 },
     show: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
     exit: { opacity: 0, scale: 1.02, transition: { duration: 0.3 } }
@@ -315,11 +322,12 @@ export default function OnboardingPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 max-h-[45vh] overflow-y-auto pr-2 custom-scrollbar">
                   {movies.map((movie) => {
-                    const active = selectedMovies.includes(movie.tmdb_id || movie._id);
+                    const idStr = String(movie.tmdb_id);
+                    const active = selectedMovies.includes(idStr);
                     return (
                       <button
-                        key={movie.tmdb_id || movie._id}
-                        onClick={() => toggleMovie(movie.tmdb_id || movie._id)}
+                        key={idStr}
+                        onClick={() => toggleMovie(idStr)}
                         className={`group relative aspect-[2/3] overflow-hidden rounded-xl border-2 transition-all duration-300 cursor-pointer ${
                           active
                             ? "border-[var(--accent-warm)] ring-4 ring-[var(--accent-warm)]/10 scale-[0.98]"

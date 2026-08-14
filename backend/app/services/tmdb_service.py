@@ -54,6 +54,17 @@ async def fetch_movie_details(tmdb_id: int) -> Optional[Dict[str, Any]]:
         return response.json()
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+async def fetch_trending(time_window: str = "week") -> Dict[str, Any]:
+    """Fetch trending movies from TMDB."""
+    url = f"{TMDB_BASE_URL}/trending/movie/{time_window}"
+    
+    async with httpx.AsyncClient(timeout=_timeout) as client:
+        response = await client.get(url, headers=_get_headers(), params=_get_params())
+        response.raise_for_status()
+        return response.json()
+
+
 async def search_movies(query: str, page: int = 1) -> Dict[str, Any]:
     """Search for movies on TMDB."""
     url = f"{TMDB_BASE_URL}/search/movie"
