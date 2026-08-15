@@ -1,16 +1,419 @@
 [
   {
-    "id": "trail_directors_cut",
-    "name": "The Director's Cut",
-    "description": "A journey through visionary directors and their masterpieces.",
-    "theme": "Auteur Cinema",
-    "movie_ids": [238, 680, 11216]
+    "id": "trail_hindi_to_iranian_realism",
+    "name": "From Hindi Parallel Cinema to Iranian Social Realism",
+    "description": "An intimate journey through moral ambiguity, institutional pressure, and quiet human dignity across South Asian and Middle Eastern cinema.",
+    "theme": "Social Realism & Humanist Drama",
+    "region": "South Asia & Middle East",
+    "estimated_time_mins": 580,
+    "editor_note": "Curated by NeuralFlix Editorial. Focuses on unadorned cinematography, natural lighting, and ordinary people negotiating rigid moral and societal institutions.",
+    "movie_ids": [337703, 287903, 62206, 40189, 290098],
+    "steps": [
+      {
+        "tmdb_id": 337703,
+        "title": "Masaan",
+        "director": "Neeraj Ghaywan",
+        "year": 2015,
+        "region": "India",
+        "note": "A haunting exploration of caste, loss, and contemporary youth on the banks of the Ganges in Varanasi."
+      },
+      {
+        "tmdb_id": 287903,
+        "title": "Court",
+        "director": "Chaitanya Tamhane",
+        "year": 2014,
+        "region": "India",
+        "note": "A minimalist procedural that exposes the sluggish, absurd labyrinth of the Mumbai judiciary system through a folk singer's trial."
+      },
+      {
+        "tmdb_id": 62206,
+        "title": "A Separation",
+        "director": "Asghar Farhadi",
+        "year": 2011,
+        "region": "Iran",
+        "note": "A domestic breakdown in Tehran spirals into a complex ethical, legal, and religious web where no single character is villainized."
+      },
+      {
+        "tmdb_id": 40189,
+        "title": "Taste of Cherry",
+        "director": "Abbas Kiarostami",
+        "year": 1997,
+        "region": "Iran",
+        "note": "A man drives through the dusty outskirts of Tehran seeking someone to bury him, sparking philosophical conversations on existence."
+      },
+      {
+        "tmdb_id": 290098,
+        "title": "The Salesman",
+        "director": "Asghar Farhadi",
+        "year": 2016,
+        "region": "Iran",
+        "note": "A theater couple's life unravels after an assault, examining revenge, honor, and psychological decay."
+      }
+    ],
+    "transitions": [
+      {
+        "from_title": "Masaan",
+        "to_title": "Court",
+        "bridge_concept": "From personal grief to institutional absurdities",
+        "reasons": [
+          "Both represent the pinnacle of modern Indian parallel cinema.",
+          "Shift from Varanasi's existential ghats to Mumbai's quiet, slow-paced legal chambers.",
+          "Shared dedication to non-melodramatic, naturalist soundscapes."
+        ]
+      },
+      {
+        "from_title": "Court",
+        "to_title": "A Separation",
+        "bridge_concept": "Cross-continental legal & moral labyrinths",
+        "reasons": [
+          "Seamless transition from Indian bureaucratic satire to Iranian ethical realism.",
+          "Both place ordinary citizens inside legal structures that distort truth.",
+          "Focus on class divides and religious traditions dictating personal decisions."
+        ]
+      },
+      {
+        "from_title": "A Separation",
+        "to_title": "Taste of Cherry",
+        "bridge_concept": "From conversational intensity to meditative open road",
+        "reasons": [
+          "Masterclasses in Iranian cinema's humanist restraint.",
+          "Transition from Farhadi's tense apartment claustrophobia to Kiarostami's expansive vehicular meditation.",
+          "Deep reflection on Iranian society's hidden emotional fractures."
+        ]
+      },
+      {
+        "from_title": "Taste of Cherry",
+        "to_title": "The Salesman",
+        "bridge_concept": "Full circle of morality, performance, and redemption",
+        "reasons": [
+          "Arthur Miller's Death of a Salesman staging juxtaposed with contemporary Tehran reality.",
+          "Completes the arc from philosophical peace to psychological reckoning."
+        ]
+      }
+    ]
   },
   {
-    "id": "trail_world_tour",
-    "name": "Global Cinema Tour",
-    "description": "Experience storytelling from different cultures.",
-    "theme": "World Cinema",
-    "movie_ids": [496243, 129, 375022]
+    "id": "trail_tokyo_solitude_neon",
+    "name": "Tokyo Solitude & Neon Melancholy",
+    "description": "The evolution of urban isolation, quiet contemplation, and unspoken connection in the Japanese metropolis.",
+    "theme": "Urban Melancholy & Existential Stillness",
+    "region": "East Asia",
+    "estimated_time_mins": 520,
+    "editor_note": "Traces how cinematic depictions of Tokyo shifted from post-war familial drifting to hyper-modern neon loneliness and restorative daily rituals.",
+    "movie_ids": [18148, 153, 735795, 976893],
+    "steps": [
+      { "tmdb_id": 18148, "title": "Tokyo Story", "director": "Yasujirō Ozu", "year": 1953, "region": "Japan", "note": "Ozu's definitive tatami-shot masterpiece on familial estrangement and rapid post-war modernization." },
+      { "tmdb_id": 153, "title": "Lost in Translation", "director": "Sofia Coppola", "year": 2003, "region": "USA / Japan", "note": "Two insomniacs navigate the surreal, neon haze of Shinjuku, finding fleeting solace in shared displacement." },
+      { "tmdb_id": 735795, "title": "Drive My Car", "director": "Ryusuke Hamaguchi", "year": 2021, "region": "Japan", "note": "A grieving theater director and his stoic young chauffeur bond over long journeys in a red Saab 900." },
+      { "tmdb_id": 976893, "title": "Perfect Days", "director": "Wim Wenders", "year": 2023, "region": "Japan / Germany", "note": "A Tokyo toilet cleaner discovers profound grace and poetic joy in cassette tapes, morning light, and daily routine." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Tokyo Story",
+        "to_title": "Lost in Translation",
+        "bridge_concept": "Generational distance evolves into modern urban insomnia",
+        "reasons": ["Transition from classical low-angle Ozu family framing to Western outsider impressionism.", "Both capture Tokyo as an emotional backdrop for quiet longing."]
+      },
+      {
+        "from_title": "Lost in Translation",
+        "to_title": "Drive My Car",
+        "bridge_concept": "From unspoken attraction to therapeutic grief articulation",
+        "reasons": ["Both explore the difficulty of putting deep psychological pain into spoken words.", "Expands the scope into Murakami's meditative road landscapes."]
+      },
+      {
+        "from_title": "Drive My Car",
+        "to_title": "Perfect Days",
+        "bridge_concept": "Reconciliation with life through minimalist everyday practice",
+        "reasons": ["Shift from grief processing to transcendent acceptance of simple beauty.", "Unmatched visual appreciation for Tokyo's quiet public spaces and natural light."]
+      }
+    ]
+  },
+  {
+    "id": "trail_nordic_noir_shadows",
+    "name": "Nordic Noir & Psychological Shadows",
+    "description": "Cold landscapes, societal rot, and ethical fracturing across Scandinavian cinema.",
+    "theme": "Psychological Thriller & Nordic Noir",
+    "region": "Scandinavia & Northern Europe",
+    "estimated_time_mins": 460,
+    "editor_note": "A curated path exploring how bleak weather, tight-knit communities, and internal psychological pressure breed exceptional tension.",
+    "movie_ids": [65057, 10098, 13310, 1018320],
+    "steps": [
+      { "tmdb_id": 65057, "title": "The Hunt (Jagten)", "director": "Thomas Vinterberg", "year": 2012, "region": "Denmark", "note": "A kindergarten teacher's life is decimated by an innocent lie, exposing collective mass hysteria." },
+      { "tmdb_id": 10098, "title": "Insomnia", "director": "Erik Skjoldbjærg", "year": 1997, "region": "Norway", "note": "Under the perpetual midnight sun of northern Norway, a compromised detective loses his mind." },
+      { "tmdb_id": 13310, "title": "Let the Right One In", "director": "Tomas Alfredson", "year": 2008, "region": "Sweden", "note": "A lonely, bullied boy in a bleak Stockholm suburb befriends a mysterious young girl who lives next door." },
+      { "tmdb_id": 1018320, "title": "Fallen Leaves", "director": "Aki Kaurismäki", "year": 2023, "region": "Finland", "note": "Two lonely working-class souls in Helsinki navigate dead-end jobs and radio news to find quiet romance." }
+    ],
+    "transitions": [
+      {
+        "from_title": "The Hunt",
+        "to_title": "Insomnia",
+        "bridge_concept": "From community paranoia to individual psychological breakdown",
+        "reasons": ["Both dismantle the illusion of idyllic Scandinavian societal perfection.", "Subverts traditional noir darkness into blinding Arctic white sunlight."]
+      },
+      {
+        "from_title": "Insomnia",
+        "to_title": "Let the Right One In",
+        "bridge_concept": "Subverting crime genres with atmospheric melancholic dread",
+        "reasons": ["Bleak suburban snowscapes serving as emotional metaphors.", "Deep exploration of isolation, vulnerability, and moral compromise."]
+      },
+      {
+        "from_title": "Let the Right One In",
+        "to_title": "Fallen Leaves",
+        "bridge_concept": "From icy dread to deadpan working-class warmth",
+        "reasons": ["Kaurismäki's trademark minimalist color palette and dry humor.", "Reduces tension into a gentle, humanist Nordic romance."]
+      }
+    ]
+  },
+  {
+    "id": "trail_latin_magical_realism",
+    "name": "Latin American Magical Realism & Social Memory",
+    "description": "Where historical trauma, political violence, and mythological wonder bleed together.",
+    "theme": "Magical Realism & Historical Memory",
+    "region": "Latin America",
+    "estimated_time_mins": 510,
+    "editor_note": "Explores cinema that uses fable, memory, and lyrical realism to confront dictatorial violence and generational wounds.",
+    "movie_ids": [1417, 426426, 25376, 28941],
+    "steps": [
+      { "tmdb_id": 1417, "title": "Pan's Labyrinth", "director": "Guillermo del Toro", "year": 2006, "region": "Spain / Mexico", "note": "In post-Civil War Spain, a young girl retreats into a terrifying fairy realm to survive fascist cruelty." },
+      { "tmdb_id": 426426, "title": "Roma", "director": "Alfonso Cuarón", "year": 2018, "region": "Mexico", "note": "An exquisite black-and-white portrait of a domestic worker amidst the political turmoil of 1970s Mexico City." },
+      { "tmdb_id": 25376, "title": "The Secret in Their Eyes (El secreto de sus ojos)", "director": "Juan José Campanella", "year": 2009, "region": "Argentina", "note": "A retired legal counselor writes a novel to make sense of an unsolved murder under Argentina's junta era." },
+      { "tmdb_id": 28941, "title": "Macario", "director": "Roberto Gavaldón", "year": 1960, "region": "Mexico", "note": "A starving peasant makes a deal with Death on Day of the Dead in this foundational Golden Age classic." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Pan's Labyrinth",
+        "to_title": "Roma",
+        "bridge_concept": "From dark fantasy escape to hyper-detailed historical memory",
+        "reasons": ["Both capture pivotal moments of societal upheaval through personal vulnerability.", "Cuarón strips away fantasy monsters while maintaining breathtaking visual mythos."]
+      },
+      {
+        "from_title": "Roma",
+        "to_title": "The Secret in Their Eyes",
+        "bridge_concept": "From domestic observation to decades-long political investigation",
+        "reasons": ["Deep examination of state corruption in Latin America.", "Emotional focus on unfulfilled romance and memory's inability to let go."]
+      },
+      {
+        "from_title": "The Secret in Their Eyes",
+        "to_title": "Macario",
+        "bridge_concept": "Roots of Mexican and Latin fable filmmaking",
+        "reasons": ["Connects modern historical thrillers with Mexico's folkloric storytelling tradition."]
+      }
+    ]
+  },
+  {
+    "id": "trail_french_nouvelle_vague_to_now",
+    "name": "French New Wave to Contemporary Neo-Realism",
+    "description": "How radical 1960s camera freedom sparked today's sharpest European auteur cinema.",
+    "theme": "French Cinema & Narrative Revolution",
+    "region": "Western Europe",
+    "estimated_time_mins": 475,
+    "editor_note": "Traces rule-breaking editing, feminist gaze, and linguistic dissection across 60 years of French filmmaking.",
+    "movie_ids": [404, 4995, 531428, 915935],
+    "steps": [
+      { "tmdb_id": 404, "title": "The 400 Blows", "director": "François Truffaut", "year": 1959, "region": "France", "note": "The seminal foundation of the French New Wave, following rebellious youth Antoine Doinel." },
+      { "tmdb_id": 4995, "title": "Cléo from 5 to 7", "director": "Agnès Varda", "year": 1962, "region": "France", "note": "Real-time, feminist exploration of a singer walking through Paris while awaiting biopsy results." },
+      { "tmdb_id": 531428, "title": "Portrait of a Lady on Fire", "director": "Céline Sciamma", "year": 2019, "region": "France", "note": "An 18th-century female painter is commissioned to paint a wedding portrait in secret on a remote island." },
+      { "tmdb_id": 915935, "title": "Anatomy of a Fall", "director": "Justine Triet", "year": 2023, "region": "France", "note": "A Palme d'Or-winning dissection of a marriage, truth, and judicial perception following a fatal fall in the Alps." }
+    ],
+    "transitions": [
+      {
+        "from_title": "The 400 Blows",
+        "to_title": "Cléo from 5 to 7",
+        "bridge_concept": "From Left Bank Parisian streets to Left Bank feminist realism",
+        "reasons": ["Varda's real-time cinema verité builds directly on Truffaut's street shooting freedom.", "Shifts perspective from male youth delinquency to female existential anxiety."]
+      },
+      {
+        "from_title": "Cléo from 5 to 7",
+        "to_title": "Portrait of a Lady on Fire",
+        "bridge_concept": "The evolution of the female artistic gaze",
+        "reasons": ["Sciamma inherits Varda's focus on female agency and looking at the subject as an equal.", "Intimate, painterly attention to breath, silence, and observation."]
+      },
+      {
+        "from_title": "Portrait of a Lady on Fire",
+        "to_title": "Anatomy of a Fall",
+        "bridge_concept": "Modern French mastery: language, intellect, and moral dissection",
+        "reasons": ["Sandra Hüller's multilingual courtroom battle examines narrative truth and marital compromise."]
+      }
+    ]
+  },
+  {
+    "id": "trail_korean_neo_noir_vengeance",
+    "name": "Korean Neo-Noir & Societal Vengeance",
+    "description": "Precision cinematography, dark humor, and systemic rage in modern South Korean cinema.",
+    "theme": "Korean Thriller & Neo-Noir",
+    "region": "East Asia",
+    "estimated_time_mins": 530,
+    "editor_note": "South Korean cinema perfected the blend of visceral genre entertainment and searing socio-economic criticism.",
+    "movie_ids": [11423, 670, 496243, 705996],
+    "steps": [
+      { "tmdb_id": 11423, "title": "Memories of Murder", "director": "Bong Joon-ho", "year": 2003, "region": "South Korea", "note": "Two mismatched detectives fail to catch Korea's first serial killer amidst 1980s military dictatorship." },
+      { "tmdb_id": 670, "title": "Oldboy", "director": "Park Chan-wook", "year": 2003, "region": "South Korea", "note": "A man imprisoned in a room for 15 years is suddenly released on a five-day quest for bloody answers." },
+      { "tmdb_id": 496243, "title": "Parasite", "director": "Bong Joon-ho", "year": 2019, "region": "South Korea", "note": "Greed and class discrimination threaten the newly formed symbiotic relationship between two families." },
+      { "tmdb_id": 705996, "title": "Decision to Leave", "director": "Park Chan-wook", "year": 2022, "region": "South Korea", "note": "A polite, insomniac detective investigates a man's fatal fall and falls under the spell of the enigmatic widow." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Memories of Murder",
+        "to_title": "Oldboy",
+        "bridge_concept": "2003: The dual masterpieces of the Korean New Wave",
+        "reasons": ["Bong's political procedural vs. Park's Shakespearean Greek tragedy vengeance.", "Both redefined global genre cinema simultaneously."]
+      },
+      {
+        "from_title": "Oldboy",
+        "to_title": "Parasite",
+        "bridge_concept": "From individual rage to structural economic class warfare",
+        "reasons": ["Substitutes visceral blood with razor-sharp satirical metaphors for global capitalism.", "Both demonstrate unparalleled structural tension and tonal flexibility."]
+      },
+      {
+        "from_title": "Parasite",
+        "to_title": "Decision to Leave",
+        "bridge_concept": "The mature, romantic sublimation of Korean noir",
+        "reasons": ["Park trades extreme violence for delicate Hitchcockian obsession, fog, and oceanic longing."]
+      }
+    ]
+  },
+  {
+    "id": "trail_slow_cinema_odyssey",
+    "name": "The Slow Cinema Odyssey",
+    "description": "Films that use expansive durations, ambient soundscapes, and hypnotic tracking shots to alter time perception.",
+    "theme": "Contemplative & Transcendental Cinema",
+    "region": "Global / Multi-Region",
+    "estimated_time_mins": 590,
+    "editor_note": "An invitation to decelerate. Experience cinema as meditation, memory, and spiritual architecture.",
+    "movie_ids": [1398, 480105, 597890, 725201],
+    "steps": [
+      { "tmdb_id": 1398, "title": "Stalker", "director": "Andrei Tarkovsky", "year": 1979, "region": "Soviet Union", "note": "A guide leads a writer and a scientist through the mysterious Zone to a room where deepest desires come true." },
+      { "tmdb_id": 480105, "title": "Long Day's Journey into Night", "director": "Bi Gan", "year": 2018, "region": "China", "note": "A man returns to his hometown in Guizhou to search for a lost love, concluding with a 59-minute dream sequence." },
+      { "tmdb_id": 597890, "title": "Memoria", "director": "Apichatpong Weerasethakul", "year": 2021, "region": "Colombia / Thailand", "note": "A Scottish botanist in Bogotá begins hearing an elusive sonic boom, leading her deep into the Colombian jungle." },
+      { "tmdb_id": 725201, "title": "The Turin Horse", "director": "Béla Tarr", "year": 2011, "region": "Hungary", "note": "Six days in the bleak life of a cab driver, his daughter, and their aging horse under a relentless windstorm." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Stalker",
+        "to_title": "Long Day's Journey into Night",
+        "bridge_concept": "Tarkovskian dream ruins meet modern Chinese neon noir",
+        "reasons": ["Bi Gan channels Tarkovsky's wet, subterranean texture with 3D cinematic poetry.", "Both explore regret and metaphysical space."]
+      },
+      {
+        "from_title": "Long Day's Journey into Night",
+        "to_title": "Memoria",
+        "bridge_concept": "Sound design as a bridge between past memories and physical earth",
+        "reasons": ["Apichatpong's signature animist philosophy applied to Latin American geology.", "Demands absolute sonic focus and contemplative patience."]
+      },
+      {
+        "from_title": "Memoria",
+        "to_title": "The Turin Horse",
+        "bridge_concept": "The ultimate terminus of slow cinema minimalism",
+        "reasons": ["Béla Tarr's uncompromising, monochrome portrait of human persistence and entropy."]
+      }
+    ]
+  },
+  {
+    "id": "trail_african_visions_pioneers",
+    "name": "African Cinema: Pioneers to Modern Visions",
+    "description": "Post-colonial identity, oral storytelling rhythms, and visual brilliance across West and North Africa.",
+    "theme": "African Cinema & Decolonial Aesthetics",
+    "region": "Africa",
+    "estimated_time_mins": 440,
+    "editor_note": "From Ousmane Sembène's groundbreaking anti-colonial cinema to contemporary supernatural Dakar realism.",
+    "movie_ids": [44719, 44723, 563385, 273895],
+    "steps": [
+      { "tmdb_id": 44719, "title": "Black Girl (La Noire de...)", "director": "Ousmane Sembène", "year": 1966, "region": "Senegal", "note": "The first sub-Saharan feature by an African director, chronicling a young Senegalese woman working in France." },
+      { "tmdb_id": 44723, "title": "Touki Bouki", "director": "Djibril Diop Mambéty", "year": 1973, "region": "Senegal", "note": "A radical, avant-garde masterpiece about two young Dakar lovers scheming to board a ship to Paris." },
+      { "tmdb_id": 563385, "title": "Atlantics", "director": "Mati Diop", "year": 2019, "region": "Senegal / France", "note": "Mambéty's niece directs this hypnotic supernatural romance about young migrant laborers haunting Dakar." },
+      { "tmdb_id": 273895, "title": "Timbuktu", "director": "Abderrahmane Sissako", "year": 2014, "region": "Mauritania / Mali", "note": "Poetic resistance and quiet defiance under fundamentalist occupation in the historic city of Timbuktu." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Black Girl",
+        "to_title": "Touki Bouki",
+        "bridge_concept": "From classical social critique to jump-cut psychedelic rebellion",
+        "reasons": ["Mambéty responds to Sembène's realist tragedy with avant-garde energy and motorcycle horns.", "Both dissect the psychological pull of European migration."]
+      },
+      {
+        "from_title": "Touki Bouki",
+        "to_title": "Atlantics",
+        "bridge_concept": "Dynastic cinematic lineage: Mambéty to Mati Diop",
+        "reasons": ["Mati Diop directly revisits Dakar's Atlantic shoreline with ghostly, feminine luminescence.", "Wins Grand Prix at Cannes."]
+      },
+      {
+        "from_title": "Atlantics",
+        "to_title": "Timbuktu",
+        "bridge_concept": "Poetry as resistance against oppression",
+        "reasons": ["Sissako crafts unforgettable images of soccer played without a ball and rooftop singing."]
+      }
+    ]
+  },
+  {
+    "id": "trail_poetic_neorealism_parables",
+    "name": "Poetic Realism & Modern Social Parables",
+    "description": "Children, working-class resilience, and the fragility of innocence across Italy, India, and Japan.",
+    "theme": "Humanist Parables & Italian-Indian-Japanese Bridge",
+    "region": "Global / Multi-Region",
+    "estimated_time_mins": 480,
+    "editor_note": "Shows how Italian Neorealism directly inspired the Apu Trilogy in Bengal and Hirokazu Kore-eda in Tokyo.",
+    "movie_ids": [5156, 5849, 466272, 829560],
+    "steps": [
+      { "tmdb_id": 5156, "title": "Bicycle Thieves (Ladri di biciclette)", "director": "Vittorio De Sica", "year": 1948, "region": "Italy", "note": "A desperate father and son search post-war Rome for the stolen bicycle essential for his job." },
+      { "tmdb_id": 5849, "title": "Pather Panchali", "director": "Satyajit Ray", "year": 1955, "region": "India (Bengal)", "note": "Ray saw Bicycle Thieves in London and returned to rural Bengal to make this lyrical humanist landmark." },
+      { "tmdb_id": 466272, "title": "Shoplifters (Manbiki kazoku)", "director": "Hirokazu Kore-eda", "year": 2018, "region": "Japan", "note": "A makeshift family of petty criminals and outcasts in Tokyo takes in a neglected neighborhood girl." },
+      { "tmdb_id": 829560, "title": "The Quiet Girl (An Cailín Ciúin)", "director": "Colm Bairéad", "year": 2022, "region": "Ireland", "note": "A neglected 9-year-old girl is sent to live with foster relatives on a rural Irish farm for the summer." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Bicycle Thieves",
+        "to_title": "Pather Panchali",
+        "bridge_concept": "The historic catalyst that birthed modern Indian art cinema",
+        "reasons": ["Satyajit Ray was directly inspired by De Sica's non-professional actors and natural locations.", "Ravi Shankar's sitar score meets post-war neorealist compassion."]
+      },
+      {
+        "from_title": "Pather Panchali",
+        "to_title": "Shoplifters",
+        "bridge_concept": "Chosen family, child gaze, and quiet social observation",
+        "reasons": ["Kore-eda is the direct spiritual heir to Ozu and Ray.", "Examines societal morality vs. unconditional emotional warmth."]
+      },
+      {
+        "from_title": "Shoplifters",
+        "to_title": "The Quiet Girl",
+        "bridge_concept": "Language of gentleness and transformative kindness",
+        "reasons": ["Irish-language masterpiece emphasizing unspoken emotional healing and safety."]
+      }
+    ]
+  },
+  {
+    "id": "trail_cinematic_architecture_isolation",
+    "name": "Cinematic Architecture & Urban Alienation",
+    "description": "How modern glass, geometry, and urban planning shape human disconnection.",
+    "theme": "Architecture, Space & Modernity",
+    "region": "Global / Multi-Region",
+    "estimated_time_mins": 460,
+    "editor_note": "A visual study of how modernist buildings and grid cities reflect psychological alienation.",
+    "movie_ids": [11212, 335984, 437557, 152601],
+    "steps": [
+      { "tmdb_id": 11212, "title": "Playtime", "director": "Jacques Tati", "year": 1967, "region": "France", "note": "Monsieur Hulot gets hopelessly entangled in a futuristic, glass-and-steel Paris built entirely on an epic set." },
+      { "tmdb_id": 335984, "title": "Blade Runner 2049", "director": "Denis Villeneuve", "year": 2017, "region": "USA", "note": "Brutalist monoliths, neon dust storms, and existential replicant questions in a future Los Angeles." },
+      { "tmdb_id": 437557, "title": "Columbus", "director": "Kogonada", "year": 2017, "region": "USA", "note": "The son of a comatose architecture scholar meets a young woman passionate about Modernist buildings in Indiana." },
+      { "tmdb_id": 152601, "title": "Her", "director": "Spike Jonze", "year": 2013, "region": "USA", "note": "A lonely letter writer in a pastel-hued, near-future Los Angeles/Shanghai hybrid falls in love with an AI." }
+    ],
+    "transitions": [
+      {
+        "from_title": "Playtime",
+        "to_title": "Blade Runner 2049",
+        "bridge_concept": "From comedic modernist satire to colossal sci-fi brutalism",
+        "reasons": ["Both use staggering architectural scale to dwarf the human individual.", "Roger Deakins' geometry mirrors Tati's meticulous framing."]
+      },
+      {
+        "from_title": "Blade Runner 2049",
+        "to_title": "Columbus",
+        "bridge_concept": "From dystopian scale to intimate architectural healing",
+        "reasons": ["Kogonada (video essayist turned director) uses Eero Saarinen buildings as emotional cathedrals.", "Subtle dialogue on parental obligation and aesthetic comfort."]
+      },
+      {
+        "from_title": "Columbus",
+        "to_title": "Her",
+        "bridge_concept": "Pastel metropolis, soft lighting, and modern intimacy",
+        "reasons": ["Shot in Shanghai and LA, using high-rise architecture to explore loneliness and digital connection."]
+      }
+    ]
   }
 ]

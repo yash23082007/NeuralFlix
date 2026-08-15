@@ -77,10 +77,9 @@ function SearchContent() {
       try {
         // Build search URL
         const params = new URLSearchParams({
-          q: debouncedQuery,
-          limit: "50"
+          query: debouncedQuery,
         });
-        const res = await fetch(`${API}/api/v1/search?${params.toString()}`);
+        const res = await fetch(`${API}/api/v1/movies/search/?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
