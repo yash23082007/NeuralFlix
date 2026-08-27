@@ -46,31 +46,34 @@ REGION_LANGUAGE_MAP = {
 }
 
 
-def _format_movie(m: Movie) -> dict:
+def _format_movie(m: Any) -> dict:
     """Format movie object into standardized dictionary."""
+    movie_id = getattr(m, "id", None) or getattr(m, "tmdb_id", 0)
+    tmdb_id = getattr(m, "tmdb_id", 0) or getattr(m, "id", 0)
+    rating = getattr(m, "tmdb_rating", None) or getattr(m, "rating", None)
     return {
-        "_id": str(m.id),
-        "id": m.id,
-        "tmdb_id": m.tmdb_id,
-        "imdb_id": m.imdb_id,
-        "title": m.title,
-        "overview": m.overview,
-        "tagline": m.tagline,
-        "year": m.year,
-        "release_date": m.release_date,
-        "runtime": m.runtime,
-        "poster_url": m.poster_url,
-        "backdrop_url": m.backdrop_url,
-        "rating": m.tmdb_rating,
-        "tmdb_rating": m.tmdb_rating,
-        "votes": m.tmdb_votes,
-        "genres": m.genres or [],
-        "language": m.language,
-        "cinema_region": m.cinema_region,
-        "director": m.director,
-        "cast_members": m.cast_members or [],
-        "popularity_score": m.popularity_score or 0.0,
-        "rec_score": round((m.tmdb_rating or 7.5) / 10.0, 2)
+        "_id": str(movie_id),
+        "id": movie_id,
+        "tmdb_id": tmdb_id,
+        "imdb_id": getattr(m, "imdb_id", None),
+        "title": getattr(m, "title", ""),
+        "overview": getattr(m, "overview", None),
+        "tagline": getattr(m, "tagline", None),
+        "year": getattr(m, "year", None),
+        "release_date": getattr(m, "release_date", None),
+        "runtime": getattr(m, "runtime", None),
+        "poster_url": getattr(m, "poster_url", None),
+        "backdrop_url": getattr(m, "backdrop_url", None),
+        "rating": rating,
+        "tmdb_rating": rating,
+        "votes": getattr(m, "tmdb_votes", None) or getattr(m, "votes", None),
+        "genres": getattr(m, "genres", []) or [],
+        "language": getattr(m, "language", None),
+        "cinema_region": getattr(m, "cinema_region", None),
+        "director": getattr(m, "director", None),
+        "cast_members": getattr(m, "cast_members", []) or [],
+        "popularity_score": getattr(m, "popularity_score", 0.0) or 0.0,
+        "rec_score": round((rating or 7.5) / 10.0, 2)
     }
 
 

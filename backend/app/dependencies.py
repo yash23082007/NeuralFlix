@@ -1,7 +1,7 @@
 """
 NeuralFlix — Dependencies
 
-Shared FastAPI dependencies (auth, current user, etc.).
+Shared FastAPI dependencies (auth, current user, optional user, etc.).
 """
 
 from typing import Optional
@@ -65,8 +65,31 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """Validate JWT if provided, otherwise return None without error."""
+    token = await get_token_from_cookie(request)
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.jwt_secret, 
+            algorithms=[settings.jwt_algorithm]
+        )
+        user_id: str = payload.get("sub")
+        if not user_id:
+            return None
+        result = await db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+    except Exception:
+        return None
+
+
 async def get_current_active_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """Ensure the user is active (could add is_active flag later)."""
+    """Ensure the user is active."""
     return current_user

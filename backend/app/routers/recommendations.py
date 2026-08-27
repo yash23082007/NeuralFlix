@@ -207,6 +207,8 @@ async def explain_recommendation(
         
     return {
         "movieId": movie_id,
+        "explanation": "This movie was matched to your Taste Constellation settings.",
+        "factors": [r["label"] for r in reasons],
         "reasons": reasons,
         "rankingVersion": "4.0-DeterministicTaste",
         "catalogFreshness": {
