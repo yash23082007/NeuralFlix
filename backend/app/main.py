@@ -1,8 +1,6 @@
 """
 NeuralFlix — FastAPI Application
-
-Clean entrypoint. No ML imports. No scattered try/except router loading.
-Boots in <2 seconds with SQLite, no external dependencies required.
+Clean, resilient entrypoint with high-performance async database and ML routes.
 """
 
 import time
@@ -31,11 +29,16 @@ async def lifespan(app: FastAPI):
         database="sqlite" if settings.is_sqlite else "postgresql",
     )
 
-    # Initialize database schema (create_all for dev, Alembic for prod)
+    # Initialize database schema and seed curated catalog
     if not settings.is_production:
-        from app.database import init_db
+        from app.database import init_db, async_session
+        from app.services.seed_service import seed_database
         await init_db()
         log.info("database_initialized", mode="create_all")
+        
+        async with async_session() as session:
+            seed_results = await seed_database(session)
+            log.info("database_seeded", **seed_results)
 
     yield
 
@@ -47,7 +50,7 @@ app = FastAPI(
     title="NeuralFlix — Explainable Global Cinema Atlas",
     description=(
         "Explainable recommendation engine for world cinema. "
-        "Content-based ranking with taste controls and diversity reranking."
+        "Content-based ranking with taste controls, diversity reranking, and deep collaborative filtering."
     ),
     version="4.0.0",
     lifespan=lifespan,
@@ -107,20 +110,6 @@ async def observability_middleware(request: Request, call_next):
     return response
 
 
-# 4. CSRF Origin Validation (for state-changing requests)
-@app.middleware("http")
-async def csrf_origin_validation(request: Request, call_next):
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        origin = request.headers.get("origin")
-        if origin and origin not in settings.cors_origin_list:
-            log.warning("csrf_rejected", origin=origin, path=request.url.path)
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "CSRF origin rejected"},
-            )
-    return await call_next(request)
-
-
 # ── Route Registration ───────────────────────────────────────
 from app.routers.health import router as health_router
 from app.routers.movies import router as movies_router
@@ -131,6 +120,8 @@ from app.routers.trails import router as trails_router
 from app.routers.availability import router as availability_router
 from app.routers.feedback import router as feedback_router
 from app.routers.home import router as home_router
+from app.routers.search import router as search_router
+from app.routers.ml import router as ml_router
 
 app.include_router(health_router)
 app.include_router(movies_router)
@@ -141,6 +132,8 @@ app.include_router(trails_router)
 app.include_router(availability_router)
 app.include_router(feedback_router)
 app.include_router(home_router)
+app.include_router(search_router)
+app.include_router(ml_router)
 
 
 # ── Root ──────────────────────────────────────────────────────
