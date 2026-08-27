@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import MovieCard from "../../components/MovieCard";
 import { Search, Film, Sparkles, X, Clock, ArrowRight, Filter, ChevronRight } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 const TRENDING_SUGGESTIONS = [
   "Nolan", "Korean Thriller", "Anime", "Sci-Fi", "Bollywood", "Oscars", "Mind Blown"
 ];
@@ -77,10 +75,10 @@ function SearchContent() {
       try {
         // Build search URL
         const params = new URLSearchParams({
-          q: debouncedQuery,
-          limit: "50"
+          query: debouncedQuery,
+          page: "1"
         });
-        const res = await fetch(`${API}/api/v1/search?${params.toString()}`);
+        const res = await fetch(`/api/v1/movies/search?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);

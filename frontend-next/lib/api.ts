@@ -1,7 +1,7 @@
 const API_BASE =
   typeof window === "undefined"
-    ? process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "https://neuralflix.onrender.com"
-    : process.env.NEXT_PUBLIC_API_URL || "https://neuralflix.onrender.com";
+    ? process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface Movie {
   _id?: string;

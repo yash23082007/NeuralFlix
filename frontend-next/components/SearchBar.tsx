@@ -4,8 +4,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, X, ArrowRight, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 interface SearchSuggestion {
   tmdb_id: number
   title: string
@@ -59,7 +57,7 @@ export default function SearchBar() {
     setLoading(true)
     try {
       const res = await fetch(
-        `${API_BASE}/api/v1/search/movies?query=${encodeURIComponent(q)}&limit=6`,
+        `/api/v1/movies/search?query=${encodeURIComponent(q)}&page=1`,
         { signal: abortControllerRef.current.signal }
       )
       if (!res.ok) throw new Error('Search failed')

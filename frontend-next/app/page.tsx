@@ -1,15 +1,24 @@
-import { Compass, Sparkles, TrendingUp, Star } from "lucide-react";
+import { Compass, Sparkles } from "lucide-react";
 import Link from "next/link";
 import MovieRow from "../components/MovieRow";
 import { getHome } from "../lib/api";
 
 export const dynamic = "force-dynamic";
 
+const FALLBACK_MOVIES = [
+  { tmdb_id: 155, title: "The Dark Knight", year: 2008, rating: 8.5, genres: ["Crime"], poster_url: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" },
+  { tmdb_id: 496243, title: "Parasite", year: 2019, rating: 8.5, genres: ["Thriller"], language: "ko", poster_url: "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg" },
+  { tmdb_id: 313369, title: "La La Land", year: 2016, rating: 8.0, genres: ["Music"], poster_url: "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg" },
+  { tmdb_id: 129, title: "Spirited Away", year: 2001, rating: 8.6, genres: ["Animation"], language: "ja", poster_url: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" },
+  { tmdb_id: 278, title: "The Shawshank Redemption", year: 1994, rating: 8.7, genres: ["Drama"], poster_url: "https://image.tmdb.org/t/p/w500/lyQBXzOQSuE59IsHyHRrQFZ7aPr.jpg" },
+  { tmdb_id: 496, title: "Spirited Away", year: 2001, rating: 8.6, genres: ["Animation"], language: "ja", poster_url: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" },
+];
+
 export default async function Home() {
-  let homeData = {
-    featured: {},
-    trending: [],
-    topRated: [],
+  let homeData: any = {
+    featured: FALLBACK_MOVIES[1],
+    trending: FALLBACK_MOVIES,
+    topRated: FALLBACK_MOVIES.slice().reverse(),
     regions: {},
     coldStartCollections: []
   };
@@ -17,7 +26,12 @@ export default async function Home() {
   try {
     const data = await getHome();
     if (data) {
-      homeData = { ...homeData, ...data };
+      homeData = {
+        ...homeData,
+        ...data,
+        trending: data.trending?.length ? data.trending : homeData.trending,
+        topRated: data.topRated?.length ? data.topRated : homeData.topRated,
+      };
     }
   } catch (error) {
     console.error("Failed to load home data:", error);
@@ -27,6 +41,7 @@ export default async function Home() {
     <main className="min-h-screen pb-20">
       {/* Hero Section */}
       <section className="relative h-[60vh] lg:h-[80vh] flex items-center justify-center overflow-hidden border-b border-border/40">
+        <img src={homeData.featured?.backdrop_url || FALLBACK_MOVIES[1].poster_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background z-10" />
         <div className="absolute inset-0 bg-secondary/10" />
         

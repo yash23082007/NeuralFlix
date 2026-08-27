@@ -41,7 +41,7 @@ export function useMovieSearch(initialQuery?: string): UseMovieSearchResult {
     setError(null)
     setPage(1)
     try {
-      const res = await fetch(`/api/v1/movies/search?q=${encodeURIComponent(q)}&limit=20`)
+      const res = await fetch(`/api/v1/movies/search?query=${encodeURIComponent(q)}&page=1`)
       if (!res.ok) throw new Error(`Search failed: ${res.status}`)
       const data = await res.json()
       setResults(data.results || [])
@@ -59,7 +59,7 @@ export function useMovieSearch(initialQuery?: string): UseMovieSearchResult {
     const nextPage = page + 1
     setLoading(true)
     try {
-      const res = await fetch(`/api/v1/movies/search?q=${encodeURIComponent(query)}&page=${nextPage}&limit=20`)
+      const res = await fetch(`/api/v1/movies/search?query=${encodeURIComponent(query)}&page=${nextPage}`)
       if (!res.ok) throw new Error(`Search failed: ${res.status}`)
       const data = await res.json()
       setResults((prev) => [...prev, ...(data.results || [])])
