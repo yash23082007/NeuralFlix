@@ -67,6 +67,7 @@ class Settings(BaseSettings):
     lite_mode: bool = True
     enable_experimental_ml: bool = False
     demo_mode: bool = False
+    allow_tmdb_write_through: bool = False
 
     # ── Server ───────────────────────────────────────────────
     host: str = "0.0.0.0"

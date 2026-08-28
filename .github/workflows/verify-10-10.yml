@@ -10,10 +10,10 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
@@ -28,13 +28,18 @@ jobs:
         cd backend
         pytest app/tests/ -v
 
+    - name: Uvicorn Smoke Boot
+      run: |
+        cd backend
+        timeout 10s uvicorn app.main:app --host 0.0.0.0 --port 8000 || [ $? -eq 124 ]
+
   frontend-verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Node.js 22
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: "22"
         

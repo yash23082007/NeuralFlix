@@ -52,4 +52,5 @@ tsconfig.tsbuildinfo
 
 # Local scratch and temporary files
 backend/scratch/
+pipeline/.tmdb-checkpoint.json
 

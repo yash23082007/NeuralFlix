@@ -20,3 +20,7 @@ async def test_submit_feedback(client: AsyncClient):
     response = await client.post("/api/v1/feedback?movie_id=456&action=dislike")
     assert response.status_code == 200
     assert response.json()["action"] == "dislike"
+    
+    # Submit bogus feedback action (should be 422 Unprocessable Entity)
+    response = await client.post("/api/v1/recommendations/feedback?movie_id=123&action=bogus")
+    assert response.status_code == 422

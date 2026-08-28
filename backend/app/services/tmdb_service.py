@@ -65,6 +65,16 @@ async def search_movies(query: str, page: int = 1) -> Dict[str, Any]:
         return response.json()
 
 
+async def discover_movies(page: int = 1, sort_by: str = "popularity.desc") -> Dict[str, Any]:
+    """Fetch one deterministic TMDB discover page for offline ingestion jobs."""
+    url = f"{TMDB_BASE_URL}/discover/movie"
+    params = _get_params({"page": page, "sort_by": sort_by, "include_adult": "false", "include_video": "false"})
+    async with httpx.AsyncClient(timeout=_timeout) as client:
+        response = await client.get(url, headers=_get_headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+
+
 def parse_tmdb_movie(data: dict) -> dict:
     """Extract and normalize TMDB fields to match our DB schema."""
     

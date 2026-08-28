@@ -70,7 +70,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
     return JSONResponse(
         status_code=500,
-        content={"message": "Internal Server Error", "error_id": error_id},
+        content={"detail": "Internal Server Error", "error_id": error_id},
     )
 
 
@@ -107,6 +107,13 @@ async def observability_middleware(request: Request, call_next):
     )
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Process-Time"] = f"{latency:.4f}"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if settings.is_production:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     return response
 
 
