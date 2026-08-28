@@ -6,8 +6,6 @@ import Link from "next/link";
 import { Eye, EyeOff, LogIn, Film, Sparkles, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { setUser } from "../../lib/auth";
-import GoogleLogin from "../../components/GoogleLogin";
-import GithubLogin from "../../components/GithubLogin";
 
 interface CollageMovie {
   tmdb_id: number;
@@ -262,17 +260,6 @@ export default function LoginPage() {
               {loading ? "Authenticating..." : "Continue"}
             </button>
           </form>
-
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-[var(--border-default)]"></div>
-            <span className="flex-shrink mx-4 text-[var(--text-tertiary)] text-xs font-mono uppercase">Or connect via</span>
-            <div className="flex-grow border-t border-[var(--border-default)]"></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <GoogleLogin />
-            <GithubLogin />
-          </div>
 
           <p className="text-center text-xs text-[var(--text-secondary)]">
             Don&apos;t have an account?{" "}

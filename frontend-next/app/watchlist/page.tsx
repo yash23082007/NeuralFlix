@@ -31,7 +31,7 @@ export default function WatchlistPage() {
       const currentUser = getUser();
       if (!currentUser) return;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await authFetch(`${API}/api/v1/users/${currentUser.id}/watchlist?limit=100`);
+      const res = await authFetch(`${API}/api/v1/users/me/watchlist`);
       if (res.ok) {
         const data = await res.json();
         setWatchlist(data.results || []);
@@ -47,7 +47,7 @@ export default function WatchlistPage() {
     e.stopPropagation();
     try {
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await authFetch(`${API}/api/v1/users/${user.id}/watchlist/${movieId}`, {
+      const res = await authFetch(`${API}/api/v1/users/me/watchlist/${movieId}`, {
         method: "DELETE"
       });
       if (res.ok) {

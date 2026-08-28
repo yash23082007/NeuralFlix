@@ -8,6 +8,7 @@ All configuration is centralized here — no scattered os.getenv() calls.
 from functools import lru_cache
 from typing import Optional
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,6 +44,14 @@ class Settings(BaseSettings):
 
     # ── CORS ─────────────────────────────────────────────────
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if self.is_production and self.jwt_secret == "neuralflix-v4-dev-secret-change-in-prod":
+            raise ValueError("JWT_SECRET must be set to a non-default value in production")
+        if self.is_production and not self.cookie_secure:
+            raise ValueError("COOKIE_SECURE must be true in production")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -11,7 +11,7 @@
  * - getUser()/setUser(): Display-only user info in localStorage (NOT the token)
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://neuralflix.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const USER_KEY = "neuralflix_user";
 

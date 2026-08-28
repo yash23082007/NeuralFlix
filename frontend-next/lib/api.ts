@@ -5,6 +5,7 @@ const API_BASE =
 
 export interface Movie {
   _id?: string;
+  id?: number;
   tmdb_id?: number;
   title: string;
   overview?: string;

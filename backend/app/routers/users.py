@@ -3,8 +3,9 @@ NeuralFlix — Users Router
 Manages user profiles, Taste DNA fingerprint sequencing, and Taste Constellation sliders.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -13,9 +14,24 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.models.user import User
 from app.models.taste_control import TasteControl
 from app.models.movie import Movie
+from app.models.recommendation_feedback import WatchlistItem, Rating
+from app.models.watch_event import WatchEvent
 from app.schemas.auth import UserResponse
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users"])
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100)
+    onboarded: Optional[bool] = None
+
+class TasteControlsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    discovery: Optional[int] = Field(default=None, ge=0, le=100)
+    global_taste: Optional[int] = Field(default=None, alias="global", ge=0, le=100)
+    challenge: Optional[int] = Field(default=None, ge=0, le=100)
+    pace: Optional[int] = Field(default=None, ge=0, le=100)
+    hidden_gems: Optional[int] = Field(default=None, alias="hiddenGems", ge=0, le=100)
+    diversity_boost: Optional[bool] = Field(default=None, alias="diversityBoost")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -24,17 +40,17 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.put("/me")
+@router.put("/me", response_model=UserResponse)
 async def update_me(
-    user_update: dict,
+    user_update: UserUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update user profile."""
-    if "name" in user_update:
-        current_user.name = user_update["name"]
-    if "onboarded" in user_update:
-        current_user.onboarded = user_update["onboarded"]
+    if user_update.name is not None:
+        current_user.name = user_update.name
+    if user_update.onboarded is not None:
+        current_user.onboarded = user_update.onboarded
         
     await db.commit()
     await db.refresh(current_user)
@@ -42,14 +58,12 @@ async def update_me(
 
 
 @router.get("/me/taste-controls")
-@router.get("/{user_id}/taste-controls")
 async def get_taste_controls(
-    user_id: Optional[str] = None,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user's taste constellation settings."""
-    target_id = user_id or (current_user.id if current_user else "anonymous")
+    target_id = current_user.id
     result = await db.execute(select(TasteControl).where(TasteControl.user_id == target_id))
     taste = result.scalar_one_or_none()
     
@@ -70,15 +84,14 @@ async def get_taste_controls(
 
 
 @router.put("/me/taste-controls")
-@router.put("/{user_id}/taste-controls")
 async def update_taste_controls(
-    controls: dict,
-    user_id: Optional[str] = None,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    controls: TasteControlsUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update user's taste constellation settings."""
-    target_id = user_id or (current_user.id if current_user else "anonymous")
+    target_id = current_user.id
+    controls_data = controls.model_dump(by_alias=True, exclude_none=True)
     result = await db.execute(select(TasteControl).where(TasteControl.user_id == target_id))
     taste = result.scalar_one_or_none()
     
@@ -86,27 +99,26 @@ async def update_taste_controls(
         taste = TasteControl(user_id=target_id)
         db.add(taste)
         
-    if "discovery" in controls:
-        taste.discovery = controls["discovery"]
-    if "global" in controls:
-        taste.global_taste = controls["global"]
-    if "challenge" in controls:
-        taste.challenge = controls["challenge"]
-    if "pace" in controls:
-        taste.pace = controls["pace"]
-    if "hiddenGems" in controls:
-        taste.hidden_gems = controls["hiddenGems"]
-    if "diversityBoost" in controls:
-        taste.diversity_boost = controls["diversityBoost"]
+    if "discovery" in controls_data:
+        taste.discovery = controls_data["discovery"]
+    if "global" in controls_data:
+        taste.global_taste = controls_data["global"]
+    if "challenge" in controls_data:
+        taste.challenge = controls_data["challenge"]
+    if "pace" in controls_data:
+        taste.pace = controls_data["pace"]
+    if "hiddenGems" in controls_data:
+        taste.hidden_gems = controls_data["hiddenGems"]
+    if "diversityBoost" in controls_data:
+        taste.diversity_boost = controls_data["diversityBoost"]
         
     await db.commit()
-    return {"status": "success", "controls": controls}
+    return {"status": "success", "controls": controls_data}
 
 
 @router.get("/me/profile")
-@router.get("/{user_id}/profile")
 async def get_user_profile(
-    user_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Generate dynamic Taste DNA cinematic profile sequencing."""
@@ -152,12 +164,70 @@ async def get_user_profile(
 
 
 @router.get("/me/watchlist")
-async def get_watchlist(current_user: User = Depends(get_current_user)):
+async def get_watchlist(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Get user's watchlist."""
-    return {"watchlist": []}
+    result = await db.execute(
+        select(Movie).join(WatchlistItem, WatchlistItem.movie_id == Movie.id)
+        .where(WatchlistItem.user_id == current_user.id)
+        .order_by(WatchlistItem.added_at.desc())
+    )
+    return {"watchlist": result.scalars().all()}
 
 
 @router.post("/me/watchlist")
-async def add_to_watchlist(movie_id: int, current_user: User = Depends(get_current_user)):
+async def add_to_watchlist(movie_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Add a movie to user's watchlist."""
+    movie = await db.get(Movie, movie_id)
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    existing = await db.execute(select(WatchlistItem).where(
+        WatchlistItem.user_id == current_user.id, WatchlistItem.movie_id == movie_id
+    ))
+    if not existing.scalar_one_or_none():
+        db.add(WatchlistItem(user_id=current_user.id, movie_id=movie_id))
+        await db.commit()
     return {"status": "success", "movie_id": movie_id}
+
+
+@router.delete("/me/watchlist/{movie_id}")
+async def remove_from_watchlist(movie_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WatchlistItem).where(
+        WatchlistItem.user_id == current_user.id, WatchlistItem.movie_id == movie_id
+    ))
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Movie is not in your watchlist")
+    await db.delete(item)
+    await db.commit()
+    return {"status": "success", "movie_id": movie_id}
+
+
+@router.get("/me/history")
+async def get_history(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Movie, WatchEvent).join(WatchEvent, WatchEvent.movie_id == Movie.id)
+        .where(WatchEvent.user_id == current_user.id).order_by(WatchEvent.created_at.desc()))
+    return {"history": [{"movie": movie, "watched_at": event.created_at, "completed": event.completed} for movie, event in result.all()]}
+
+
+@router.get("/me/stats")
+async def get_stats(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    watched = await db.execute(select(WatchEvent).where(WatchEvent.user_id == current_user.id))
+    ratings = await db.execute(select(Rating).where(Rating.user_id == current_user.id))
+    watchlist = await db.execute(select(WatchlistItem).where(WatchlistItem.user_id == current_user.id))
+    watched_rows, rating_rows, watchlist_rows = watched.scalars().all(), ratings.scalars().all(), watchlist.scalars().all()
+    return {"watched_count": len(watched_rows), "rated_count": len(rating_rows), "watchlist_count": len(watchlist_rows),
+            "average_rating": round(sum(r.rating for r in rating_rows) / len(rating_rows), 2) if rating_rows else None}
+
+
+@router.put("/me/ratings/{movie_id}")
+async def rate_movie(movie_id: int, rating: float = Query(..., ge=0, le=5), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not await db.get(Movie, movie_id):
+        raise HTTPException(status_code=404, detail="Movie not found")
+    result = await db.execute(select(Rating).where(Rating.user_id == current_user.id, Rating.movie_id == movie_id))
+    item = result.scalar_one_or_none()
+    if item:
+        item.rating = rating
+    else:
+        db.add(Rating(user_id=current_user.id, movie_id=movie_id, rating=rating))
+    await db.commit()
+    return {"status": "success", "movie_id": movie_id, "rating": rating}

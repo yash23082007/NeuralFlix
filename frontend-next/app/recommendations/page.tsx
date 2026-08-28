@@ -48,10 +48,7 @@ function RecommendationsContent() {
     if (user?.id) {
       setUserId(user.id);
     } else {
-      const queryUserId = searchParams.get("user_id");
-      if (queryUserId) {
-        setUserId(queryUserId);
-      } else {
+      {
         setLoading(false);
         setProfileLoading(false);
       }
@@ -67,7 +64,7 @@ function RecommendationsContent() {
       }
       setProfileLoading(true);
       try {
-        const res = await authFetch(`${API}/api/v1/users/${userId}/profile`);
+        const res = await authFetch(`${API}/api/v1/users/me/profile`);
         if (res.ok) {
           const data = await res.json();
           if (data.profile) setTasteProfile(data.profile);
@@ -92,7 +89,7 @@ function RecommendationsContent() {
         if (selectedLanguage) params.set("language", selectedLanguage);
         params.set("sort", sortBy);
 
-        const recsRes = await authFetch(`${API}/api/v1/recommendations/user/${userId}?` + params);
+        const recsRes = await authFetch(`${API}/api/v1/recommendations/feed?` + params);
         if (recsRes.ok) {
           const recsData = await recsRes.json();
           const movies = (recsData.recommendations || []).map((m: any) => ({

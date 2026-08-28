@@ -122,6 +122,7 @@ from app.routers.feedback import router as feedback_router
 from app.routers.home import router as home_router
 from app.routers.search import router as search_router
 from app.routers.ml import router as ml_router
+from app.routers.interactions import router as interactions_router
 
 app.include_router(health_router)
 app.include_router(movies_router)
@@ -134,6 +135,7 @@ app.include_router(feedback_router)
 app.include_router(home_router)
 app.include_router(search_router)
 app.include_router(ml_router)
+app.include_router(interactions_router)
 
 
 # ── Root ──────────────────────────────────────────────────────

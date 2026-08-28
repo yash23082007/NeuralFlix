@@ -19,7 +19,11 @@ async def get_recommendations_for_user(
     db: AsyncSession,
     user_id: str,
     taste: TasteControl,
-    limit: int = 10
+    limit: int = 10,
+    mode: str = "for_you",
+    genres: list[str] | None = None,
+    language: str | None = None,
+    mood: str | None = None,
 ) -> List[dict]:
     """Get personalized recommendations based on TasteControl sliders."""
     
@@ -39,8 +43,22 @@ async def get_recommendations_for_user(
     for movie in all_movies:
         if movie.id in excluded_movie_ids:
             continue
+        movie_genres = set(movie.genres or [])
+        if genres and not movie_genres.intersection(genres):
+            continue
+        if language and (movie.language or "").lower() != language.lower():
+            continue
+        if mood:
+            mood_genres = {"intense": {"Action", "Thriller"}, "chill": {"Comedy", "Romance"},
+                           "scary": {"Horror", "Thriller"}, "thoughtful": {"Drama", "Mystery"}}.get(mood.lower())
+            if mood_genres and not movie_genres.intersection(mood_genres):
+                continue
             
         score = _calculate_score(movie, taste)
+        if mode == "hidden_gems":
+            score += max(0, 70 - min(movie.popularity_score or 0, 70)) * 0.25
+        elif mode == "outside_bubble" and movie.cinema_region not in {None, "US", "UK"}:
+            score += 10
         scored_movies.append((movie, score))
         
     # 4. Sort and return top N
@@ -54,6 +72,7 @@ async def get_recommendations_for_user(
         
         # Serialize with extra recommendation fields
         response.append({
+            "id": movie.id,
             "tmdb_id": movie.tmdb_id,
             "title": movie.title,
             "year": movie.year,
@@ -63,7 +82,7 @@ async def get_recommendations_for_user(
             "genres": movie.genres or [],
             "language": movie.language,
             "cinema_region": movie.cinema_region,
-            "rec_score": round(score, 2),
+            "rec_score": round(score / 100, 4),
             "explanation": explanation
         })
         

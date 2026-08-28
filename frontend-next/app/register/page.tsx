@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, UserPlus, Film, Sparkles, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
-import GoogleLogin from "../../components/GoogleLogin";
-import GithubLogin from "../../components/GithubLogin";
 
 interface CollageMovie {
   tmdb_id: number;
@@ -80,8 +78,8 @@ export default function RegisterPage() {
       setError("Passwords do not match");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8 || !/[^A-Za-z0-9]/.test(password)) {
+      setError("Password must be at least 8 characters and include a symbol");
       return;
     }
 
@@ -92,7 +90,13 @@ export default function RegisterPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          credentials: "include",
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            username: (email.split("@")[0] || "user").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 50),
+          }),
         }
       );
       if (!res.ok) {
@@ -296,17 +300,6 @@ export default function RegisterPage() {
               {loading ? "Creating Profile..." : "Create Account"}
             </button>
           </form>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-[var(--border-default)]"></div>
-            <span className="flex-shrink mx-4 text-[var(--text-tertiary)] text-xs font-mono uppercase">Or connect via</span>
-            <div className="flex-grow border-t border-[var(--border-default)]"></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <GoogleLogin />
-            <GithubLogin />
-          </div>
 
           <p className="text-center text-xs text-[var(--text-secondary)]">
             Already have an account?{" "}

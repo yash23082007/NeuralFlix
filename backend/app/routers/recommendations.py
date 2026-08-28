@@ -3,7 +3,7 @@ NeuralFlix — Recommendations Router
 Full hybrid recommendation endpoints with Taste Constellation scoring and XAI attribution.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,11 @@ router = APIRouter(prefix="/api/v1/recommendations", tags=["Recommendations"])
 
 @router.get("/feed")
 async def get_feed(
+    top_k: int = Query(20, ge=1, le=100),
+    mode: str = Query("for_you"),
+    genres: Optional[str] = Query(None),
+    mood: Optional[str] = Query(None),
+    language: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -30,8 +35,10 @@ async def get_feed(
     result = await db.execute(select(TasteControl).where(TasteControl.user_id == current_user.id))
     taste = result.scalar_one_or_none() or TasteControl(user_id=current_user.id)
     
-    recommendations = await get_recommendations_for_user(db, current_user.id, taste)
-    return {"recommendations": recommendations}
+    recommendations = await get_recommendations_for_user(db, current_user.id, taste, limit=top_k,
+        mode=mode, genres=[g.strip() for g in genres.split(",")] if genres else None,
+        mood=mood, language=language)
+    return {"recommendations": recommendations, "served_by": "deterministic-v0", "mode": mode}
 
 
 @router.get("/user/{user_id}")
@@ -43,10 +50,13 @@ async def get_user_recommendations(
     mood: Optional[str] = Query(None),
     language: Optional[str] = Query(None),
     sort: str = Query("score"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get personalized recommendations tailored to user taste coordinates with filters."""
-    result = await db.execute(select(TasteControl).where(TasteControl.user_id == user_id))
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own recommendations")
+    result = await db.execute(select(TasteControl).where(TasteControl.user_id == current_user.id))
     taste = result.scalar_one_or_none() or TasteControl(user_id=user_id)
     
     # 1. Fetch all movies
@@ -212,8 +222,7 @@ async def explain_recommendation(
         "reasons": reasons,
         "rankingVersion": "4.0-DeterministicTaste",
         "catalogFreshness": {
-            "updatedAt": datetime.now(timezone.utc).isoformat(),
-            "ageHours": 1
+            "updatedAt": datetime.now(timezone.utc).isoformat()
         }
     }
 
@@ -221,12 +230,12 @@ async def explain_recommendation(
 @router.post("/feedback")
 async def submit_feedback(
     movie_id: int,
-    action: str = Query("like"),  # 'like', 'dislike', 'watchlist'
-    current_user_id: Optional[str] = Query(None),
+    action: Literal["like", "dislike", "watchlist"] = Query("like"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Submit user feedback for recommendation adjustments."""
-    uid = current_user_id or "anonymous"
+    uid = current_user.id
     
     result = await db.execute(
         select(RecommendationFeedback)

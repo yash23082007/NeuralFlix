@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { authFetch } from '../lib/auth'
 
 interface WatchEventPayload {
-  user_id: string | number
   movie_id: string | number
   metadata?: Record<string, unknown>
 }
 
 interface RatingPayload {
-  user_id: string | number
   movie_id: string | number
   rating: number
   metadata?: Record<string, unknown>
@@ -32,15 +31,10 @@ export function useWatchEvent(): UseWatchEventResult {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/events/watch', {
+      const res = await authFetch('/api/v1/interactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: String(payload.user_id),
-          item_id: String(payload.movie_id),
-          event_type: 'watch',
-          metadata: payload.metadata || {},
-        }),
+        body: JSON.stringify([{ movie_id: Number(payload.movie_id), event: 'watch' }]),
       })
       return res.ok
     } catch (err) {
@@ -55,16 +49,9 @@ export function useWatchEvent(): UseWatchEventResult {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/events/rate', {
+      const res = await authFetch(`/api/v1/users/me/ratings/${payload.movie_id}?rating=${payload.rating}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: String(payload.user_id),
-          item_id: String(payload.movie_id),
-          event_type: 'rating',
-          rating: payload.rating,
-          metadata: payload.metadata || {},
-        }),
       })
       return res.ok
     } catch (err) {
@@ -79,14 +66,10 @@ export function useWatchEvent(): UseWatchEventResult {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/events/search', {
+      const res = await authFetch('/api/v1/interactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: String(userId),
-          query,
-          event_type: 'search',
-        }),
+        body: JSON.stringify([]),
       })
       return res.ok
     } catch (err) {
@@ -101,15 +84,10 @@ export function useWatchEvent(): UseWatchEventResult {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/events/click', {
+      const res = await authFetch('/api/v1/interactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: String(userId),
-          item_id: String(movieId),
-          event_type: 'click',
-          metadata: { page },
-        }),
+        body: JSON.stringify([{ movie_id: Number(movieId), event: 'click', context: page }]),
       })
       return res.ok
     } catch (err) {

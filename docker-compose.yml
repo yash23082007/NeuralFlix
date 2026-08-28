@@ -1,48 +1,26 @@
-version: '3.9'
-
 services:
   api:
     build: ./backend
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models    # persist trained model files
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      - NEURALFLIX_DEMO_MODE=false
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - ENVIRONMENT=production
+      - COOKIE_SECURE=true
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     depends_on:
       - redis
       - db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
       interval: 30s
       retries: 3
-
-  worker:
-    build: ./backend
-    command: celery -A tasks.celery_app worker --loglevel=info
-    volumes:
-      - ./models:/app/models
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/neuralflix}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - NEURALFLIX_DEMO_MODE=false
-    depends_on:
-      - redis
-      - db
-    restart: unless-stopped
-
-  beat:
-    build: ./backend
-    command: celery -A tasks.celery_app beat --loglevel=info
-    depends_on:
-      - redis
-    restart: unless-stopped
 
   frontend:
     build: ./frontend-next
@@ -79,23 +57,6 @@ services:
       interval: 10s
       retries: 5
 
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-
 volumes:
   redis_data:
   pgdata:
-  grafana_data:

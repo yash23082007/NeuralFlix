@@ -51,13 +51,11 @@ export default function ProfilePage() {
       if (!currentUser) return;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       
-      const [profileRes, historyRes, statsRes, watchlistRes, favoritesRes, ratingsRes] = await Promise.all([
-        authFetch(`${API}/api/v1/users/${currentUser.id}/profile`),
-        authFetch(`${API}/api/v1/users/${currentUser.id}/history`),
-        authFetch(`${API}/api/v1/users/${currentUser.id}/stats`),
-        authFetch(`${API}/api/v1/users/${currentUser.id}/watchlist?limit=50`),
-        authFetch(`${API}/api/v1/users/${currentUser.id}/favorites`),
-        authFetch(`${API}/api/v1/users/${currentUser.id}/ratings`)
+      const [profileRes, historyRes, statsRes, watchlistRes] = await Promise.all([
+        authFetch(`${API}/api/v1/users/me/profile`),
+        authFetch(`${API}/api/v1/users/me/history`),
+        authFetch(`${API}/api/v1/users/me/stats`),
+        authFetch(`${API}/api/v1/users/me/watchlist`),
       ]);
 
       if (profileRes.ok) {
@@ -74,15 +72,7 @@ export default function ProfilePage() {
       }
       if (watchlistRes.ok) {
         const data = await watchlistRes.json();
-        setWatchlist(data.results || []);
-      }
-      if (favoritesRes.ok) {
-        const data = await favoritesRes.json();
-        setFavorites(data.results || []);
-      }
-      if (ratingsRes.ok) {
-        const data = await ratingsRes.json();
-        setUserRatings(data.ratings || {});
+        setWatchlist(data.watchlist || data.results || []);
       }
     } catch (err) {
       console.error("Profile fetch error:", err);
@@ -96,7 +86,7 @@ export default function ProfilePage() {
     setSettingsMessage("");
     try {
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await authFetch(`${API}/api/v1/auth/me`, {
+      const res = await authFetch(`${API}/api/v1/users/me`, {
         method: "PUT",
         body: JSON.stringify({
           name: editName,
@@ -121,13 +111,13 @@ export default function ProfilePage() {
   const handleRemoveFromWatchlist = async (movieId: string) => {
     try {
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await authFetch(`${API}/api/v1/users/${user.id}/watchlist/${movieId}`, {
+      const res = await authFetch(`${API}/api/v1/users/me/watchlist/${movieId}`, {
         method: "DELETE"
       });
       if (res.ok) {
         setWatchlist((prev) => prev.filter((m) => String(m.tmdb_id) !== String(movieId)));
         // Refresh stats
-        const statsRes = await authFetch(`${API}/api/v1/users/${user.id}/stats`);
+        const statsRes = await authFetch(`${API}/api/v1/users/me/stats`);
         if (statsRes.ok) setStats(await statsRes.json());
       }
     } catch (err) {
@@ -136,17 +126,7 @@ export default function ProfilePage() {
   };
 
   const handleToggleFavorite = async (movieId: string) => {
-    try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await authFetch(`${API}/api/v1/users/${user.id}/favorites/${movieId}`, {
-        method: "POST"
-      });
-      if (res.ok) {
-        setFavorites((prev) => prev.filter((m) => String(m.tmdb_id) !== String(movieId)));
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    setFavorites((prev) => prev.filter((m) => String(m.tmdb_id) !== String(movieId)));
   };
 
   // Compute ratings distribution

@@ -3,7 +3,7 @@ NeuralFlix — Auth Endpoints
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -26,13 +26,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Password exceeds bcrypt's 72-byte limit")
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
+    expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 

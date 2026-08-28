@@ -5,7 +5,6 @@ import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { CommandPalette } from "../components/CommandPalette";
 import Providers from "../components/Providers";
-import KeepAlive from "../components/KeepAlive";
 
 export const metadata: Metadata = {
   title: {
@@ -93,7 +92,6 @@ export default function RootLayout({
             <div className="app-shell relative min-h-screen flex flex-col">
               <Navbar />
               <CommandPalette />
-              <KeepAlive />
 
               <main className="flex-grow z-10 relative">
                 {children}

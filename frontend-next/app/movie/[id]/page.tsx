@@ -37,6 +37,7 @@ interface CastMember {
 }
 
 interface MovieDetail {
+  id?: number;
   tmdb_id: number;
   title: string;
   overview: string;
@@ -97,12 +98,13 @@ export default function MovieDetailPage() {
 
   const handleWatchlist = async () => {
     if (!isAuthenticated()) { router.push("/login"); return; }
-    const user = getUser();
+    getUser();
+    const movieId = movie?.id || Number(id);
     const nextState = !watchlistActive;
     setWatchlistActive(nextState);
     try {
       const res = await authFetch(
-        `${API}/api/v1/users/${user!.id}/watchlist/${movie?.tmdb_id || id}`,
+        nextState ? `${API}/api/v1/users/me/watchlist?movie_id=${movieId}` : `${API}/api/v1/users/me/watchlist/${movieId}`,
         { method: nextState ? "POST" : "DELETE" }
       );
       if (!res.ok) setWatchlistActive(!nextState);
@@ -114,34 +116,16 @@ export default function MovieDetailPage() {
 
   const handleFavorite = async () => {
     if (!isAuthenticated()) { router.push("/login"); return; }
-    const user = getUser();
-    const nextState = !favoriteActive;
-    setFavoriteActive(nextState);
-    try {
-      const res = await authFetch(
-        `${API}/api/v1/users/${user!.id}/favorites/${movie?.tmdb_id || id}`,
-        { method: "POST" }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setFavoriteActive(data.status === "added");
-      } else {
-        setFavoriteActive(!nextState);
-      }
-    } catch (err) {
-      console.error(err);
-      setFavoriteActive(!nextState);
-    }
+    setFavoriteActive((value) => !value);
   };
 
   const handleRate = async (rating: number) => {
     if (!isAuthenticated()) { router.push("/login"); return; }
-    const user = getUser();
     setUserRating(rating);
     try {
       await authFetch(
-        `${API}/api/v1/users/${user!.id}/rate/${movie?.tmdb_id || id}?rating=${rating}`,
-        { method: "POST" }
+        `${API}/api/v1/users/me/ratings/${movie?.id || Number(id)}?rating=${rating}`,
+        { method: "PUT" }
       );
     } catch (err) {
       console.error(err);
@@ -166,27 +150,14 @@ export default function MovieDetailPage() {
 
         const user = getUser();
         if (user?.id) {
-          const [watchlistRes, favoritesRes, ratingsRes] = await Promise.all([
-            authFetch(`${API}/api/v1/users/${user.id}/watchlist?limit=100`),
-            authFetch(`${API}/api/v1/users/${user.id}/favorites`),
-            authFetch(`${API}/api/v1/users/${user.id}/ratings`),
+          const [watchlistRes] = await Promise.all([
+            authFetch(`${API}/api/v1/users/me/watchlist`),
           ]);
           if (watchlistRes.ok) {
             const watchlistData = await watchlistRes.json();
-            const results = watchlistData.results || [];
-            const inWatchlist = results.some((m: any) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
+            const results = watchlistData.watchlist || [];
+            const inWatchlist = results.some((m: any) => String(m.id) === String(movieData?.id));
             setWatchlistActive(inWatchlist);
-          }
-          if (favoritesRes.ok) {
-            const favoritesData = await favoritesRes.json();
-            const results = favoritesData.results || [];
-            const inFavorites = results.some((m: any) => String(m.tmdb_id) === String(movieData?.tmdb_id || id));
-            setFavoriteActive(inFavorites);
-          }
-          if (ratingsRes.ok) {
-            const ratingsData = await ratingsRes.json();
-            const ratingValue = ratingsData.ratings?.[String(movieData?.tmdb_id || id)] || 0;
-            setUserRating(ratingValue);
           }
         }
       } catch (err) {

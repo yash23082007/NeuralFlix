@@ -1,12 +1,9 @@
 """
-NeuralFlix — Health Endpoints
-
-/health/live   — always 200, proves the process is running
-/health/ready  — checks database, optional Redis, reports recommendation mode
+NeuralFlix — Health & Diagnostics Endpoints
+Supports /health/live, /health/ready, /health, /api/health, /api/info.
 """
 
 from fastapi import APIRouter
-
 from app.config import get_settings
 from app.database import ping_database
 
@@ -15,6 +12,7 @@ settings = get_settings()
 
 
 @router.get("/health/live")
+@router.get("/api/health/live")
 async def health_live():
     """Liveness probe — the process is running."""
     return {
@@ -25,6 +23,7 @@ async def health_live():
 
 
 @router.get("/health/ready")
+@router.get("/api/health/ready")
 async def health_ready():
     """Readiness probe — can we serve traffic?"""
     db_ok = await ping_database()
@@ -40,9 +39,20 @@ async def health_ready():
 
 
 @router.get("/health")
+@router.get("/api/health")
 async def health_combined():
     """Docker / generic health check."""
     return await health_ready()
+
+
+@router.get("/api/info")
+async def api_info():
+    """API info endpoint."""
+    return {
+        "name": "NeuralFlix — Explainable Global Cinema Atlas",
+        "version": "4.0.0",
+        "status": "healthy"
+    }
 
 
 async def _ping_redis() -> bool:

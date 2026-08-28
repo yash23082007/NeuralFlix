@@ -3,7 +3,7 @@ NeuralFlix — Movie Endpoints
 Full support for trending, top-rated, cinema regions, mood mapping, anime, and search.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_

@@ -10,25 +10,13 @@ import type { NextRequest } from 'next/server'
  * HttpOnly cookies ARE accessible to Next.js server middleware (they run server-side).
  */
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token')?.value
+  const token = request.cookies.get('nf_access_token')?.value
   
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // For admin routes: basic client-side UX guard.
-  // The real admin check happens server-side in the backend via require_admin dependency.
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      if (!payload.is_admin) {
-        return NextResponse.redirect(new URL('/', request.url))
-      }
-    } catch {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  }
-  
+  // Authorization is deliberately server-side. JWT claims are not a trusted UX gate.
   return NextResponse.next()
 }
 

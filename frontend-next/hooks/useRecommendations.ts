@@ -15,7 +15,7 @@ export function useRecommendations(topK: number = 20) {
         if (!res.ok) throw new Error('Failed to fetch onboarding');
         return res.json();
       }
-      const res = await fetch(`${API_URL}/api/v1/recommendations/user/${userId}?limit=${topK}`);
+      const res = await fetch(`${API_URL}/api/v1/recommendations/feed?top_k=${topK}`, { credentials: "include" });
       if (!res.ok) {
         throw new Error('Network response was not ok');
       }

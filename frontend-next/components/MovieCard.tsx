@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Film, Heart, Play, Plus, Star } from "lucide-react";
+import { Film, Heart, Play, Plus, Star, Check } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Movie } from "../lib/api";
+import { authFetch } from "../lib/auth";
 
 export type { Movie } from "../lib/api";
 
@@ -24,12 +25,28 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const langName = LANGUAGE_NAMES[movie.language || "en"] || movie.language?.toUpperCase();
   const score = movie.rec_score || movie.popularity_score;
   const scoreWidth = score != null && score <= 1 ? score * 100 : Math.min((score || 0) * 5, 100);
 
   const handleMouseLeave = () => {
     setIsHovered(false);
+  };
+
+  const addToWatchlist = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const movieId = movie.id ?? movie.tmdb_id;
+    if (!movieId || saving || saved) return;
+    setSaving(true);
+    try {
+      const response = await authFetch(`/api/v1/users/me/watchlist?movie_id=${movieId}`, { method: "POST" });
+      if (response.ok) setSaved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -102,10 +119,12 @@ export function MovieCard({ movie, priority = false }: { movie: Movie; priority?
             <motion.button
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
-              aria-label="Add to Watchlist"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20"
+              aria-label={saved ? "Saved to Watchlist" : "Add to Watchlist"}
+              onClick={addToWatchlist}
+              disabled={saving || saved}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-md border border-white/15 transition-all hover:bg-white/20 disabled:opacity-70"
             >
-              <Plus className="h-4 w-4" />
+              {saved ? <Check className="h-4 w-4 text-emerald-300" /> : <Plus className="h-4 w-4" />}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.15 }}
