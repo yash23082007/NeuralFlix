@@ -51,7 +51,7 @@ async def get_current_user(
             settings.jwt_secret, 
             algorithms=[settings.jwt_algorithm]
         )
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except PyJWTError:
@@ -80,7 +80,7 @@ async def get_current_user_optional(
             settings.jwt_secret, 
             algorithms=[settings.jwt_algorithm]
         )
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if not user_id:
             return None
         result = await db.execute(select(User).where(User.id == user_id))

@@ -49,7 +49,7 @@ def _get_headers() -> dict:
     return {"accept": "application/json"}
 
 
-def _get_params(extra: dict = None) -> dict:
+def _get_params(extra: Optional[dict] = None) -> dict:
     params = {}
     if not settings.tmdb_read_access_token and settings.tmdb_api_key:
         params["api_key"] = settings.tmdb_api_key
@@ -106,7 +106,7 @@ async def search_movies(query: str, page: int = 1) -> Dict[str, Any]:
     return result or {"results": [], "total_results": 0, "page": page}
 
 
-async def discover_movies(page: int = 1, sort_by: str = "popularity.desc", extra_params: dict = None) -> Dict[str, Any]:
+async def discover_movies(page: int = 1, sort_by: str = "popularity.desc", extra_params: Optional[dict] = None) -> Dict[str, Any]:
     """Fetch one deterministic TMDB discover page for ingestion jobs."""
     url = f"{TMDB_BASE_URL}/discover/movie"
     params_dict = {"page": page, "sort_by": sort_by, "include_adult": "false", "include_video": "false"}

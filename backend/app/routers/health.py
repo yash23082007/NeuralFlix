@@ -62,7 +62,7 @@ async def _ping_redis() -> bool:
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(settings.redis_url, socket_connect_timeout=1)
-        await r.ping()
+        await r.ping()  # type: ignore
         await r.aclose()
         return True
     except Exception:

@@ -188,14 +188,14 @@ async def get_by_region(region: str, page: int = Query(1, ge=1), limit: int = Qu
     offset = (page - 1) * limit
     result = await db.execute(
         select(Movie)
-        .where(where_clause)
+        .where(where_clause)  # type: ignore
         .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
         .offset(offset)
         .limit(limit)
     )
     paged = result.scalars().all()
     
-    count_res = await db.execute(select(func.count(Movie.id)).where(where_clause))
+    count_res = await db.execute(select(func.count(Movie.id)).where(where_clause))  # type: ignore
     total = count_res.scalar() or 0
     
     return {
@@ -225,10 +225,10 @@ async def get_region_stats(region: str, db: AsyncSession = Depends(get_db)):
         
     where_clause = or_(*conditions) if conditions else True
     
-    result = await db.execute(select(Movie).where(where_clause))
+    result = await db.execute(select(Movie).where(where_clause))  # type: ignore
     matched = result.scalars().all()
     
-    genre_counts = {}
+    genre_counts: dict[str, int] = {}
     for m in matched:
         for g in (m.genres or []):
             genre_counts[g] = genre_counts.get(g, 0) + 1

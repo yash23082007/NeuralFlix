@@ -68,7 +68,7 @@ def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str]:
         httponly=True,
         secure=settings.cookie_secure,
         domain=settings.cookie_domain,
-        samesite=settings.cookie_samesite,
+        samesite=settings.cookie_samesite,  # type: ignore
         max_age=15 * 60,
         path="/",
     )
@@ -80,7 +80,7 @@ def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str]:
         httponly=True,
         secure=settings.cookie_secure,
         domain=settings.cookie_domain,
-        samesite=settings.cookie_samesite,
+        samesite=settings.cookie_samesite,  # type: ignore
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1/auth",
     )
@@ -95,7 +95,7 @@ def clear_auth_cookies(response: Response) -> None:
         domain=settings.cookie_domain,
         secure=settings.cookie_secure,
         httponly=True,
-        samesite=settings.cookie_samesite,
+        samesite=settings.cookie_samesite,  # type: ignore
         path="/",
     )
     response.delete_cookie(
@@ -103,7 +103,7 @@ def clear_auth_cookies(response: Response) -> None:
         domain=settings.cookie_domain,
         secure=settings.cookie_secure,
         httponly=True,
-        samesite=settings.cookie_samesite,
+        samesite=settings.cookie_samesite,  # type: ignore
         path="/api/v1/auth",
     )
 

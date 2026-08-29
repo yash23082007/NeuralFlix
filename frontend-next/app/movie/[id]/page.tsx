@@ -22,8 +22,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MovieRow from "../../../components/MovieRow";
-import MultiRatingPanel from "../../../components/movie/MultiRatingPanel";
-import StreamingPanel from "../../../components/movie/StreamingPanel";
 import Loading from "./loading";
 import { getUser, authFetch, isAuthenticated } from "../../../lib/auth";
 
@@ -386,8 +384,18 @@ export default function MovieDetailPage() {
               </div>
             )}
 
-            {/* Multi-Source Ratings */}
-            <MultiRatingPanel tmdbId={movie.tmdb_id} imdbId={movie.imdb_id} mediaType={type} />
+            {/* TMDB Rating */}
+            {movie.rating > 0 && (
+              <div className="flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/40 px-4 py-3.5 backdrop-blur-sm max-w-fit">
+                <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+                <div>
+                  <div className="text-lg font-bold text-white">
+                    {movie.rating.toFixed(1)} <span className="text-xs text-[var(--text-tertiary)]">/ 10</span>
+                  </div>
+                  <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">TMDB Score</div>
+                </div>
+              </div>
+            )}
 
             {/* Tabs Controller */}
             <div className="border-b border-[var(--border-subtle)] flex gap-6">
@@ -436,8 +444,8 @@ export default function MovieDetailPage() {
                     </div>
 
                     <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 p-6 backdrop-blur-sm">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Where to Watch</h3>
-                      <StreamingPanel tmdbId={movie.tmdb_id} imdbId={movie.imdb_id} mediaType={type} />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Availability</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">Check local providers for streaming availability.</p>
                     </div>
                   </motion.div>
                 )}

@@ -150,7 +150,7 @@ async def get_taste_controls(
         await db.commit()
         await db.refresh(taste)
 
-    return TasteControlsResponse(
+    return TasteControlsResponse(  # type: ignore
         discovery=taste.discovery,
         global_taste=taste.global_taste,
         challenge=taste.challenge,
@@ -191,7 +191,7 @@ async def update_taste_controls(
 
     await db.commit()
     await db.refresh(taste)
-    return TasteControlsResponse(
+    return TasteControlsResponse(  # type: ignore
         discovery=taste.discovery,
         global_taste=taste.global_taste,
         challenge=taste.challenge,
@@ -247,19 +247,19 @@ async def get_user_profile(
             total_runtime += m.runtime
             valid_runtimes += 1
 
-    top_genres = sorted(genre_counts.items(), key=lambda x: -x[1])[:5]
-    top_decades = sorted(decade_counts.items(), key=lambda x: -x[1])[:3]
-    top_directors = sorted(director_counts.items(), key=lambda x: -x[1])[:3]
-    top_langs = sorted(lang_counts.items(), key=lambda x: -x[1])[:3]
+    top_genres = [list(x) for x in sorted(genre_counts.items(), key=lambda x: -x[1])[:5]]
+    top_decades = [list(x) for x in sorted(decade_counts.items(), key=lambda x: -x[1])[:3]]
+    top_directors = [list(x) for x in sorted(director_counts.items(), key=lambda x: -x[1])[:3]]
+    top_langs = [list(x) for x in sorted(lang_counts.items(), key=lambda x: -x[1])[:3]]
 
     avg_runtime = round(total_runtime / valid_runtimes, 1) if valid_runtimes else 115.0
 
     profile = TasteDNAProfile(
-        top_genres=top_genres or [("Drama", 5), ("Sci-Fi", 4)],
-        preferred_decades=top_decades or [("2010s", 5), ("2020s", 3)],
-        top_directors=top_directors or [("Christopher Nolan", 3)],
-        language_preferences=top_langs or [("en", 8)],
-        avg_runtime_preference=avg_runtime,
+        top_genres=top_genres or [("Drama", 5), ("Sci-Fi", 4)],  # type: ignore
+        preferred_decades=top_decades or [("2010s", 5), ("2020s", 3)],  # type: ignore
+        top_directors=top_directors or [("Christopher Nolan", 3)],  # type: ignore
+        language_preferences=top_langs or [("en", 8)],  # type: ignore
+        avg_runtime_preference=int(avg_runtime),
         rating_threshold=7.0
     )
 
@@ -278,7 +278,7 @@ async def get_watchlist(
         .order_by(WatchlistItem.added_at.desc())
     )
     movies = result.scalars().all()
-    return WatchlistResponse(watchlist=[_format_movie(m) for m in movies])
+    return WatchlistResponse(watchlist=[_format_movie(m) for m in movies])  # type: ignore
 
 
 @router.post("/me/watchlist")
@@ -335,11 +335,7 @@ async def get_history(
     )
     rows = result.all()
     history_items = [
-        HistoryItem(
-            movie=_format_movie(movie),
-            watched_at=event.created_at,
-            completed=event.completed
-        )
+        HistoryItem(movie=_format_movie(movie), watched_at=event.created_at, completed=event.completed)  # type: ignore
         for movie, event in rows
     ]
     return HistoryResponse(history=history_items)

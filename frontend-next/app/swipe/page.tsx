@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, X, Sparkles, RefreshCw } from "lucide-react";
-import { getTrendingAll, Movie } from "../../lib/api";
+import { getTrending, Movie } from "../../lib/api";
 
 export default function SwipePage() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -13,7 +13,7 @@ export default function SwipePage() {
   useEffect(() => {
     async function loadMovies() {
       try {
-        const data = await getTrendingAll();
+        const data = await getTrending();
         if (data && data.length > 0) {
           setMovies(data);
         }
@@ -32,7 +32,7 @@ export default function SwipePage() {
     const movie = movies[currentIndex];
     
     // In a real app, we would send this interaction to the backend via WebSocket
-    // to instantly update the user's ML Taste DNA embedding.
+    // to instantly update the user's recommendation profile.
     console.log(`Swiped ${direction} on: ${movie.title}`);
     
     setCurrentIndex((prev) => prev + 1);
@@ -50,8 +50,8 @@ export default function SwipePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--surface-primary)] text-[var(--text-primary)]">
         <Sparkles className="w-16 h-16 text-[var(--accent-warm)] mb-4" />
-        <h2 className="text-3xl font-bold mb-2">Taste DNA Updated</h2>
-        <p className="text-[var(--text-secondary)] text-center max-w-sm">You've rated all trending movies. Your recommendations are now hyper-personalized.</p>
+        <h2 className="text-3xl font-bold mb-2">Preferences Updated</h2>
+        <p className="text-[var(--text-secondary)] text-center max-w-sm">You've rated all trending movies. Your recommendations are now personalized.</p>
         <button 
           onClick={() => window.location.href = "/recommendations"}
           className="mt-8 px-8 py-3 rounded-full bg-[var(--accent-warm)] text-white font-bold hover:scale-105 transition-transform"
@@ -79,7 +79,7 @@ export default function SwipePage() {
         <div className="mb-8 text-center space-y-2">
           <div className="flex items-center justify-center gap-2 text-[var(--accent-warm)]">
             <Sparkles className="h-5 w-5" />
-            <span className="text-sm font-bold uppercase tracking-widest">Taste DNA Engine</span>
+            <span className="text-sm font-bold uppercase tracking-widest">Recommendation Engine</span>
           </div>
           <p className="text-[var(--text-secondary)] text-sm">Swipe right if you'd watch it, left if not.</p>
         </div>
