@@ -140,23 +140,30 @@ async def get_series(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le
 async def get_by_mood(mood: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=50), db: AsyncSession = Depends(get_db)):
     """Return movies aligned with affective mood filters."""
     mood_lower = mood.lower()
-    target_genres = set(MOOD_GENRE_MAP.get(mood_lower, ["Drama", "Action"]))
+    target_genres = MOOD_GENRE_MAP.get(mood_lower, ["Drama", "Action"])
     
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
+    # SQL pushdown for SQLite/Postgres: check if any target genre is in the genres JSON
+    # Simple cross-db approach for now: OR conditions on cast(genres, String).ilike
+    from sqlalchemy import cast, String
+    conditions = [cast(Movie.genres, String).ilike(f"%{g}%") for g in target_genres]
     
-    matched = []
-    for m in all_movies:
-        movie_genres = set(m.genres or [])
-        if movie_genres & target_genres:
-            matched.append(m)
-            
-    # Sort matched movies by rating
-    matched.sort(key=lambda x: (x.tmdb_rating or 0, x.popularity_score or 0), reverse=True)
     offset = (page - 1) * limit
-    paged = matched[offset : offset + limit]
+    result = await db.execute(
+        select(Movie)
+        .where(or_(*conditions))
+        .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
+        .offset(offset)
+        .limit(limit)
+    )
+    paged = result.scalars().all()
     
-    return {"results": [_format_movie(m) for m in paged], "mood": mood, "total": len(matched)}
+    # Note: total count requires a separate query or we can just return a large total
+    # For now, returning a static total or doing a count query
+    from sqlalchemy import select, func
+    count_res = await db.execute(select(func.count(Movie.id)).where(or_(*conditions)))
+    total = count_res.scalar()
+    
+    return {"results": [_format_movie(m) for m in paged], "mood": mood, "total": total}
 
 
 @router.get("/region/{region}")
@@ -165,32 +172,39 @@ async def get_by_region(region: str, page: int = Query(1, ge=1), limit: int = Qu
     region_key = region.lower()
     mapping = REGION_LANGUAGE_MAP.get(region_key)
     
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
+    from sqlalchemy import or_, select, func, desc, String, cast
     
-    matched = []
-    for m in all_movies:
-        m_region = (m.cinema_region or "").lower()
-        m_lang = (m.language or "").lower()
+    conditions = []
+    if mapping:
+        if mapping["regions"]:
+            conditions.append(cast(Movie.cinema_region, String).in_(mapping["regions"]))
+        if mapping["languages"]:
+            conditions.append(cast(Movie.language, String).in_(mapping["languages"]))
+    else:
+        conditions.append(cast(Movie.cinema_region, String).ilike(f"%{region_key}%"))
         
-        if mapping:
-            if m_region in mapping["regions"] or m_lang in mapping["languages"]:
-                matched.append(m)
-        elif region_key in m_region:
-            matched.append(m)
-            
-    matched.sort(key=lambda x: (x.tmdb_rating or 0, x.popularity_score or 0), reverse=True)
+    where_clause = or_(*conditions) if conditions else True
+    
     offset = (page - 1) * limit
-    paged = matched[offset : offset + limit]
+    result = await db.execute(
+        select(Movie)
+        .where(where_clause)
+        .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
+        .offset(offset)
+        .limit(limit)
+    )
+    paged = result.scalars().all()
+    
+    count_res = await db.execute(select(func.count(Movie.id)).where(where_clause))
+    total = count_res.scalar() or 0
     
     return {
         "results": [_format_movie(m) for m in paged],
         "region": region,
-        "total": len(matched),
+        "total": total,
         "page": page,
-        "total_pages": max(1, (len(matched) + limit - 1) // limit)
+        "total_pages": max(1, (total + limit - 1) // limit)
     }
-
 
 @router.get("/region/{region}/stats")
 async def get_region_stats(region: str, db: AsyncSession = Depends(get_db)):
@@ -198,21 +212,24 @@ async def get_region_stats(region: str, db: AsyncSession = Depends(get_db)):
     region_key = region.lower()
     mapping = REGION_LANGUAGE_MAP.get(region_key)
     
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
+    from sqlalchemy import or_, select, func, desc, String, cast
     
-    matched = []
-    genre_counts = {}
-    for m in all_movies:
-        m_region = (m.cinema_region or "").lower()
-        m_lang = (m.language or "").lower()
+    conditions = []
+    if mapping:
+        if mapping["regions"]:
+            conditions.append(cast(Movie.cinema_region, String).in_(mapping["regions"]))
+        if mapping["languages"]:
+            conditions.append(cast(Movie.language, String).in_(mapping["languages"]))
+    else:
+        conditions.append(cast(Movie.cinema_region, String).ilike(f"%{region_key}%"))
         
-        if mapping:
-            if m_region in mapping["regions"] or m_lang in mapping["languages"]:
-                matched.append(m)
-        elif region_key in m_region:
-            matched.append(m)
-            
+    where_clause = or_(*conditions) if conditions else True
+    
+    result = await db.execute(select(Movie).where(where_clause))
+    matched = result.scalars().all()
+    
+    genre_counts = {}
+    for m in matched:
         for g in (m.genres or []):
             genre_counts[g] = genre_counts.get(g, 0) + 1
             
@@ -226,21 +243,28 @@ async def get_region_stats(region: str, db: AsyncSession = Depends(get_db)):
         "top_genres": top_genres or ["Drama", "Action", "Thriller"]
     }
 
-
 @router.get("/genre/{genre}")
 async def get_by_genre(genre: str, page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=50), db: AsyncSession = Depends(get_db)):
     """Return movies by genre."""
     genre_lower = genre.lower()
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
     
-    matched = [m for m in all_movies if any(g.lower() == genre_lower for g in (m.genres or []))]
-    matched.sort(key=lambda x: (x.tmdb_rating or 0, x.popularity_score or 0), reverse=True)
+    from sqlalchemy import select, func, desc, String, cast
+    where_clause = cast(Movie.genres, String).ilike(f"%{genre_lower}%")
     
     offset = (page - 1) * limit
-    paged = matched[offset : offset + limit]
-    return {"results": [_format_movie(m) for m in paged], "genre": genre, "total": len(matched)}
-
+    result = await db.execute(
+        select(Movie)
+        .where(where_clause)
+        .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
+        .offset(offset)
+        .limit(limit)
+    )
+    paged = result.scalars().all()
+    
+    count_res = await db.execute(select(func.count(Movie.id)).where(where_clause))
+    total = count_res.scalar() or 0
+    
+    return {"results": [_format_movie(m) for m in paged], "genre": genre, "total": total}
 
 @router.get("/search", response_model=MovieSearchResult)
 @router.get("/search/", response_model=MovieSearchResult, include_in_schema=False)
@@ -252,24 +276,28 @@ async def search(
     """Search movies across local database with fallback to TMDB."""
     query_lower = query.lower()
     
-    # 1. Search in local database
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
+    from sqlalchemy import select, func, desc, String, cast, or_
     
-    local_matches = []
-    for m in all_movies:
-        if (
-            query_lower in (m.title or "").lower()
-            or query_lower in (m.director or "").lower()
-            or any(query_lower in c.lower() for c in (m.cast_members or []))
-            or any(query_lower in g.lower() for g in (m.genres or []))
-        ):
-            local_matches.append(_format_movie(m))
-            
-    if local_matches:
+    where_clause = or_(
+        cast(Movie.title, String).ilike(f"%{query_lower}%"),
+        cast(Movie.director, String).ilike(f"%{query_lower}%"),
+        cast(Movie.cast_members, String).ilike(f"%{query_lower}%"),
+        cast(Movie.genres, String).ilike(f"%{query_lower}%")
+    )
+    
+    result = await db.execute(
+        select(Movie)
+        .where(where_clause)
+        .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
+        .limit(20)
+    )
+    local_matches = result.scalars().all()
+    
+    formatted_matches = [_format_movie(m) for m in local_matches]
+    if formatted_matches:
         return {
-            "results": local_matches[:20],
-            "total": len(local_matches)
+            "results": formatted_matches,
+            "total": len(formatted_matches)
         }
         
     # 2. Search TMDB if no local matches
@@ -291,7 +319,6 @@ async def search(
         return {"results": results, "total": tmdb_result.get("total_results", 0)}
     except Exception:
         return {"results": [], "total": 0}
-
 
 @router.get("/{tmdb_id}")
 async def get_movie(tmdb_id: int, db: AsyncSession = Depends(get_db)):

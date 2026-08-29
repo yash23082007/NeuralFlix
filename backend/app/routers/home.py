@@ -17,38 +17,39 @@ router = APIRouter(prefix="/api/v1/home", tags=["Home"])
 @router.get("")
 async def get_home(db: AsyncSession = Depends(get_db)):
     """Return aggregated home page data with trending, top rated, and regional cinema clusters."""
-    result = await db.execute(select(Movie))
-    all_movies = result.scalars().all()
+    from sqlalchemy import select, desc, or_, cast, String
+    from app.routers.movies import REGION_LANGUAGE_MAP
     
-    if not all_movies:
-        return {
-            "featured": {},
-            "trending": [],
-            "topRated": [],
-            "regions": {},
-            "coldStartCollections": []
-        }
-        
-    formatted = [_format_movie(m) for m in all_movies]
+    # We can fetch top overall via SQL
+    trend_res = await db.execute(select(Movie).order_by(desc(Movie.popularity_score)).limit(15))
+    trending = [_format_movie(m) for m in trend_res.scalars().all()]
     
-    # Trending sorted by popularity
-    trending = sorted(formatted, key=lambda x: x.get("popularity_score", 0), reverse=True)[:15]
+    top_res = await db.execute(select(Movie).order_by(desc(Movie.tmdb_rating)).limit(15))
+    top_rated = [_format_movie(m) for m in top_res.scalars().all()]
     
-    # Top Rated sorted by rating
-    top_rated = sorted(formatted, key=lambda x: x.get("rating", 0), reverse=True)[:15]
+    featured = trending[0] if trending else {}
     
-    # Featured backdrop film
-    featured = trending[0] if trending else (formatted[0] if formatted else {})
-    
-    # Regional clusters
     regions = {}
     for r_key in ["korean", "indian", "japanese", "french", "spanish"]:
-        r_movies = [m for m in formatted if (m.get("cinema_region") or "").lower() == r_key or (m.get("language") or "") == r_key[:2]]
-        if r_movies:
-            regions[r_key] = r_movies[:10]
+        mapping = REGION_LANGUAGE_MAP.get(r_key)
+        conditions = []
+        if mapping:
+            if mapping["regions"]:
+                conditions.append(cast(Movie.cinema_region, String).in_(mapping["regions"]))
+            if mapping["languages"]:
+                conditions.append(cast(Movie.language, String).in_(mapping["languages"]))
+        else:
+            conditions.append(cast(Movie.cinema_region, String).ilike(f"%{r_key}%"))
             
-    # Curated Hidden Gems
-    hidden_gems = [m for m in formatted if m.get("popularity_score", 0) < 70 and m.get("rating", 0) >= 7.8][:10]
+        where_clause = or_(*conditions) if conditions else True
+        r_res = await db.execute(select(Movie).where(where_clause).order_by(desc(Movie.popularity_score)).limit(10))
+        r_movies = [_format_movie(m) for m in r_res.scalars().all()]
+        if r_movies:
+            regions[r_key] = r_movies
+            
+    # Hidden Gems: pop < 70, rating >= 7.8
+    gem_res = await db.execute(select(Movie).where(Movie.popularity_score < 70, Movie.tmdb_rating >= 7.8).limit(10))
+    hidden_gems = [_format_movie(m) for m in gem_res.scalars().all()]
     
     return {
         "featured": featured,
@@ -57,3 +58,4 @@ async def get_home(db: AsyncSession = Depends(get_db)):
         "regions": regions,
         "coldStartCollections": hidden_gems
     }
+

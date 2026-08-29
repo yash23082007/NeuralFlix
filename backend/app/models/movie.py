@@ -77,8 +77,8 @@ class Movie(Base):
     )
 
     # Relationships
-    ratings = relationship("Rating", back_populates="movie", lazy="selectin")
-    availability = relationship("MovieAvailability", back_populates="movie", lazy="selectin")
+    ratings = relationship("Rating", back_populates="movie", lazy="raise")
+    availability = relationship("MovieAvailability", back_populates="movie", lazy="raise")
 
     def __repr__(self) -> str:
         return f"<Movie id={self.id} tmdb_id={self.tmdb_id} title={self.title!r}>"
