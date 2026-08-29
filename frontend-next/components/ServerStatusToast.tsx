@@ -88,7 +88,7 @@ export default function ServerStatusToast() {
               {status === "waking" && (
                 <>
                   <span className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
-                    Waking up AI Engine
+                    Waking up Recommendation Engine
                   </span>
                   <span className="text-xs text-[var(--text-secondary)]">
                     Free tier server takes ~50s to start.

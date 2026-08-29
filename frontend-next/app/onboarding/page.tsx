@@ -123,7 +123,7 @@ export default function OnboardingPage() {
         }),
       });
 
-      // Prepare local TasteDNA mock structure for preview
+      // Prepare local Taste Profile structure for preview
       setTempProfile({
         top_genres: selectedGenres.map((g, idx) => [g, 10 - idx]),
         preferred_decades: [["2020", 8], ["2010", 6]],
@@ -198,16 +198,16 @@ export default function OnboardingPage() {
                 <Sparkles className="h-10 w-10 animate-pulse" />
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-playfair">
-                Sequence Your Taste DNA
+                Configure Your Preferences
               </h1>
               <p className="text-zinc-400 text-base leading-relaxed">
-                NeuralFlix calibrates recommendations based on vector mappings of your cinematic profile. Answer a few choices to bootstrap your neural model.
+                Configure your account preferences to receive personalized movie recommendations.
               </p>
               <button
                 onClick={() => setStep(2)}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] px-8 py-4 text-xs font-black text-black shadow-lg hover:brightness-110 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer uppercase tracking-wider font-mono"
               >
-                Let&apos;s build your Taste DNA
+                Let&apos;s get started
                 <ChevronRight className="h-4 w-4" />
               </button>
             </motion.div>
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
               <div className="text-center max-w-xl mx-auto space-y-2">
                 <h2 className="text-3xl font-extrabold tracking-tight font-playfair text-white">Select Favorite Genres</h2>
                 <p className="text-sm text-zinc-400">
-                  Pick at least 3 genres. Your selection creates your primary coordinate embeddings.
+                  Pick at least 3 genres to customize your recommendations.
                 </p>
               </div>
 
@@ -293,7 +293,7 @@ export default function OnboardingPage() {
               <div className="text-center max-w-xl mx-auto space-y-2">
                 <h2 className="text-3xl font-extrabold tracking-tight font-playfair text-white">Select films you love</h2>
                 <p className="text-sm text-zinc-400">
-                  Pick 5+ movies. We query these against collaborative filters to calibrate taste profiles.
+                  Pick 5+ movies. We use these to find similar recommendations for you.
                 </p>
               </div>
 
@@ -301,7 +301,7 @@ export default function OnboardingPage() {
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-warm)]" />
                   <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
-                    Searching vector databases...
+                    Searching movies...
                   </p>
                 </div>
               ) : movies.length === 0 ? (
@@ -439,12 +439,12 @@ export default function OnboardingPage() {
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Sequencing...
+                      Saving...
                     </>
                   ) : (
                     <>
                       <Heart className="h-4 w-4" />
-                      Initialize Engine
+                      Complete Setup
                     </>
                   )}
                 </button>
@@ -465,13 +465,13 @@ export default function OnboardingPage() {
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-black animate-bounce">
                   <Check className="h-6 w-6" />
                 </div>
-                <h2 className="text-4xl font-extrabold font-playfair text-white tracking-tight">Your neural engine is ready</h2>
+                <h2 className="text-4xl font-extrabold font-playfair text-white tracking-tight">Setup Complete</h2>
                 <p className="text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
-                  We mapped your film profile into our vector space. An overview of your calibrated Taste DNA is displayed below.
+                  Your movie preferences have been saved. An overview of your Taste Profile is displayed below.
                 </p>
               </div>
 
-              {/* Render local mockup TasteDNA */}
+              {/* Render local Taste Profile preview */}
               <div className="border border-zinc-900 rounded-3xl p-6 bg-zinc-950/40 backdrop-blur-md">
                 <TasteDNA profile={tempProfile} loading={false} />
               </div>

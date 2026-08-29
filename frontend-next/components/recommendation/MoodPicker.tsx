@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 const SIGNALS = [
   { 
     id: "feel_good", 
-    label: "Feel-Good Vibe", 
+    label: "Feel-Good Mood", 
     icon: Activity, 
     tone: "text-cyan-400 border-cyan-400/20 hover:border-cyan-400/50 hover:bg-cyan-950/10",
     glowColor: "rgba(34, 211, 238, 0.15)"
@@ -28,7 +28,7 @@ const SIGNALS = [
   },
   { 
     id: "desi_vibes", 
-    label: "Desi Cinema Vibe", 
+    label: "Desi Cinema", 
     icon: Compass, 
     tone: "text-orange-400 border-orange-400/20 hover:border-orange-400/50 hover:bg-orange-950/10",
     glowColor: "rgba(251, 146, 60, 0.15)"
