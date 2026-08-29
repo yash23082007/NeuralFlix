@@ -95,7 +95,7 @@ export default function RegisterPage() {
             name,
             email,
             password,
-            username: (email.split("@")[0] || "user").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 50),
+            username: ((email.split("@")[0] || "user").replace(/[^A-Za-z0-9_.-]/g, "") + "user").slice(0, 50),
           }),
         }
       );

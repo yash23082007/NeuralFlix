@@ -52,7 +52,7 @@ async def get_current_user(
             algorithms=[settings.jwt_algorithm]
         )
         user_id = payload.get("sub")
-        if user_id is None:
+        if user_id is None or payload.get("type") != "access":
             raise credentials_exception
     except PyJWTError:
         raise credentials_exception
@@ -81,7 +81,7 @@ async def get_current_user_optional(
             algorithms=[settings.jwt_algorithm]
         )
         user_id = payload.get("sub")
-        if not user_id:
+        if not user_id or payload.get("type") != "access":
             return None
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()

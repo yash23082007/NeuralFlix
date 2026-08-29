@@ -13,6 +13,8 @@ import jwt
 from jwt.exceptions import PyJWTError
 import bcrypt
 
+from app.main import limiter
+
 from app.config import get_settings
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -48,18 +50,18 @@ def create_token(data: dict, expires_delta: timedelta, token_type: str = "access
     return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str]:
+def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str, str]:
     """Generate and set access and refresh cookies with proper expiry and paths."""
     access_token = create_token(
         data={"sub": user_id},
         expires_delta=timedelta(minutes=15),
         token_type="access",
     )
-    refresh_token = create_token(
-        data={"sub": user_id},
-        expires_delta=timedelta(days=settings.refresh_token_expire_days),
-        token_type="refresh",
-    )
+    refresh_jti = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=settings.refresh_token_expire_days)
+    to_encode = {"sub": user_id, "exp": expire, "iat": now, "jti": refresh_jti, "type": "refresh"}
+    refresh_token = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
     # 15-minute access token cookie
     response.set_cookie(
@@ -85,7 +87,7 @@ def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str]:
         path="/api/v1/auth",
     )
 
-    return access_token, refresh_token
+    return access_token, refresh_token, refresh_jti
 
 
 def clear_auth_cookies(response: Response) -> None:
@@ -109,7 +111,8 @@ def clear_auth_cookies(response: Response) -> None:
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_in: UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def register(request: Request, user_in: UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
     """Register a new user and set HttpOnly session cookies."""
     # Check email exists
     result = await db.execute(select(User).where(User.email == user_in.email))
@@ -140,27 +143,41 @@ async def register(user_in: UserCreate, response: Response, db: AsyncSession = D
     await db.commit()
     await db.refresh(new_user)
 
-    set_auth_cookies(response, user_id)
+    access_token, refresh_token, refresh_jti = set_auth_cookies(response, user_id)
+    new_user.refresh_jti = refresh_jti
+    await db.commit()
+    
     return new_user
 
 
 @router.post("/login", response_model=UserResponse)
-async def login(user_in: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, user_in: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
     """Login with credentials and set HttpOnly session cookies."""
     result = await db.execute(select(User).where(User.email == user_in.email))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(user_in.password, user.hashed_password):
+    valid_pwd = False
+    if user:
+        try:
+            valid_pwd = verify_password(user_in.password, user.hashed_password)
+        except ValueError:
+            valid_pwd = False
+
+    if not user or not valid_pwd:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
 
-    set_auth_cookies(response, user.id)
+    access_token, refresh_token, refresh_jti = set_auth_cookies(response, user.id)
+    user.refresh_jti = refresh_jti
+    await db.commit()
     return user
 
 
 @router.post("/refresh")
+@limiter.limit("30/minute")
 async def refresh_session(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Rotate session tokens using valid HttpOnly refresh cookie."""
     refresh_token = request.cookies.get("nf_refresh_token")
@@ -206,7 +223,15 @@ async def refresh_session(request: Request, response: Response, db: AsyncSession
             detail="User not found",
         )
 
-    set_auth_cookies(response, user.id)
+    if user.refresh_jti != payload.get("jti"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked",
+        )
+
+    access_token, refresh_token, refresh_jti = set_auth_cookies(response, user.id)
+    user.refresh_jti = refresh_jti
+    await db.commit()
     return {"status": "success", "message": "Token refreshed successfully"}
 
 
