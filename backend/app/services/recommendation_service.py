@@ -30,6 +30,13 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     score = 30.0  # Base calibration
     components: List[Dict[str, Any]] = []
 
+    # Sliders safe resolution
+    s_disc = getattr(taste, "discovery", 50) if getattr(taste, "discovery", None) is not None else 50
+    s_glob = getattr(taste, "global_taste", 50) if getattr(taste, "global_taste", None) is not None else 50
+    s_chal = getattr(taste, "challenge", 50) if getattr(taste, "challenge", None) is not None else 50
+    s_pace = getattr(taste, "pace", 50) if getattr(taste, "pace", None) is not None else 50
+    s_gems = getattr(taste, "hidden_gems", 50) if getattr(taste, "hidden_gems", None) is not None else 50
+
     # 1. Baseline Quality
     rating = movie.tmdb_rating or 7.0
     quality_delta = round((rating / 10.0) * 20.0, 1)
@@ -43,8 +50,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     # 2. Hidden Gems Axis (0-100)
     pop = min(movie.popularity_score or 0.0, 100.0)
     votes = movie.tmdb_votes or 0
-    if taste.hidden_gems >= 55:
-        gem_bonus = round(((100.0 - pop) / 100.0) * ((taste.hidden_gems - 50) / 50.0) * 20.0, 1)
+    if s_gems >= 55:
+        gem_bonus = round(((100.0 - pop) / 100.0) * ((s_gems - 50) / 50.0) * 20.0, 1)
         if votes < 5000 and rating >= 7.5:
             gem_bonus += 5.0
         score += gem_bonus
@@ -54,8 +61,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
                 "delta": gem_bonus,
                 "because": f"High rating ({rating:.1f}) with indie discovery profile (pop: {pop:.0f}/100)"
             })
-    elif taste.hidden_gems <= 45:
-        pop_bonus = round((pop / 100.0) * ((50 - taste.hidden_gems) / 50.0) * 15.0, 1)
+    elif s_gems <= 45:
+        pop_bonus = round((pop / 100.0) * ((50 - s_gems) / 50.0) * 15.0, 1)
         score += pop_bonus
         if pop_bonus > 3.0:
             components.append({
@@ -67,8 +74,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     # 3. Pace Axis (0-100)
     genres = set(movie.genres or [])
     runtime = movie.runtime or 110
-    if taste.pace > 55:
-        pace_weight = (taste.pace - 50) / 50.0
+    if s_pace > 55:
+        pace_weight = (s_pace - 50) / 50.0
         pace_delta = 0.0
         if "Action" in genres or "Thriller" in genres or "Adventure" in genres:
             pace_delta += round(15.0 * pace_weight, 1)
@@ -83,8 +90,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
                 "delta": pace_delta,
                 "because": "Calibrated for fast-paced, high-momentum storytelling" if pace_delta > 0 else "Slower pacing than your setting"
             })
-    elif taste.pace < 45:
-        pace_weight = (50 - taste.pace) / 50.0
+    elif s_pace < 45:
+        pace_weight = (50 - s_pace) / 50.0
         pace_delta = 0.0
         if "Drama" in genres or "Romance" in genres or "Mystery" in genres:
             pace_delta += round(15.0 * pace_weight, 1)
@@ -104,8 +111,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     region = (movie.cinema_region or "").lower()
     lang = (movie.language or "").lower()
     is_world_cinema = region not in ["us", "uk", "hollywood", ""] or lang not in ["en", ""]
-    if taste.global_taste >= 55:
-        global_weight = (taste.global_taste - 50) / 50.0
+    if s_glob >= 55:
+        global_weight = (s_glob - 50) / 50.0
         if is_world_cinema:
             global_delta = round(20.0 * global_weight, 1)
             score += global_delta
@@ -114,8 +121,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
                 "delta": global_delta,
                 "because": f"{region.title() if region else lang.upper()} cinema outside domestic Hollywood"
             })
-    elif taste.global_taste <= 45:
-        local_weight = (50 - taste.global_taste) / 50.0
+    elif s_glob <= 45:
+        local_weight = (50 - s_glob) / 50.0
         if not is_world_cinema:
             local_delta = round(15.0 * local_weight, 1)
             score += local_delta
@@ -128,8 +135,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     # 5. Challenge Axis (0-100)
     challenging_genres = {"Science Fiction", "Mystery", "History", "Documentary", "War", "Crime"}
     light_genres = {"Comedy", "Animation", "Family", "Music"}
-    if taste.challenge >= 55:
-        chal_weight = (taste.challenge - 50) / 50.0
+    if s_chal >= 55:
+        chal_weight = (s_chal - 50) / 50.0
         if genres & challenging_genres:
             chal_delta = round(12.0 * chal_weight, 1)
             score += chal_delta
@@ -138,8 +145,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
                 "delta": chal_delta,
                 "because": "Thought-provoking thematic complexity"
             })
-    elif taste.challenge <= 45:
-        light_weight = (50 - taste.challenge) / 50.0
+    elif s_chal <= 45:
+        light_weight = (50 - s_chal) / 50.0
         if genres & light_genres:
             light_delta = round(12.0 * light_weight, 1)
             score += light_delta
@@ -150,8 +157,8 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
             })
 
     # 6. Discovery Axis (0-100)
-    if taste.discovery >= 60:
-        disc_weight = (taste.discovery - 50) / 50.0
+    if s_disc >= 60:
+        disc_weight = (s_disc - 50) / 50.0
         disc_delta = round(10.0 * disc_weight, 1)
         score += disc_delta
         components.append({
@@ -162,7 +169,6 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
 
     final_score = min(max(round(score, 1), 5.0), 99.0)
     
-    # Grounded explanation string generated only from positive contributing components
     positive_reasons = [c["because"] for c in components if c["delta"] > 2.0 and c["feature"] != "baseline_quality"]
     if positive_reasons:
         explanation = f"Recommended: {', '.join(positive_reasons[:2])}."
@@ -251,7 +257,6 @@ async def get_recommendations_for_user(
         breakdown["rec_score"] = round(score / 100.0, 4)
         scored_movies.append((movie, breakdown))
 
-    # Sort descending by score
     scored_movies.sort(key=lambda x: x[1]["score"], reverse=True)
     top_items = scored_movies[:limit]
 

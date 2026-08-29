@@ -26,7 +26,6 @@ async def test_get_feed(mock_get_recs, client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_why(client: AsyncClient):
-    # Need auth
     register_data = {
         "username": "whytest",
         "email": "whytest@example.com",
@@ -34,6 +33,9 @@ async def test_get_why(client: AsyncClient):
     }
     await client.post("/api/v1/auth/register", json=register_data)
     
-    response = await client.get("/api/v1/recommendations/123/why")
+    # Query seeded movie 155 (The Dark Knight)
+    response = await client.get("/api/v1/recommendations/155/why")
     assert response.status_code == 200
-    assert "explanation" in response.json()
+    data = response.json()
+    assert "explanation" in data
+    assert "reasons" in data

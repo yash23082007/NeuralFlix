@@ -6,7 +6,7 @@ Hybrid search with natural language query parsing, structured filters, and sugge
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, or_, cast, String
+from sqlalchemy import select, desc
 
 from app.database import get_db
 from app.dependencies import get_current_user_optional
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/v1/search", tags=["Search"])
 @router.get("")
 @router.get("/movies")
 async def search_movies_endpoint(
-    q: str = Query("", min_length=0, alias="query"),
+    q: Optional[str] = Query(None),
     query: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=50),
@@ -115,8 +115,7 @@ async def search_movies_endpoint(
                 match_score -= 20.0
 
         # Include if positive match or if general search term matched
-        if match_score > 0 or (not clean_q and (target_genres or target_region)):
-            # Incorporate user taste coordinates for personalized ranking
+        if match_score > 0 or (not clean_q and (target_genres or target_region or runtime_max)):
             taste_bd = calculate_score_breakdown(m, taste)
             total_rank = match_score + (taste_bd["score"] * 0.3)
             
@@ -164,6 +163,5 @@ async def search_suggestions(
                 "cinema_region": m.cinema_region
             })
     
-    # Sort by rating and popularity
     matches.sort(key=lambda x: x.get("rating") or 0.0, reverse=True)
     return {"suggestions": matches[:limit]}

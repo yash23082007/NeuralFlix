@@ -11,7 +11,7 @@ Five sliders that control the recommendation engine:
 Plus a diversity boost toggle.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -42,11 +42,26 @@ class TasteControl(Base):
     diversity_boost: Mapped[bool] = mapped_column(Boolean, default=True)
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
     # Relationship
     user = relationship("User", back_populates="taste_control")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if kwargs.get("discovery") is None:
+            self.discovery = 50
+        if kwargs.get("global_taste") is None:
+            self.global_taste = 50
+        if kwargs.get("challenge") is None:
+            self.challenge = 50
+        if kwargs.get("pace") is None:
+            self.pace = 50
+        if kwargs.get("hidden_gems") is None:
+            self.hidden_gems = 50
+        if kwargs.get("diversity_boost") is None:
+            self.diversity_boost = True
 
     def __repr__(self) -> str:
         return (
