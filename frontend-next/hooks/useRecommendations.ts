@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUserStore } from '../store/userStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://neuralflix.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export function useRecommendations(topK: number = 20) {
   const userId = useUserStore((state) => state.userId);
@@ -11,7 +11,7 @@ export function useRecommendations(topK: number = 20) {
     queryFn: async () => {
       // If unauthenticated, fetch cold-start editorial fallback
       if (!userId) {
-        const res = await fetch(`${API_URL}/api/v1/recommendations/onboarding?limit=${topK}`);
+        const res = await fetch(`${API_URL}/api/v1/recommendations/popular`);
         if (!res.ok) throw new Error('Failed to fetch onboarding');
         return res.json();
       }
@@ -47,7 +47,7 @@ export function useUserTasteProfile() {
     queryKey: ['tasteProfile', userId],
     queryFn: async () => {
       if (!userId) return null;
-      const res = await fetch(`${API_URL}/api/v1/tracking/profile/${userId}`);
+      const res = await fetch(`${API_URL}/api/v1/users/me/profile`, { credentials: "include" });
       if (!res.ok) throw new Error('Failed to fetch profile');
       return res.json();
     },

@@ -75,7 +75,7 @@ export default function OnboardingPage() {
       // Fetch trending popular movies filtered by selected genres
       let url = `${API}/api/v1/movies/trending-all`;
       if (selectedGenres.length > 0) {
-        url = `${API}/api/v1/movies/discover?genre=${encodeURIComponent(selectedGenres[0].toLowerCase())}&limit=24`;
+        url = `${API}/api/v1/movies/genre/${encodeURIComponent(selectedGenres[0].toLowerCase())}?limit=24`;
       }
       
       const res = await fetch(url);

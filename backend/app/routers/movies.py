@@ -266,6 +266,60 @@ async def get_by_genre(genre: str, page: int = Query(1, ge=1), limit: int = Quer
     
     return {"results": [_format_movie(m) for m in paged], "genre": genre, "total": total}
 
+
+@router.get("/filter")
+async def filter_movies(
+    genres: Optional[str] = None,
+    language: Optional[str] = None,
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+    min_rating: Optional[float] = None,
+    sort: Optional[str] = "popularity",
+    media_type: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=50),
+    db: AsyncSession = Depends(get_db)
+):
+    """Filter movies by structured criteria."""
+    from sqlalchemy import select, and_, func, cast, String, desc
+    
+    conditions = []
+    if genres:
+        for g in genres.split(","):
+            conditions.append(cast(Movie.genres, String).ilike(f"%{g.strip()}%"))
+    if language:
+        conditions.append(cast(Movie.language, String).ilike(f"{language}"))
+    if year_from:
+        conditions.append(Movie.year >= year_from)
+    if year_to:
+        conditions.append(Movie.year <= year_to)
+    if min_rating:
+        conditions.append(Movie.tmdb_rating >= min_rating)
+        
+    where_clause = and_(*conditions) if conditions else True
+    
+    order_by_clause = desc(Movie.popularity_score)
+    if sort == "rating":
+        order_by_clause = desc(Movie.tmdb_rating)
+    elif sort == "year":
+        order_by_clause = desc(Movie.year)
+        
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Movie).where(where_clause).order_by(order_by_clause).offset(offset).limit(limit)
+    )
+    movies = result.scalars().all()
+    
+    count_res = await db.execute(select(func.count(Movie.id)).where(where_clause))
+    total = count_res.scalar() or 0
+    
+    return {
+        "results": [_format_movie(m) for m in movies],
+        "total": total,
+        "page": page,
+        "total_pages": max(1, (total + limit - 1) // limit)
+    }
+
 @router.get("/search", response_model=MovieSearchResult)
 @router.get("/search/", response_model=MovieSearchResult, include_in_schema=False)
 async def search(

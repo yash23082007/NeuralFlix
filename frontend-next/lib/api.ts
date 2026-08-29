@@ -153,10 +153,6 @@ export async function getMovieDetails(id: string): Promise<MovieDetail | null> {
   return await apiFetch<MovieDetail>(`/api/v1/movies/${id}`);
 }
 
-export async function getHome(): Promise<any> {
-  return await apiFetch<any>("/api/v1/home");
-}
-
 export async function searchMovies(query: string, page = 1): Promise<Movie[]> {
   const data = await apiFetch<{ results: Movie[] }>(
     `/api/v1/search?q=${encodeURIComponent(query)}&page=${page}`,

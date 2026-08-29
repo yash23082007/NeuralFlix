@@ -23,12 +23,6 @@ export default function LoginPage() {
   const [collageMovies, setCollageMovies] = useState<CollageMovie[]>([]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-    if (code) {
-      handleGithubCallback(code);
-    }
-
     // Fetch popular movies for the collage
     async function fetchCollage() {
       try {
@@ -51,32 +45,7 @@ export default function LoginPage() {
     fetchCollage();
   }, []);
 
-  const handleGithubCallback = async (code: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/github`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ code }),
-        }
-      );
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "GitHub login failed");
-      }
-      const data = await res.json();
-      setUser(data.user);
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
