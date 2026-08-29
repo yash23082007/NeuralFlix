@@ -1,45 +1,44 @@
 """
 NeuralFlix — Explanation Service
 
-Generates human-readable explanations for why a movie was recommended.
-No ML black-boxes — 100% deterministic and transparent.
+Generates human-readable, mathematically grounded explanations from actual score deltas.
+Strict honesty: no explanation is generated without real non-zero score components.
 """
 
+from typing import Any, Dict
 from app.models.movie import Movie
 from app.models.taste_control import TasteControl
 
 
-def generate_explanation(movie: Movie, taste: TasteControl, score: float) -> str:
-    """Generate a single sentence explaining why this movie was recommended."""
+def generate_explanation(movie: Movie, taste: TasteControl, score: float = 0.0) -> str:
+    """Generate a single honest sentence explaining why this movie was recommended."""
+    from app.services.recommendation_service import calculate_score_breakdown
+    breakdown = calculate_score_breakdown(movie, taste)
+    return breakdown["explanation"]
+
+
+def generate_structured_explanation(movie: Movie, taste: TasteControl) -> Dict[str, Any]:
+    """Generate structured XAI attributions for the WhyRecommended sheet."""
+    from app.services.recommendation_service import calculate_score_breakdown
+    breakdown = calculate_score_breakdown(movie, taste)
+    
     reasons = []
+    for c in breakdown["components"]:
+        if c["delta"] > 0:
+            reasons.append({
+                "type": c["feature"],
+                "label": c["because"],
+                "evidence": [f"+{c['delta']} match delta", c["feature"].replace("_", " ").title()]
+            })
 
-    # Check Taste Constellation matches
-    if taste.global_taste > 70 and movie.cinema_region not in ["US", "UK", None]:
-        reasons.append(f"aligns with your global taste ({movie.cinema_region})")
-    
-    if taste.discovery > 70 and (movie.popularity_score or 0) < 50:
-        reasons.append("is an adventurous discovery")
-        
-    if taste.pace < 30 and "Drama" in (movie.genres or []):
-        reasons.append("matches your preference for slow-burn storytelling")
-        
-    if taste.pace > 70 and "Action" in (movie.genres or []):
-        reasons.append("matches your preference for fast-paced action")
-        
-    if taste.hidden_gems > 70 and (movie.tmdb_votes or 0) < 1000:
-        reasons.append("is a highly-rated hidden gem")
-        
-    # Check simple genre matches if no specific taste sliders strongly matched
-    if not reasons and movie.genres:
-        genre = movie.genres[0]
-        reasons.append(f"is a highly-rated {genre}")
-
-    # Fallback
-    if not reasons:
-        return "Recommended based on your general profile."
-        
-    # Combine reasons gracefully
-    if len(reasons) == 1:
-        return f"This movie {reasons[0]}."
-    
-    return f"This movie {reasons[0]} and {reasons[1]}."
+    return {
+        "movieId": movie.tmdb_id or movie.id,
+        "explanation": breakdown["explanation"],
+        "factors": [r["label"] for r in reasons],
+        "reasons": reasons,
+        "score": breakdown["score"],
+        "rankingVersion": "4.0-DeterministicTaste-v1",
+        "catalogFreshness": {
+            "updatedAt": movie.release_date or "2024-01-01"
+        }
+    }

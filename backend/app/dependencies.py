@@ -6,7 +6,8 @@ Shared FastAPI dependencies (auth, current user, optional user, etc.).
 
 from typing import Optional
 from fastapi import Depends, HTTPException, Request, status
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -53,7 +54,7 @@ async def get_current_user(
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except PyJWTError:
         raise credentials_exception
         
     result = await db.execute(select(User).where(User.id == user_id))
@@ -93,3 +94,16 @@ async def get_current_active_user(
 ) -> User:
     """Ensure the user is active."""
     return current_user
+
+
+async def require_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Ensure the user has administrator privileges verified against the database."""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+    return current_user
+

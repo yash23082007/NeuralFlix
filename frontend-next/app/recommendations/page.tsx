@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { SlidersHorizontal, Sparkles, RefreshCw, Cpu, Activity, ListFilter, Sliders } from "lucide-react";
+import { Sparkles, RefreshCw, Compass, Moon, Globe, Zap, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/MovieCard";
-import ScrollReveal from "../../components/ScrollReveal";
+import TasteConstellation, { TasteControls } from "../../components/recommendation/TasteConstellation";
 import { getUser, authFetch } from "../../lib/auth";
 
 interface Movie {
   tmdb_id: number;
+  id?: number;
   title: string;
   poster_url?: string;
   genres?: string[];
@@ -20,51 +21,47 @@ interface Movie {
   year?: number;
   language?: string;
   cinema_region?: string;
+  explanation?: string;
 }
 
-const GENRES = ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance", "Thriller", "Animation", "Documentary"];
-const MOODS = ["Exciting", "Chill", "Thoughtful", "Funny", "Intense", "Romantic"];
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const GENRES = ["Action", "Comedy", "Drama", "Horror", "Science Fiction", "Romance", "Thriller", "Animation", "Documentary"];
+const MODES = [
+  { id: "for_you", label: "For You", icon: Sparkles, desc: "Personalized taste blend" },
+  { id: "hidden_gems", label: "Hidden Gems", icon: Compass, desc: "Acclaimed indie & world cinema" },
+  { id: "tonight", label: "Watch Tonight", icon: Moon, desc: "Brisk runtime under 2 hours" },
+  { id: "outside_bubble", label: "Outside Comfort Zone", icon: Globe, desc: "International cinema discoveries" },
+];
 
 function RecommendationsContent() {
   const searchParams = useSearchParams();
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [streaming, setStreaming] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [activeMode, setActiveMode] = useState<string>("for_you");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
-  const [sortBy, setSortBy] = useState<"score" | "popularity" | "year">("score");
-  const [tasteProfile, setTasteProfile] = useState(null);
+  const [tasteProfile, setTasteProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [servedBy, setServedBy] = useState<string>("deterministic-taste-v1");
 
-  // Initialize user ID from auth state or search params
   useEffect(() => {
     const user = getUser();
     if (user?.id) {
       setUserId(user.id);
     } else {
-      {
-        setLoading(false);
-        setProfileLoading(false);
-      }
+      setLoading(false);
+      setProfileLoading(false);
     }
   }, [searchParams]);
 
-  // Fetch user taste profile
+  // Fetch Taste DNA Profile
   useEffect(() => {
     async function fetchTasteProfile() {
-      if (!userId) {
-        setProfileLoading(false);
-        return;
-      }
+      if (!userId) return;
       setProfileLoading(true);
       try {
-        const res = await authFetch(`${API}/api/v1/users/me/profile`);
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await authFetch(`${apiBase}/api/v1/users/me/profile`);
         if (res.ok) {
           const data = await res.json();
           if (data.profile) setTasteProfile(data.profile);
@@ -79,29 +76,20 @@ function RecommendationsContent() {
   }, [userId]);
 
   const fetchRecommendations = useCallback(
-    async (pageNum: number, append = false) => {
+    async (mode = activeMode) => {
       if (!userId) return;
       setLoading(true);
       try {
-        const params = new URLSearchParams({ top_k: "20", page: String(pageNum) });
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const params = new URLSearchParams({ top_k: "24", mode });
         if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
         if (selectedMood) params.set("mood", selectedMood);
-        if (selectedLanguage) params.set("language", selectedLanguage);
-        params.set("sort", sortBy);
 
-        const recsRes = await authFetch(`${API}/api/v1/recommendations/feed?` + params);
+        const recsRes = await authFetch(`${apiBase}/api/v1/recommendations/feed?` + params);
         if (recsRes.ok) {
           const recsData = await recsRes.json();
-          const movies = (recsData.recommendations || []).map((m: any) => ({
-            ...m,
-            rec_score: m.score != null ? m.score : 0.85,
-          }));
-          if (append) {
-            setRecommendations((prev) => [...prev, ...movies]);
-          } else {
-            setRecommendations(movies);
-          }
-          setHasMore(movies.length === 20);
+          setRecommendations(recsData.recommendations || []);
+          if (recsData.served_by) setServedBy(recsData.served_by);
         }
       } catch (err) {
         console.error("Error fetching recommendations:", err);
@@ -109,65 +97,17 @@ function RecommendationsContent() {
         setLoading(false);
       }
     },
-    [userId, selectedGenres, selectedMood, selectedLanguage, sortBy]
+    [userId, activeMode, selectedGenres, selectedMood]
   );
 
   useEffect(() => {
-    setPage(1);
-    fetchRecommendations(1);
-  }, [selectedGenres, selectedMood, selectedLanguage, sortBy, fetchRecommendations]);
+    fetchRecommendations(activeMode);
+  }, [activeMode, selectedGenres, selectedMood, fetchRecommendations]);
 
-  useEffect(() => {
-    if (!sentinelRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((p) => p + 1);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, loading]);
-
-  useEffect(() => {
-    if (page > 1) fetchRecommendations(page, true);
-  }, [page, fetchRecommendations]);
-
-  // Websocket telemetry updates
-  useEffect(() => {
-    if (!userId) return;
-    let ws: WebSocket | null = null;
-    try {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${API.replace(/^https?:\/\//, "")}/ws/recommendations/${userId}`;
-      ws = new WebSocket(wsUrl);
-      ws.onopen = () => setStreaming(true);
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "recommendations_update" && msg.data) {
-            setRecommendations(
-              msg.data.slice(0, 20).map((m: any) => ({
-                ...m,
-                rec_score: m.score != null ? m.score : 0.85,
-              }))
-            );
-          }
-        } catch (err) {
-          console.error("Error parsing WS message:", err);
-        }
-      };
-      ws.onclose = () => setStreaming(false);
-    } catch (err) {
-      console.error("Error connecting WS:", err);
-    }
-    return () => {
-      ws?.close();
-      setStreaming(false);
-    };
-  }, [userId]);
+  const handleControlsChange = (controls: TasteControls) => {
+    // When sliders move, re-query with current mode to reflect new weights
+    fetchRecommendations(activeMode);
+  };
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((prev) =>
@@ -175,40 +115,22 @@ function RecommendationsContent() {
     );
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.04 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 15 } },
+  const handleDismiss = (mId: number) => {
+    setRecommendations((prev) => prev.filter((m) => Number(m.id || m.tmdb_id) !== mId));
   };
 
   if (!userId && !loading && !profileLoading) {
     return (
       <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden pb-24 pt-28 flex items-center justify-center">
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20" aria-hidden="true">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-        </div>
-        <div className="relative z-10 max-w-md w-full mx-auto px-6 text-center py-20 bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] rounded-3xl backdrop-blur-md glass-card">
-          <Sparkles className="w-12 h-12 text-[var(--accent-warm)] mx-auto mb-6 animate-pulse" />
-          <h2 className="text-2xl font-bold font-playfair mb-3">Authentication Required</h2>
-          <p className="text-sm text-[var(--text-secondary)] mb-8">
-            Log in to access your personalized Neural Engine curation, watch history, and Taste DNA.
+        <div className="relative z-10 max-w-md w-full mx-auto px-6 text-center py-16 bg-[var(--surface-elevated)] border border-[var(--border-default)] rounded-3xl shadow-2xl">
+          <Sparkles className="w-10 h-10 text-[var(--accent-warm)] mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl font-bold font-playfair mb-2">Authentication Required</h2>
+          <p className="text-xs text-[var(--text-secondary)] mb-6">
+            Sign in to access your personalized Taste Constellation feed and mathematical recommendations.
           </p>
           <a
             href="/login"
-            className="inline-block bg-[var(--accent-warm)] text-black font-semibold px-8 py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-glow uppercase tracking-wider text-xs font-sans"
+            className="inline-block bg-[var(--accent-warm)] text-black font-bold px-7 py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-glow text-xs uppercase tracking-wider"
           >
             Sign In / Register
           </a>
@@ -219,242 +141,121 @@ function RecommendationsContent() {
 
   return (
     <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] relative overflow-hidden pb-24 pt-28">
-      {/* Telemetry/Neural background grids */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-20" aria-hidden="true">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-        <div
-          className="absolute top-1/4 left-1/4 h-[600px] w-[600px] rounded-full opacity-40 blur-[100px]"
-          style={{
-            background: "radial-gradient(circle, rgba(232,168,73,0.05) 0%, transparent 70%)",
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-8">
-        {/* Hub Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10 border-b border-[var(--border-subtle)] pb-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 border-b border-[var(--border-subtle)] pb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[var(--accent-warm)] uppercase">
-              <Cpu className="h-3.5 w-3.5 animate-pulse" />
-              Neural Engine Hub
+              <Sparkles className="h-3 w-3" />
+              Taste Intelligence Engine
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight font-playfair flex items-center gap-3">
-              <Sparkles className="w-8 h-8 text-[var(--accent-warm)] animate-pulse" />
-              Machine Learning Curation
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-playfair text-[var(--text-primary)]">
+              Personalized Recommendations
             </h1>
-            <p className="text-xs text-[var(--text-secondary)] font-sans max-w-xl">
-              Cinematic coordinate vectors calculated dynamically using collaborative filtering matrices and user taste profiles.
+            <p className="text-xs text-[var(--text-tertiary)] max-w-xl">
+              Transparent, user-steerable scoring with per-feature mathematical attributions.
             </p>
           </div>
 
-          <AnimatePresence>
-            {streaming && (
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-warm)]/10 border border-[var(--accent-warm)]/20 rounded-full"
-              >
-                <span className="w-2 h-2 bg-[var(--accent-warm)] rounded-full animate-ping" />
-                <span className="text-[9px] font-bold text-[var(--accent-warm)] uppercase tracking-wider font-sans">
-                  Real-time Neural Link
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-tertiary)]">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-[11px]">Active Tier: {servedBy}</span>
+          </div>
         </div>
 
-        {/* Taste DNA Section */}
-        <ScrollReveal className="mb-10">
-          <TasteDNA profile={tasteProfile} loading={profileLoading} />
-        </ScrollReveal>
+        {/* Layout Grid: Taste Constellation (Controls) + Recs Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Sidebar: Taste Constellation & DNA */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* The Signature Taste Constellation Component */}
+            <TasteConstellation onControlsChange={handleControlsChange} />
 
-        {/* Filter Panel (Glass Bento Console) */}
-        <ScrollReveal className="mb-10">
-          <div className="bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] rounded-3xl p-6 backdrop-blur-md relative overflow-hidden glass-card">
-            {/* Glowing accent orb */}
-            <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-[var(--accent-warm)]/5 blur-xl pointer-events-none" />
-
-            <div className="flex items-center gap-2 mb-6 border-b border-[var(--border-subtle)] pb-3">
-              <ListFilter className="w-4 h-4 text-[var(--accent-warm)]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-primary)] font-sans">
-                Algorithmic Refinement Panel
-              </span>
-            </div>
-
-            <div className="space-y-6">
-              {/* Genre Filter */}
-              <div>
-                <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
-                  Target Genre Coordinates
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {GENRES.map((genre) => {
-                    const active = selectedGenres.includes(genre);
-                    return (
-                      <button
-                        key={genre}
-                        onClick={() => toggleGenre(genre)}
-                        className={`px-3.5 py-1.5 text-xs rounded-xl border font-sans uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                          active
-                            ? "bg-[var(--accent-warm)] text-black border-[var(--accent-warm)] font-bold shadow-[0_0_12px_var(--accent-warm-glow)]"
-                            : "bg-[var(--surface-overlay)]/40 text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--accent-warm)]/40"
-                        }`}
-                      >
-                        {genre}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                {/* Emotional Bias */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
-                    Emotional Profile Bias (Mood)
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {MOODS.map((mood) => {
-                      const active = selectedMood === mood;
-                      return (
-                        <button
-                          key={mood}
-                          onClick={() => setSelectedMood(active ? null : mood)}
-                          className={`px-3.5 py-1.5 text-xs rounded-xl border font-sans uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                            active
-                              ? "bg-[var(--accent-rose)] text-white border-[var(--accent-rose)] font-bold shadow-[0_0_12px_var(--accent-rose-glow)]"
-                              : "bg-[var(--surface-overlay)]/40 text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--accent-rose)]/40"
-                          }`}
-                        >
-                          {mood}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Re-Rank Algorithm */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
-                    Matrix Re-Rank Algorithm
-                  </p>
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className="w-full max-w-xs px-4 py-2.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/60 text-[var(--text-primary)] font-sans uppercase tracking-wider focus:outline-none focus:border-[var(--accent-warm)] transition-colors cursor-pointer appearance-none"
-                    >
-                      <option value="score">Hybrid Neural Match Score</option>
-                      <option value="popularity">Global Popularity Index</option>
-                      <option value="year">Temporal Archiving (Year)</option>
-                    </select>
-                    {/* Select indicator */}
-                    <div className="absolute right-[calc(100%-8rem)] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-tertiary)]">
-                      <Sliders className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Language Filter */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase text-[var(--text-tertiary)] tracking-wider mb-3 font-sans">
-                    Language Filter
-                  </p>
-                  <div className="relative">
-                    <select
-                      value={selectedLanguage}
-                      onChange={(e) => setSelectedLanguage(e.target.value)}
-                      className="w-full max-w-xs px-4 py-2.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-overlay)]/60 text-[var(--text-primary)] font-sans uppercase tracking-wider focus:outline-none focus:border-[var(--accent-warm)] transition-colors cursor-pointer appearance-none"
-                    >
-                      <option value="">All Languages</option>
-                      <option value="en">English</option>
-                      <option value="hi">Hindi</option>
-                      <option value="ko">Korean</option>
-                      <option value="ja">Japanese</option>
-                      <option value="fr">French</option>
-                      <option value="es">Spanish</option>
-                    </select>
-                    {/* Select indicator */}
-                    <div className="absolute right-[calc(100%-8rem)] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-tertiary)]">
-                      <Sliders className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ScrollReveal>
-
-        {/* Recommendations Grid */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3 mb-6">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] font-playfair tracking-wide flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[var(--accent-warm)]" />
-              Calculated Curation Output
-            </h2>
-            <button
-              onClick={() => {
-                setPage(1);
-                fetchRecommendations(1);
-              }}
-              className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-[var(--accent-warm)] hover:text-[var(--accent-rose)] transition-colors duration-200 cursor-pointer uppercase font-sans"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Recalculate Matrix
-            </button>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {loading && recommendations.length === 0 ? (
-              <div className="flex justify-center py-24">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--accent-warm)]/10 border-t-[var(--accent-warm)] shadow-[0_0_15px_var(--accent-warm-glow)]" />
-                    <Cpu className="absolute inset-0 m-auto h-4 w-4 text-[var(--accent-warm)] animate-pulse" />
-                  </div>
-                  <p className="text-xs font-semibold tracking-wider text-[var(--text-tertiary)] uppercase animate-pulse font-sans">
-                    Refactoring neural projection weights...
-                  </p>
-                </div>
-              </div>
-            ) : recommendations.length > 0 ? (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
-              >
-                {recommendations.slice(0, 20).map((movie) => (
-                  <motion.div key={movie.tmdb_id || (movie as any)._id} variants={itemVariants}>
-                    <MovieCard movie={movie} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            ) : (
-              <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 py-24 text-center backdrop-blur-sm">
-                <Cpu className="mx-auto mb-4 h-12 w-12 text-[var(--text-tertiary)] animate-pulse" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No Neural Recommendations Found</h3>
-                <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-md mx-auto font-sans">
-                  The recommended matrix returned empty. Try adjusting your genre coordinates, setting a different emotional bias, or checking back later.
-                </p>
+            {/* Inferred Taste DNA */}
+            {tasteProfile && (
+              <div className="rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-default)] p-5 shadow-lg">
+                <TasteDNA profile={tasteProfile} />
               </div>
             )}
-          </AnimatePresence>
+          </div>
 
-          <div ref={sentinelRef} className="h-4" />
-
-          {loading && recommendations.length > 0 && (
-            <div className="flex justify-center py-6">
-              <div className="w-6 h-6 border-2 border-[var(--accent-warm)] border-t-transparent rounded-full animate-spin" />
+          {/* Right Main Column: Mode Tabs, Genre Chips, and Recommendations Grid */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Mode Switcher */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {MODES.map((m) => {
+                const Icon = m.icon;
+                const active = activeMode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setActiveMode(m.id)}
+                    className={`flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
+                      active
+                        ? "bg-[var(--surface-elevated)] border-[var(--accent-warm)] shadow-md text-[var(--text-primary)]"
+                        : "bg-[var(--surface-primary)] border-[var(--border-subtle)] hover:border-[var(--border-default)] text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${active ? "text-[var(--accent-warm)]" : "text-[var(--text-tertiary)]"}`} />
+                      <span className="text-xs font-bold">{m.label}</span>
+                    </div>
+                    <span className="text-[10px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{m.desc}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </section>
+
+            {/* Genre Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <span className="text-[11px] font-semibold text-[var(--text-tertiary)] flex items-center gap-1 pr-1 shrink-0">
+                <Filter className="h-3 w-3" /> Filter:
+              </span>
+              {GENRES.map((g) => {
+                const active = selectedGenres.includes(g);
+                return (
+                  <button
+                    key={g}
+                    onClick={() => toggleGenre(g)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium shrink-0 transition-colors border ${
+                      active
+                        ? "bg-[var(--accent-warm)]/15 border-[var(--accent-warm)] text-[var(--accent-warm)]"
+                        : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Recommendations Grid */}
+            {loading ? (
+              <div className="py-24 flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="h-7 w-7 animate-spin text-[var(--accent-warm)]" />
+                <span className="text-xs text-[var(--text-tertiary)]">Calibrating candidate vectors...</span>
+              </div>
+            ) : recommendations.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-12 text-center text-xs text-[var(--text-tertiary)]">
+                No titles matched your specific filter combination. Try clearing genre filters or moving the discovery slider.
+              </div>
+            ) : (
+              <motion.div 
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {recommendations.map((movie) => (
+                  <MovieCard
+                    key={movie.tmdb_id || movie.id}
+                    movie={movie}
+                    onDismiss={handleDismiss}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );
@@ -464,12 +265,9 @@ export default function RecommendationsPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[var(--surface-primary)] pt-28 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-warm)] border-t-transparent" />
-            <p className="text-sm text-[var(--text-secondary)] font-sans">Loading Recommendations...</p>
-          </div>
-        </main>
+        <div className="flex h-screen items-center justify-center bg-[var(--surface-primary)]">
+          <RefreshCw className="h-8 w-8 animate-spin text-[var(--accent-warm)]" />
+        </div>
       }
     >
       <RecommendationsContent />

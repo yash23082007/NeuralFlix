@@ -1,13 +1,16 @@
 """
 NeuralFlix — Auth Endpoints
+Secure cookie-based authentication with rotating refresh tokens and PyJWT.
 """
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from jose import jwt
+import jwt
+from jwt.exceptions import PyJWTError
 import bcrypt
 
 from app.config import get_settings
@@ -22,37 +25,102 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 def get_password_hash(password: str) -> str:
     if len(password.encode("utf-8")) > 72:
         raise ValueError("Password exceeds bcrypt's 72-byte limit")
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
-def create_access_token(data: dict, expires_delta: timedelta):
+def create_token(data: dict, expires_delta: timedelta, token_type: str = "access") -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
+    now = datetime.now(timezone.utc)
+    expire = now + expires_delta
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "jti": str(uuid.uuid4()),
+        "type": token_type,
+    })
     return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str]:
+    """Generate and set access and refresh cookies with proper expiry and paths."""
+    access_token = create_token(
+        data={"sub": user_id},
+        expires_delta=timedelta(minutes=15),
+        token_type="access",
+    )
+    refresh_token = create_token(
+        data={"sub": user_id},
+        expires_delta=timedelta(days=settings.refresh_token_expire_days),
+        token_type="refresh",
+    )
+
+    # 15-minute access token cookie
+    response.set_cookie(
+        key="nf_access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+        samesite=settings.cookie_samesite,
+        max_age=15 * 60,
+        path="/",
+    )
+
+    # 30-day refresh token cookie restricted to auth endpoints
+    response.set_cookie(
+        key="nf_refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+        samesite=settings.cookie_samesite,
+        max_age=settings.refresh_token_expire_days * 86400,
+        path="/api/v1/auth",
+    )
+
+    return access_token, refresh_token
+
+
+def clear_auth_cookies(response: Response) -> None:
+    """Clear both access and refresh cookies."""
+    response.delete_cookie(
+        key="nf_access_token",
+        domain=settings.cookie_domain,
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite=settings.cookie_samesite,
+        path="/",
+    )
+    response.delete_cookie(
+        key="nf_refresh_token",
+        domain=settings.cookie_domain,
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite=settings.cookie_samesite,
+        path="/api/v1/auth",
+    )
 
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_in: UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
-    """Register a new user and set HttpOnly cookie."""
-    
+    """Register a new user and set HttpOnly session cookies."""
     # Check email exists
     result = await db.execute(select(User).where(User.email == user_in.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
-        
+
     # Check username exists
     result = await db.execute(select(User).where(User.username == user_in.username))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Username already taken")
-        
+
     # Create user
     user_id = str(uuid.uuid4())
     hashed_password = get_password_hash(user_in.password)
@@ -63,75 +131,89 @@ async def register(user_in: UserCreate, response: Response, db: AsyncSession = D
         hashed_password=hashed_password,
         name=user_in.name or user_in.username,
     )
-    
+
     # Create taste profile
     taste_profile = TasteControl(user_id=user_id)
-    
+
     db.add(new_user)
     db.add(taste_profile)
     await db.commit()
     await db.refresh(new_user)
-    
-    # Generate token
-    access_token = create_access_token(
-        data={"sub": user_id},
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
-    )
-    
-    # Set cookie
-    response.set_cookie(
-        key="nf_access_token",
-        value=access_token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-        samesite=settings.cookie_samesite,
-        max_age=settings.access_token_expire_minutes * 60,
-    )
-    
+
+    set_auth_cookies(response, user_id)
     return new_user
 
 
 @router.post("/login", response_model=UserResponse)
 async def login(user_in: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
-    """Login and set HttpOnly cookie."""
+    """Login with credentials and set HttpOnly session cookies."""
     result = await db.execute(select(User).where(User.email == user_in.email))
     user = result.scalar_one_or_none()
-    
+
     if not user or not verify_password(user_in.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
-        
-    access_token = create_access_token(
-        data={"sub": user.id},
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
-    )
-    
-    response.set_cookie(
-        key="nf_access_token",
-        value=access_token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-        samesite=settings.cookie_samesite,
-        max_age=settings.access_token_expire_minutes * 60,
-    )
-    
+
+    set_auth_cookies(response, user.id)
     return user
+
+
+@router.post("/refresh")
+async def refresh_session(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    """Rotate session tokens using valid HttpOnly refresh cookie."""
+    refresh_token = request.cookies.get("nf_refresh_token")
+    if not refresh_token:
+        # Check authorization header fallback
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            refresh_token = auth_header.split(" ")[1]
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+        )
+
+    try:
+        payload = jwt.decode(
+            refresh_token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type for refresh",
+            )
+        user_id: Optional[str] = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+            )
+    except PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    set_auth_cookies(response, user.id)
+    return {"status": "success", "message": "Token refreshed successfully"}
 
 
 @router.post("/logout")
 async def logout(response: Response):
-    """Clear HttpOnly cookie."""
-    response.delete_cookie(
-        key="nf_access_token",
-        domain=settings.cookie_domain,
-        secure=settings.cookie_secure,
-        httponly=True,
-        samesite=settings.cookie_samesite,
-    )
+    """Clear HttpOnly authentication cookies."""
+    clear_auth_cookies(response)
     return {"status": "success", "message": "Logged out successfully"}
 
 

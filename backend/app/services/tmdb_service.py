@@ -1,14 +1,15 @@
 """
 NeuralFlix — TMDB API Service
 
-Lightweight client for TMDB API. Fetches movie details and populates
-the local database schema. Uses tenacity for robust retries.
+Pooled, resilient client for the TMDB API.
+Fetches movie details, search, and discover feeds.
+Includes 429 rate-limit awareness and avoids retrying permanent errors (401/404).
 """
 
+import asyncio
 from typing import Any, Dict, Optional
 import httpx
 import structlog
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 
@@ -17,8 +18,27 @@ settings = get_settings()
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
-# Common HTTPX client settings
-_timeout = httpx.Timeout(10.0, connect=5.0)
+_client: Optional[httpx.AsyncClient] = None
+
+
+def get_tmdb_client() -> httpx.AsyncClient:
+    """Return a module-level pooled AsyncClient singleton."""
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0, connect=5.0),
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _client
+
+
+async def close_tmdb_client() -> None:
+    """Close the pooled AsyncClient."""
+    global _client
+    if _client is not None and not _client.is_closed:
+        await _client.aclose()
+        _client = None
+
 
 def _get_headers() -> dict:
     if settings.tmdb_read_access_token:
@@ -27,6 +47,7 @@ def _get_headers() -> dict:
             "accept": "application/json"
         }
     return {"accept": "application/json"}
+
 
 def _get_params(extra: dict = None) -> dict:
     params = {}
@@ -37,47 +58,67 @@ def _get_params(extra: dict = None) -> dict:
     return params
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+async def _execute_tmdb_request(url: str, params: dict, max_retries: int = 3) -> Optional[Dict[str, Any]]:
+    """Execute a TMDB request with 429 Retry-After handling and non-retryable status guards."""
+    client = get_tmdb_client()
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = await client.get(url, headers=_get_headers(), params=params)
+            
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                log.info("tmdb_not_found", url=url)
+                return None
+            elif response.status_code in (401, 403):
+                log.error("tmdb_auth_error", status=response.status_code, url=url)
+                return None
+            elif response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 2))
+                log.warning("tmdb_rate_limited", retry_after=retry_after, attempt=attempt)
+                await asyncio.sleep(retry_after)
+                continue
+            else:
+                log.warning("tmdb_http_error", status=response.status_code, attempt=attempt)
+                if attempt == max_retries:
+                    response.raise_for_status()
+                await asyncio.sleep(2 ** attempt)
+        except httpx.RequestError as exc:
+            log.warning("tmdb_network_error", error=str(exc), attempt=attempt)
+            if attempt == max_retries:
+                return None
+            await asyncio.sleep(2 ** attempt)
+    return None
+
+
 async def fetch_movie_details(tmdb_id: int) -> Optional[Dict[str, Any]]:
-    """Fetch complete movie details from TMDB, including credits and videos."""
+    """Fetch complete movie details from TMDB, including credits, videos, and keywords."""
     url = f"{TMDB_BASE_URL}/movie/{tmdb_id}"
     params = _get_params({"append_to_response": "credits,videos,keywords,release_dates"})
-    
-    async with httpx.AsyncClient(timeout=_timeout) as client:
-        response = await client.get(url, headers=_get_headers(), params=params)
-        
-        if response.status_code == 404:
-            log.warning("tmdb_movie_not_found", tmdb_id=tmdb_id)
-            return None
-            
-        response.raise_for_status()
-        return response.json()
+    return await _execute_tmdb_request(url, params)
 
 
 async def search_movies(query: str, page: int = 1) -> Dict[str, Any]:
     """Search for movies on TMDB."""
     url = f"{TMDB_BASE_URL}/search/movie"
     params = _get_params({"query": query, "page": page, "include_adult": "false"})
-    
-    async with httpx.AsyncClient(timeout=_timeout) as client:
-        response = await client.get(url, headers=_get_headers(), params=params)
-        response.raise_for_status()
-        return response.json()
+    result = await _execute_tmdb_request(url, params)
+    return result or {"results": [], "total_results": 0, "page": page}
 
 
-async def discover_movies(page: int = 1, sort_by: str = "popularity.desc") -> Dict[str, Any]:
-    """Fetch one deterministic TMDB discover page for offline ingestion jobs."""
+async def discover_movies(page: int = 1, sort_by: str = "popularity.desc", extra_params: dict = None) -> Dict[str, Any]:
+    """Fetch one deterministic TMDB discover page for ingestion jobs."""
     url = f"{TMDB_BASE_URL}/discover/movie"
-    params = _get_params({"page": page, "sort_by": sort_by, "include_adult": "false", "include_video": "false"})
-    async with httpx.AsyncClient(timeout=_timeout) as client:
-        response = await client.get(url, headers=_get_headers(), params=params)
-        response.raise_for_status()
-        return response.json()
+    params_dict = {"page": page, "sort_by": sort_by, "include_adult": "false", "include_video": "false"}
+    if extra_params:
+        params_dict.update(extra_params)
+    params = _get_params(params_dict)
+    result = await _execute_tmdb_request(url, params)
+    return result or {"results": [], "total_results": 0, "page": page}
 
 
 def parse_tmdb_movie(data: dict) -> dict:
     """Extract and normalize TMDB fields to match our DB schema."""
-    
     # Extract trailer key
     trailer_key = None
     if "videos" in data and "results" in data["videos"]:
@@ -112,8 +153,22 @@ def parse_tmdb_movie(data: dict) -> dict:
             year = int(data["release_date"][:4])
         except ValueError:
             pass
-            
-    # Map to schema dictionary
+
+    # Infer cinema_region from original_language if not specified
+    lang = data.get("original_language", "en")
+    lang_region_map = {
+        "hi": "bollywood",
+        "te": "tollywood",
+        "ta": "tamil",
+        "ko": "korean",
+        "ja": "japanese",
+        "fr": "french",
+        "es": "spanish",
+        "fa": "iranian",
+        "en": "hollywood",
+    }
+    cinema_region = lang_region_map.get(lang, "hollywood")
+
     return {
         "tmdb_id": data["id"],
         "imdb_id": data.get("imdb_id"),
@@ -121,7 +176,8 @@ def parse_tmdb_movie(data: dict) -> dict:
         "overview": data.get("overview"),
         "tagline": data.get("tagline"),
         "genres": [g["name"] for g in data.get("genres", [])],
-        "language": data.get("original_language"),
+        "language": lang,
+        "cinema_region": cinema_region,
         "release_date": data.get("release_date"),
         "year": year,
         "runtime": data.get("runtime"),

@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_register_and_login(client: AsyncClient):
     # Test register
@@ -14,6 +15,7 @@ async def test_register_and_login(client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["username"] == "testuser"
     assert "nf_access_token" in response.cookies
+    assert "nf_refresh_token" in response.cookies
 
     # Test login
     login_data = {
@@ -24,8 +26,20 @@ async def test_register_and_login(client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["username"] == "testuser"
     assert "nf_access_token" in response.cookies
-    
+    assert "nf_refresh_token" in response.cookies
+
     # Test me
     response = await client.get("/api/v1/auth/me")
     assert response.status_code == 200
     assert response.json()["email"] == "test@example.com"
+    assert "hashed_password" not in response.json()
+
+    # Test refresh
+    refresh_res = await client.post("/api/v1/auth/refresh")
+    assert refresh_res.status_code == 200
+    assert refresh_res.json()["status"] == "success"
+    assert "nf_access_token" in refresh_res.cookies
+
+    # Test logout
+    logout_res = await client.post("/api/v1/auth/logout")
+    assert logout_res.status_code == 200

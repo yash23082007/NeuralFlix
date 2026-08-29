@@ -1,12 +1,13 @@
 """
 NeuralFlix — Cache Service
 
-Optional Redis caching wrapper. Falls back to in-memory dict gracefully.
+Optional Redis caching wrapper with in-memory fallback and TTL eviction.
 No endpoints should ever fail if Redis goes down.
 """
 
 import json
-from typing import Any, Optional
+import time
+from typing import Any, Optional, Tuple
 
 import structlog
 
@@ -16,14 +17,15 @@ log = structlog.get_logger()
 settings = get_settings()
 
 _redis_client = None
-_in_memory_fallback: dict[str, Any] = {}
+# key -> (value, expire_timestamp)
+_in_memory_fallback: dict[str, Tuple[Any, float]] = {}
 
 
 async def _get_redis():
     global _redis_client
     if not settings.redis_url:
         return None
-        
+
     if _redis_client is None:
         try:
             import redis.asyncio as aioredis
@@ -37,7 +39,7 @@ async def _get_redis():
             log.warning("redis_connection_failed", error=str(e))
             _redis_client = False  # Mark as failed to avoid repeated connection attempts
             return None
-            
+
     return _redis_client if _redis_client is not False else None
 
 
@@ -50,13 +52,20 @@ async def get_cache(key: str) -> Optional[Any]:
             return json.loads(val) if val else None
     except Exception:
         pass
-        
-    # Fallback
-    return _in_memory_fallback.get(key)
+
+    # In-memory Fallback with TTL check
+    entry = _in_memory_fallback.get(key)
+    if entry:
+        value, expires_at = entry
+        if time.time() < expires_at:
+            return value
+        else:
+            _in_memory_fallback.pop(key, None)
+    return None
 
 
 async def set_cache(key: str, value: Any, ttl_seconds: int = 3600) -> None:
-    """Set value in cache."""
+    """Set value in cache with TTL."""
     try:
         redis = await _get_redis()
         if redis:
@@ -64,20 +73,17 @@ async def set_cache(key: str, value: Any, ttl_seconds: int = 3600) -> None:
             return
     except Exception:
         pass
-        
-    # Fallback (Note: in-memory ignores TTL for simplicity in this basic version)
-    _in_memory_fallback[key] = value
+
+    # In-memory Fallback with expiration timestamp
+    _in_memory_fallback[key] = (value, time.time() + ttl_seconds)
 
 
 async def delete_cache(key: str) -> None:
-    """Delete value from cache."""
+    """Delete a key from cache."""
     try:
         redis = await _get_redis()
         if redis:
             await redis.delete(key)
-            return
     except Exception:
         pass
-        
-    # Fallback
     _in_memory_fallback.pop(key, None)

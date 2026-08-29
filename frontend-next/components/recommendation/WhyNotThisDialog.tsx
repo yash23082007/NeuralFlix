@@ -1,17 +1,17 @@
 "use client";
 
-import { X, Check } from "lucide-react";
+import { X, Check, ThumbsDown, EyeOff, FastForward, Moon, Globe, ShieldOff } from "lucide-react";
 import { useState } from "react";
 import { authFetch } from "../../lib/auth";
 
 const REASONS = [
-  { id: "already_watched", label: "Already watched this" },
-  { id: "not_interested", label: "Just not interested" },
-  { id: "too_slow", label: "I prefer faster-paced films" },
-  { id: "too_dark", label: "Too dark or challenging" },
-  { id: "not_my_genre", label: "Not my kind of genre" },
-  { id: "wrong_language", label: "Not in my preferred language" },
-  { id: "hide_similar", label: "Hide similar films" },
+  { id: "already_watched", label: "Already watched this", icon: EyeOff },
+  { id: "not_interested", label: "Just not interested", icon: ThumbsDown },
+  { id: "too_slow", label: "I prefer faster-paced films", icon: FastForward },
+  { id: "too_dark", label: "Too dark or challenging", icon: Moon },
+  { id: "not_my_genre", label: "Not my kind of genre", icon: ShieldOff },
+  { id: "wrong_language", label: "Not in my preferred language", icon: Globe },
+  { id: "hide_similar", label: "Hide similar films", icon: EyeOff },
 ];
 
 interface WhyNotThisDialogProps {
@@ -27,27 +27,23 @@ export default function WhyNotThisDialog({ movieId, isOpen, onClose, onDismiss }
 
   const handleSubmit = async (reasonId: string) => {
     if (!movieId) return;
-    
+
     setSubmitting(true);
     try {
-      await authFetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/recommendations/feedback`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await authFetch(`${apiBase}/api/v1/recommendations/feedback?movie_id=${movieId}&action=${encodeURIComponent(reasonId)}`, {
         method: "POST",
-        body: JSON.stringify({
-          movieId,
-          action: "not_interested",
-          reason: reasonId,
-        }),
       });
-      
+
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         onDismiss(movieId);
         onClose();
-      }, 1000);
+      }, 700);
     } catch (err) {
       console.error("Failed to submit feedback", err);
-      // Even if backend fails, dismiss it locally for good UX
+      // Dismiss locally for responsive UX even on connection issue
       onDismiss(movieId);
       onClose();
     } finally {
@@ -60,53 +56,47 @@ export default function WhyNotThisDialog({ movieId, isOpen, onClose, onDismiss }
   return (
     <>
       <div 
-        className="fixed inset-0 z-[110] bg-background/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
       
-      <div className="fixed left-1/2 top-1/2 z-[120] w-[90%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface border border-border p-6 shadow-2xl">
-        {success ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20 text-green-500">
-              <Check className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary">Got it.</h3>
-            <p className="mt-2 text-sm text-text-muted">We've tuned your recommendations.</p>
+      <div className="fixed bottom-0 left-0 right-0 z-[101] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[var(--surface-elevated)] border-t border-[var(--border-default)] shadow-2xl transition-transform sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:rounded-2xl sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:border p-5 sm:p-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+          <div>
+            <h2 className="text-base font-bold text-[var(--text-primary)]">Why not this title?</h2>
+            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Your input tunes your Taste Constellation recommendations.</p>
           </div>
-        ) : (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black text-text-primary">Not a match?</h3>
-                <p className="text-xs text-text-muted mt-1">Tell us why so we can adjust your taste profile.</p>
-              </div>
-              <button 
-                onClick={onClose}
-                className="rounded-full p-2 text-text-muted hover:bg-background hover:text-text-primary transition-colors"
-                disabled={submitting}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+          <button 
+            onClick={onClose}
+            className="rounded-xl p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-            <div className="flex flex-col gap-2">
-              {REASONS.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => handleSubmit(r.id)}
-                  disabled={submitting}
-                  className="rounded-xl border border-border bg-background p-3 text-left text-sm font-medium text-text-primary transition-all hover:border-accent hover:bg-accent/5 disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-background"
-                >
-                  {r.label}
-                </button>
-              ))}
+        <div className="mt-4 space-y-2">
+          {success ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-2 text-emerald-400">
+              <Check className="h-8 w-8" />
+              <p className="text-xs font-semibold">Preferences updated — title removed from future feeds.</p>
             </div>
-            
-            <p className="mt-4 text-center text-[10px] text-text-muted">
-              Your feedback directly updates your Taste Constellation sliders.
-            </p>
-          </>
-        )}
+          ) : (
+            REASONS.map((reason) => {
+              const Icon = reason.icon;
+              return (
+                <button
+                  key={reason.id}
+                  disabled={submitting}
+                  onClick={() => handleSubmit(reason.id)}
+                  className="w-full flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3.5 py-3 text-left text-xs font-medium text-[var(--text-primary)] transition-all hover:bg-[var(--surface-hover)] hover:border-[var(--border-default)] hover:text-[var(--accent-warm)] active:scale-[0.99] disabled:opacity-50"
+                >
+                  <Icon className="h-4 w-4 text-[var(--text-tertiary)] shrink-0" />
+                  <span>{reason.label}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
     </>
   );

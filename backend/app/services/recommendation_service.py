@@ -1,139 +1,267 @@
 """
 NeuralFlix — Recommendation Service
 
-Deterministic scoring engine based on Taste Constellation.
-No matrix factorization, no deep learning. 100% transparent scoring.
+Deterministic scoring engine based on Taste Constellation v1.
+Multi-axis transparent scoring with per-component attributions.
 """
 
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.movie import Movie
 from app.models.taste_control import TasteControl
 from app.models.recommendation_feedback import RecommendationFeedback
-from app.services.explanation_service import generate_explanation
+from app.routers.movies import _format_movie
+
+
+def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, Any]:
+    """
+    Calculate deterministic match score (0-100) and return per-component attributions.
+    
+    Axes:
+    - baseline_quality: TMDB rating weight (up to 20 pts)
+    - pace_match: pace slider (0=slow burn / drama, 100=high octane / action)
+    - global_taste: global slider (0=local/domestic cinema, 100=world cinema)
+    - hidden_gems: obscure high-quality gems (low popularity + strong rating)
+    - challenge: light entertainment (comedy/family) vs complex (mystery/sci-fi/noir)
+    - discovery: familiar favorites vs adventurous boundary-pushing films
+    """
+    score = 30.0  # Base calibration
+    components: List[Dict[str, Any]] = []
+
+    # 1. Baseline Quality
+    rating = movie.tmdb_rating or 7.0
+    quality_delta = round((rating / 10.0) * 20.0, 1)
+    score += quality_delta
+    components.append({
+        "feature": "baseline_quality",
+        "delta": quality_delta,
+        "because": f"TMDB rating of {rating:.1f}/10"
+    })
+
+    # 2. Hidden Gems Axis (0-100)
+    pop = min(movie.popularity_score or 0.0, 100.0)
+    votes = movie.tmdb_votes or 0
+    if taste.hidden_gems >= 55:
+        gem_bonus = round(((100.0 - pop) / 100.0) * ((taste.hidden_gems - 50) / 50.0) * 20.0, 1)
+        if votes < 5000 and rating >= 7.5:
+            gem_bonus += 5.0
+        score += gem_bonus
+        if gem_bonus > 3.0:
+            components.append({
+                "feature": "hidden_gems",
+                "delta": gem_bonus,
+                "because": f"High rating ({rating:.1f}) with indie discovery profile (pop: {pop:.0f}/100)"
+            })
+    elif taste.hidden_gems <= 45:
+        pop_bonus = round((pop / 100.0) * ((50 - taste.hidden_gems) / 50.0) * 15.0, 1)
+        score += pop_bonus
+        if pop_bonus > 3.0:
+            components.append({
+                "feature": "popularity_affinity",
+                "delta": pop_bonus,
+                "because": f"Widely acclaimed popular title (pop: {pop:.0f}/100)"
+            })
+
+    # 3. Pace Axis (0-100)
+    genres = set(movie.genres or [])
+    runtime = movie.runtime or 110
+    if taste.pace > 55:
+        pace_weight = (taste.pace - 50) / 50.0
+        pace_delta = 0.0
+        if "Action" in genres or "Thriller" in genres or "Adventure" in genres:
+            pace_delta += round(15.0 * pace_weight, 1)
+        if runtime <= 105:
+            pace_delta += round(5.0 * pace_weight, 1)
+        if "Drama" in genres and "Action" not in genres:
+            pace_delta -= round(8.0 * pace_weight, 1)
+        score += pace_delta
+        if pace_delta != 0:
+            components.append({
+                "feature": "pace_match",
+                "delta": pace_delta,
+                "because": "Calibrated for fast-paced, high-momentum storytelling" if pace_delta > 0 else "Slower pacing than your setting"
+            })
+    elif taste.pace < 45:
+        pace_weight = (50 - taste.pace) / 50.0
+        pace_delta = 0.0
+        if "Drama" in genres or "Romance" in genres or "Mystery" in genres:
+            pace_delta += round(15.0 * pace_weight, 1)
+        if runtime >= 125:
+            pace_delta += round(5.0 * pace_weight, 1)
+        if "Action" in genres and "Drama" not in genres:
+            pace_delta -= round(8.0 * pace_weight, 1)
+        score += pace_delta
+        if pace_delta != 0:
+            components.append({
+                "feature": "pace_match",
+                "delta": pace_delta,
+                "because": "Matches your preference for deliberate, slow-burn narratives" if pace_delta > 0 else "Faster pacing than your preference"
+            })
+
+    # 4. Global Cinema Axis (0-100)
+    region = (movie.cinema_region or "").lower()
+    lang = (movie.language or "").lower()
+    is_world_cinema = region not in ["us", "uk", "hollywood", ""] or lang not in ["en", ""]
+    if taste.global_taste >= 55:
+        global_weight = (taste.global_taste - 50) / 50.0
+        if is_world_cinema:
+            global_delta = round(20.0 * global_weight, 1)
+            score += global_delta
+            components.append({
+                "feature": "global_taste",
+                "delta": global_delta,
+                "because": f"{region.title() if region else lang.upper()} cinema outside domestic Hollywood"
+            })
+    elif taste.global_taste <= 45:
+        local_weight = (50 - taste.global_taste) / 50.0
+        if not is_world_cinema:
+            local_delta = round(15.0 * local_weight, 1)
+            score += local_delta
+            components.append({
+                "feature": "domestic_cinema",
+                "delta": local_delta,
+                "because": "English-language / Hollywood cinema preference"
+            })
+
+    # 5. Challenge Axis (0-100)
+    challenging_genres = {"Science Fiction", "Mystery", "History", "Documentary", "War", "Crime"}
+    light_genres = {"Comedy", "Animation", "Family", "Music"}
+    if taste.challenge >= 55:
+        chal_weight = (taste.challenge - 50) / 50.0
+        if genres & challenging_genres:
+            chal_delta = round(12.0 * chal_weight, 1)
+            score += chal_delta
+            components.append({
+                "feature": "challenge_match",
+                "delta": chal_delta,
+                "because": "Thought-provoking thematic complexity"
+            })
+    elif taste.challenge <= 45:
+        light_weight = (50 - taste.challenge) / 50.0
+        if genres & light_genres:
+            light_delta = round(12.0 * light_weight, 1)
+            score += light_delta
+            components.append({
+                "feature": "accessible_entertainment",
+                "delta": light_delta,
+                "because": "Accessible, feel-good entertainment"
+            })
+
+    # 6. Discovery Axis (0-100)
+    if taste.discovery >= 60:
+        disc_weight = (taste.discovery - 50) / 50.0
+        disc_delta = round(10.0 * disc_weight, 1)
+        score += disc_delta
+        components.append({
+            "feature": "adventurous_discovery",
+            "delta": disc_delta,
+            "because": "Adventurous exploration beyond conventional comfort zone"
+        })
+
+    final_score = min(max(round(score, 1), 5.0), 99.0)
+    
+    # Grounded explanation string generated only from positive contributing components
+    positive_reasons = [c["because"] for c in components if c["delta"] > 2.0 and c["feature"] != "baseline_quality"]
+    if positive_reasons:
+        explanation = f"Recommended: {', '.join(positive_reasons[:2])}."
+    else:
+        explanation = f"Matched to your Taste Constellation profile with a {rating:.1f}/10 quality rating."
+
+    return {
+        "score": final_score,
+        "rec_score": round(final_score / 100.0, 4),
+        "components": components,
+        "explanation": explanation
+    }
+
+
+def _calculate_score(movie: Movie, taste: TasteControl) -> float:
+    """Helper returning scalar score (0-100)."""
+    return calculate_score_breakdown(movie, taste)["score"]
 
 
 async def get_recommendations_for_user(
     db: AsyncSession,
     user_id: str,
     taste: TasteControl,
-    limit: int = 10,
+    limit: int = 20,
     mode: str = "for_you",
-    genres: list[str] | None = None,
-    language: str | None = None,
-    mood: str | None = None,
-) -> List[dict]:
-    """Get personalized recommendations based on TasteControl sliders."""
-    
-    # 1. Get all movies in DB
+    genres: Optional[List[str]] = None,
+    language: Optional[str] = None,
+    mood: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Get personalized recommendations with mode routing and grounded XAI attributions."""
     result = await db.execute(select(Movie))
     all_movies = result.scalars().all()
-    
-    # 2. Get user feedback (to exclude "Not for me" movies)
+
+    # Exclude rejected movies from feedback
     feedback_res = await db.execute(
         select(RecommendationFeedback).where(RecommendationFeedback.user_id == user_id)
     )
-    excluded_movie_ids = {f.movie_id for f in feedback_res.scalars().all()}
-    
-    # 3. Score each movie deterministically
-    scored_movies: List[Tuple[Movie, float]] = []
-    
+    excluded_ids = {f.movie_id for f in feedback_res.scalars().all()}
+
+    scored_movies: List[Tuple[Movie, Dict[str, Any]]] = []
+
     for movie in all_movies:
-        if movie.id in excluded_movie_ids:
+        if movie.id in excluded_ids or movie.tmdb_id in excluded_ids:
             continue
+
         movie_genres = set(movie.genres or [])
         if genres and not movie_genres.intersection(genres):
             continue
         if language and (movie.language or "").lower() != language.lower():
             continue
+
         if mood:
-            mood_genres = {"intense": {"Action", "Thriller"}, "chill": {"Comedy", "Romance"},
-                           "scary": {"Horror", "Thriller"}, "thoughtful": {"Drama", "Mystery"}}.get(mood.lower())
-            if mood_genres and not movie_genres.intersection(mood_genres):
+            mood_genre_map = {
+                "intense": {"Action", "Thriller", "Crime", "Mystery"},
+                "chill": {"Comedy", "Animation", "Family", "Romance"},
+                "funny": {"Comedy", "Family", "Animation"},
+                "scary": {"Horror", "Thriller", "Mystery"},
+                "romantic": {"Romance", "Drama"},
+                "thoughtful": {"Drama", "Mystery", "History", "Science Fiction"},
+                "epic": {"Adventure", "Fantasy", "Science Fiction", "Action"},
+            }
+            target_mood_genres = mood_genre_map.get(mood.lower())
+            if target_mood_genres and not movie_genres.intersection(target_mood_genres):
                 continue
-            
-        score = _calculate_score(movie, taste)
+
+        breakdown = calculate_score_breakdown(movie, taste)
+        score = breakdown["score"]
+
+        # Mode calibrations
         if mode == "hidden_gems":
-            score += max(0, 70 - min(movie.popularity_score or 0, 70)) * 0.25
-        elif mode == "outside_bubble" and movie.cinema_region not in {None, "US", "UK"}:
-            score += 10
-        scored_movies.append((movie, score))
-        
-    # 4. Sort and return top N
-    scored_movies.sort(key=lambda x: x[1], reverse=True)
-    top_movies = scored_movies[:limit]
-    
-    # 5. Format response with explanations
-    response = []
-    for movie, score in top_movies:
-        explanation = generate_explanation(movie, taste, score)
-        
-        # Serialize with extra recommendation fields
-        response.append({
-            "id": movie.id,
-            "tmdb_id": movie.tmdb_id,
-            "title": movie.title,
-            "year": movie.year,
-            "poster_url": movie.poster_url,
-            "backdrop_url": movie.backdrop_url,
-            "rating": movie.tmdb_rating,
-            "genres": movie.genres or [],
-            "language": movie.language,
-            "cinema_region": movie.cinema_region,
-            "rec_score": round(score / 100, 4),
-            "explanation": explanation
-        })
-        
-    return response
+            if (movie.popularity_score or 0) < 70 and (movie.tmdb_rating or 0) >= 7.6:
+                score += 15.0
+            else:
+                score -= 10.0
+        elif mode == "tonight":
+            runtime = movie.runtime or 120
+            if runtime <= 120:
+                score += 10.0
+            else:
+                score -= 15.0
+        elif mode == "outside_bubble":
+            if movie.cinema_region not in ["US", "UK", "hollywood", None]:
+                score += 20.0
 
+        breakdown["score"] = score
+        breakdown["rec_score"] = round(score / 100.0, 4)
+        scored_movies.append((movie, breakdown))
 
-def _calculate_score(movie: Movie, taste: TasteControl) -> float:
-    """
-    Calculate deterministic match score (0-100) using sliders.
-    
-    Sliders (0-100):
-    - discovery: familiar (0) vs adventurous (100)
-    - global_taste: local (0) vs global (100)
-    - challenge: light (0) vs challenging (100)
-    - pace: slow (0) vs fast (100)
-    - hidden_gems: popular (0) vs obscure (100)
-    """
-    score = 50.0  # Base score
-    
-    # Hidden Gems vs Popularity
-    # movie.popularity_score is usually 0-100+
-    pop = min(movie.popularity_score or 0, 100)
-    if taste.hidden_gems > 60:
-        # Penalize popular movies
-        score += (100 - pop) * 0.2
-    elif taste.hidden_gems < 40:
-        # Reward popular movies
-        score += pop * 0.2
-        
-    # Pace
-    genres = set(movie.genres or [])
-    if taste.pace > 60:
-        if "Action" in genres or "Thriller" in genres:
-            score += 15
-        if "Drama" in genres:
-            score -= 10
-    elif taste.pace < 40:
-        if "Drama" in genres or "Romance" in genres:
-            score += 15
-        if "Action" in genres:
-            score -= 10
-            
-    # Global vs Local (assuming US/UK is "local" for simplicity)
-    is_global = movie.cinema_region not in ["US", "UK", None]
-    if taste.global_taste > 60 and is_global:
-        score += 20
-    elif taste.global_taste < 40 and not is_global:
-        score += 20
-        
-    # Baseline quality
-    rating = movie.tmdb_rating or 0
-    score += rating * 2  # up to 20 points
-    
-    return min(max(score, 0), 100)
+    # Sort descending by score
+    scored_movies.sort(key=lambda x: x[1]["score"], reverse=True)
+    top_items = scored_movies[:limit]
+
+    formatted = []
+    for movie, breakdown in top_items:
+        m_dict = _format_movie(movie)
+        m_dict["rec_score"] = breakdown["rec_score"]
+        m_dict["score"] = breakdown["rec_score"]
+        m_dict["explanation"] = breakdown["explanation"]
+        m_dict["components"] = breakdown["components"]
+        formatted.append(m_dict)
+
+    return formatted
