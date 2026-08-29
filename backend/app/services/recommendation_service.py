@@ -31,7 +31,6 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     components: List[Dict[str, Any]] = []
 
     # Sliders safe resolution
-    s_disc = getattr(taste, "discovery", 50) if getattr(taste, "discovery", None) is not None else 50
     s_glob = getattr(taste, "global_taste", 50) if getattr(taste, "global_taste", None) is not None else 50
     s_chal = getattr(taste, "challenge", 50) if getattr(taste, "challenge", None) is not None else 50
     s_pace = getattr(taste, "pace", 50) if getattr(taste, "pace", None) is not None else 50
@@ -156,16 +155,6 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
                 "because": "Accessible, feel-good entertainment"
             })
 
-    # 6. Discovery Axis (0-100)
-    if s_disc >= 60:
-        disc_weight = (s_disc - 50) / 50.0
-        disc_delta = round(10.0 * disc_weight, 1)
-        score += disc_delta
-        components.append({
-            "feature": "adventurous_discovery",
-            "delta": disc_delta,
-            "because": "Adventurous exploration beyond conventional comfort zone"
-        })
 
     final_score = min(max(round(score, 1), 5.0), 99.0)
     

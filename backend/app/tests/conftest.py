@@ -38,6 +38,13 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_rate_limits():
+    """Clear rate limits between tests to avoid cascading 429 failures."""
+    from app.main import limiter
+    limiter._storage.reset()
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Fresh database for each test function."""

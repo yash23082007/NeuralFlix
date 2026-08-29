@@ -5,7 +5,6 @@ import { Sliders, Sparkles, RefreshCw, Undo2, Map, Mountain, Zap, Shield, Compas
 import { authFetch } from "../../lib/auth";
 
 export interface TasteControls {
-  discovery: number;
   global: number;
   challenge: number;
   pace: number;
@@ -14,7 +13,6 @@ export interface TasteControls {
 }
 
 const DEFAULT_CONTROLS: TasteControls = {
-  discovery: 50,
   global: 50,
   challenge: 50,
   pace: 50,
@@ -100,7 +98,6 @@ export default function TasteConstellation({ onControlsChange, compact = false }
   };
 
   const sliders = [
-    { key: "discovery", labelLeft: "Familiar", labelRight: "Adventurous", icon: Compass },
     { key: "global", labelLeft: "Domestic", labelRight: "World Cinema", icon: Map },
     { key: "challenge", labelLeft: "Accessible", labelRight: "Challenging", icon: Mountain },
     { key: "pace", labelLeft: "Slow-Burn", labelRight: "High-Octane", icon: Zap },

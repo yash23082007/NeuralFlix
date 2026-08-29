@@ -17,10 +17,7 @@ import json
 import sys
 from pathlib import Path
 
-# Add backend directory to path
-backend_path = str(Path(__file__).resolve().parents[2] / "backend")
-if backend_path not in sys.path:
-    sys.path.insert(0, backend_path)
+
 
 from sqlalchemy import select
 from app.database import async_session, init_db

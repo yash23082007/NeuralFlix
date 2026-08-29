@@ -42,7 +42,7 @@ async def test_compare_movies(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_interactions_batch(client: AsyncClient):
+async def test_interactions_batch(client: AsyncClient, db_session):
     # Register user
     reg = {
         "username": "interactionuser",
@@ -51,6 +51,18 @@ async def test_interactions_batch(client: AsyncClient):
     }
     await client.post("/api/v1/auth/register", json=reg)
 
+    # Insert a dummy movie first
+    from app.models.movie import Movie
+    movie = Movie(
+        id=155, 
+        tmdb_id=155, 
+        title="The Dark Knight",
+        overview="Batman",
+        year=2008
+    )
+    db_session.add(movie)
+    await db_session.commit()
+
     events = [
         {"movie_id": 155, "event": "impression", "position": 0, "context": "home_feed"},
         {"movie_id": 155, "event": "click", "position": 0, "context": "home_feed"},
@@ -58,7 +70,7 @@ async def test_interactions_batch(client: AsyncClient):
     ]
     res = await client.post("/api/v1/interactions", json=events)
     assert res.status_code == 200
-    assert res.json()["count"] == 3
+    assert res.json()["accepted"] == 3
 
 
 @pytest.mark.asyncio

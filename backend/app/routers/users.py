@@ -324,14 +324,19 @@ async def remove_from_watchlist(
 
 @router.get("/me/history", response_model=HistoryResponse)
 async def get_history(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user's watch history."""
+    offset = (page - 1) * limit
     result = await db.execute(
         select(Movie, WatchEvent).join(WatchEvent, WatchEvent.movie_id == Movie.id)
         .where(WatchEvent.user_id == current_user.id)
         .order_by(WatchEvent.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     )
     rows = result.all()
     history_items = [
@@ -347,15 +352,19 @@ async def get_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Get aggregate statistics for the current user."""
-    watched = await db.execute(select(WatchEvent).where(WatchEvent.user_id == current_user.id))
-    ratings = await db.execute(select(Rating).where(Rating.user_id == current_user.id))
-    watchlist = await db.execute(select(WatchlistItem).where(WatchlistItem.user_id == current_user.id))
-    watched_rows, rating_rows, watchlist_rows = watched.scalars().all(), ratings.scalars().all(), watchlist.scalars().all()
+    from sqlalchemy import func
+    watched_count = await db.scalar(select(func.count()).select_from(WatchEvent).where(WatchEvent.user_id == current_user.id)) or 0
+    rated_count = await db.scalar(select(func.count()).select_from(Rating).where(Rating.user_id == current_user.id)) or 0
+    watchlist_count = await db.scalar(select(func.count()).select_from(WatchlistItem).where(WatchlistItem.user_id == current_user.id)) or 0
+    
+    avg_rating = await db.scalar(select(func.avg(Rating.rating)).where(Rating.user_id == current_user.id))
+    avg_rating = round(avg_rating, 2) if avg_rating is not None else None
+
     return UserStatsResponse(
-        watched_count=len(watched_rows),
-        rated_count=len(rating_rows),
-        watchlist_count=len(watchlist_rows),
-        average_rating=round(sum(r.rating for r in rating_rows) / len(rating_rows), 2) if rating_rows else None
+        watched_count=watched_count,
+        rated_count=rated_count,
+        watchlist_count=watchlist_count,
+        average_rating=avg_rating
     )
 
 

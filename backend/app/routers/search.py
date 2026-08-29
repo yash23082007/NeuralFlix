@@ -13,6 +13,7 @@ from app.dependencies import get_current_user_optional
 from app.models.user import User
 from app.models.movie import Movie
 from app.models.taste_control import TasteControl
+from app.models.graph import SearchQuery
 from app.search.query_parser import parse_search_query
 from app.routers.movies import _format_movie
 from app.services.recommendation_service import calculate_score_breakdown
@@ -38,6 +39,16 @@ async def search_movies_endpoint(
     if not search_term:
         res = await db.execute(select(Movie).order_by(desc(Movie.popularity_score)).limit(limit))
         movies = res.scalars().all()
+        
+        # Log empty search
+        db.add(SearchQuery(
+            user_id=current_user.id if current_user else None,
+            raw_query="",
+            parsed_intent=None,
+            result_count=len(movies)
+        ))
+        await db.commit()
+        
         return {"results": [_format_movie(m) for m in movies], "total": len(movies), "page": page, "parsed_intent": None}
 
     parsed = parse_search_query(search_term)
@@ -127,6 +138,15 @@ async def search_movies_endpoint(
     scored.sort(key=lambda x: x[1], reverse=True)
     offset = (page - 1) * limit
     paged = [item[0] for item in scored[offset : offset + limit]]
+    
+    # Log search
+    db.add(SearchQuery(
+        user_id=current_user.id if current_user else None,
+        raw_query=search_term,
+        parsed_intent=parsed,
+        result_count=len(scored)
+    ))
+    await db.commit()
 
     return {
         "results": paged,

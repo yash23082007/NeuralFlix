@@ -28,14 +28,13 @@ async def seed_database(db: AsyncSession) -> dict:
 
     results = {"success": 0, "inserted": 0, "failed": 0}
     
+    tmdb_ids = [item["tmdb_id"] for item in CURATED_CATALOG]
+    existing_res = await db.execute(select(Movie.tmdb_id).where(Movie.tmdb_id.in_(tmdb_ids)))
+    existing_ids = set(existing_res.scalars().all())
+    
     for item in CURATED_CATALOG:
         try:
-            # Check if movie already exists by tmdb_id
-            stmt = select(Movie).where(Movie.tmdb_id == item["tmdb_id"])
-            res = await db.execute(stmt)
-            existing = res.scalar_one_or_none()
-            
-            if not existing:
+            if item["tmdb_id"] not in existing_ids:
                 movie_obj = Movie(**item)
                 db.add(movie_obj)
                 results["inserted"] += 1

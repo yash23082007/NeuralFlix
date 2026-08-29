@@ -30,7 +30,8 @@ class TasteDNAProfile(BaseModel):
 
 
 class ProfileResponse(BaseModel):
-    profile: TasteDNAProfile
+    profile: Optional[TasteDNAProfile] = None
+    message: Optional[str] = None
 
 
 class WatchlistResponse(BaseModel):

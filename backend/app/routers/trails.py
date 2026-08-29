@@ -9,6 +9,9 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter(prefix="/api/v1/trails", tags=["Trails"])
 
 
+import functools
+
+@functools.lru_cache()
 def _load_trails():
     trails_file = os.path.join(os.path.dirname(__file__), "..", "seed", "cinema_trails.json")
     try:
