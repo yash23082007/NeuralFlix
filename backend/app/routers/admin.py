@@ -1,5 +1,5 @@
 """
-NeuralFlix — Admin Dashboard & Operations Router
+Movie Intelligence Platform — Admin Dashboard & Operations Router
 Protected operational endpoints for system health, live database aggregates, and worker triggers.
 """
 
@@ -61,7 +61,7 @@ async def get_admin_stats(
         },
         "checkpoints": checkpoints,
         "active_models": [
-            {"id": "Taste Constellation v1", "tier": "Active Default", "status": "Online"}
+            {"id": "Taste Profile v1", "tier": "Active Default", "status": "Online"}
         ]
     }
 

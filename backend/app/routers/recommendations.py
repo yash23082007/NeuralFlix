@@ -1,6 +1,6 @@
 """
-NeuralFlix — Recommendations Router
-Hybrid recommendation endpoints with Taste Constellation scoring and grounded XAI attributions.
+Movie Intelligence Platform — Recommendations Router
+Hybrid recommendation endpoints with Taste Profile scoring and grounded XAI attributions.
 """
 
 from typing import Any, Dict, List, Optional, Literal
@@ -23,6 +23,13 @@ from app.services.catalog_service import get_or_fetch_movie
 from app.routers.movies import _format_movie
 
 router = APIRouter(prefix="/api/v1/recommendations", tags=["Recommendations"])
+
+
+@router.get("/popular")
+async def get_popular(db: AsyncSession = Depends(get_db)):
+    """Fallback endpoint for popular recommendations."""
+    from app.routers.movies import get_trending
+    return await get_trending(db)
 
 
 @router.get("/feed")
@@ -144,11 +151,13 @@ async def submit_feedback(
     feedback = result.scalar_one_or_none()
 
     if not feedback:
+        from app.config import get_settings
+        settings = get_settings()
         feedback = RecommendationFeedback(
             user_id=uid,
             movie_id=movie_id,
             feedback_type=action,
-            ranking_version="4.0-DeterministicTaste-v1"
+            ranking_version=settings.ranker_id
         )
         db.add(feedback)
     else:

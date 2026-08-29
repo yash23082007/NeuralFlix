@@ -1,6 +1,6 @@
-# NeuralFlix — Non-Goals
+# Movie Intelligence Platform — Non-Goals
 
-NeuralFlix does not:
+Movie Intelligence Platform does not:
 
 - **Infer mood from private data** — We do not use camera, microphone, biometric sensors, or hidden behavior signals to guess emotional state.
 

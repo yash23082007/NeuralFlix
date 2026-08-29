@@ -1,5 +1,5 @@
 """
-NeuralFlix — Auth Schemas
+Movie Intelligence Platform — Auth Schemas
 """
 
 from typing import Optional

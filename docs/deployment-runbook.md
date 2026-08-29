@@ -1,4 +1,4 @@
-# NeuralFlix Deployment Runbook
+# Movie Intelligence Platform Deployment Runbook
 
 **Last updated:** August 2026  
 **Maintained by:** Engineering Team
@@ -182,7 +182,7 @@ If data corruption occurs:
 | `GET /health/live` | Liveness (is process running?) | `{"status": "alive"}` |
 | `GET /health/ready` | Readiness (are deps healthy?) | `{"status": "ready", "database": true, ...}` |
 | `GET /v1/metrics/health` | Alias for readiness | Same as above |
-| `GET /` | API metadata | `{"name": "NeuralFlix ML Engine", ...}` |
+| `GET /` | API metadata | `{"name": "Movie Intelligence Platform ML Engine", ...}` |
 
 ### Post-Deploy Verification Script
 

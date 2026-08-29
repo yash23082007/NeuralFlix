@@ -1,5 +1,5 @@
 """
-NeuralFlix — Test Configuration
+Movie Intelligence Platform — Test Configuration
 
 In-memory SQLite for all tests. No external dependencies.
 """

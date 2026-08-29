@@ -1,5 +1,5 @@
 """
-NeuralFlix — Normalized Graph & Ingestion Platform Models
+Movie Intelligence Platform — Normalized Graph & Ingestion Platform Models
 
 Models for people, credits, keywords, search queries, ML model versions, and sync checkpoints.
 """

@@ -107,7 +107,7 @@ export default function DiscoveryPassport() {
         </div>
         <h2 className="text-2xl font-black text-text-primary mb-3">Discovery Passport</h2>
         <p className="text-sm text-text-muted max-w-md mx-auto mb-8 leading-relaxed">
-          Track the countries, languages, and hidden gems you explore on NeuralFlix. 
+          Track the countries, languages, and hidden gems you explore on Movie Intelligence Platform. 
           We believe in strict privacy — tracking is <strong>opt-in only</strong>, never shared, and never gamified.
         </p>
         <button
@@ -201,7 +201,7 @@ export default function DiscoveryPassport() {
           </div>
           <p className="mt-4 text-xs text-text-muted leading-relaxed">
             * This is an honest reflection of your viewing habits, not a score to maximize. 
-            "Comfort zone" refers to popular, same-language films, while "Discovery" refers to international or hidden gem selections.
+            "Comfort zone" refers to popular, same-language movies, while "Discovery" refers to international or hidden gem selections.
           </p>
         </div>
       </div>

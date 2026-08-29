@@ -124,7 +124,7 @@ export default function TasteConstellation({ onControlsChange, compact = false }
               <Sliders className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[var(--text-primary)] tracking-tight">Taste Constellation</h2>
+              <h2 className="text-base font-bold text-[var(--text-primary)] tracking-tight">Taste Profile</h2>
               <p className="text-xs text-[var(--text-tertiary)]">Transparent, steerable recommendation weights.</p>
             </div>
           </div>

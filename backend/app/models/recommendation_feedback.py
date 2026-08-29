@@ -1,5 +1,5 @@
 """
-NeuralFlix — Recommendation Feedback, Watchlist, Rating, Impression Models
+Movie Intelligence Platform — Recommendation Feedback, Watchlist, Rating, Impression Models
 
 Four models that capture user interaction with the recommendation system:
 - RecommendationFeedback: "Not for me" + reason

@@ -1,5 +1,5 @@
 """
-NeuralFlix — Explanation Service
+Movie Intelligence Platform — Explanation Service
 
 Generates human-readable, mathematically grounded explanations from actual score deltas.
 Strict honesty: no explanation is generated without real non-zero score components.

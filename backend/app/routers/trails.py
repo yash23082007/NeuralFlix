@@ -1,5 +1,5 @@
 """
-NeuralFlix — Trails Router
+Movie Intelligence Platform — Trails Router
 """
 
 import json

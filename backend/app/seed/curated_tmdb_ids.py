@@ -1,5 +1,5 @@
 """
-NeuralFlix — Curated Seed IDs
+Movie Intelligence Platform — Curated Seed IDs
 
 Used for cold-start database seeding.
 Only IDs are stored. Metadata is fetched dynamically from TMDB.

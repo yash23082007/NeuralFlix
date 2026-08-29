@@ -1,5 +1,5 @@
 """
-NeuralFlix — Movie Endpoints
+Movie Intelligence Platform — Movie Endpoints
 Full support for trending, top-rated, cinema regions, mood mapping, anime, and search.
 """
 

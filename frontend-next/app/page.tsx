@@ -54,7 +54,7 @@ export default async function Home() {
             Discover Your <span className="text-primary">Taste</span> in World Cinema
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            NeuralFlix is not a black-box recommender. It is a deterministic engine where you control the weights, genres, and diversity.
+            Movie Intelligence Platform is not a black-box recommender. It is a deterministic engine where you control the weights, genres, and diversity.
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Link

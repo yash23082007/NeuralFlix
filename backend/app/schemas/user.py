@@ -1,5 +1,5 @@
 """
-NeuralFlix — User Schemas
+Movie Intelligence Platform — User Schemas
 Pydantic response models for user profiles, taste controls, stats, and history.
 """
 

@@ -1,5 +1,5 @@
 """
-NeuralFlix — Query Parser
+Movie Intelligence Platform — Query Parser
 Rule-based deterministic intent extractor for natural language movie discovery queries.
 
 Examples:
@@ -132,7 +132,7 @@ def parse_search_query(raw_query: str) -> Dict[str, Any]:
     parsed["genres"] = matched_genres
 
     # 7. Remaining clean search terms
-    tokens = [t.strip() for t in clean_q.split() if t.strip() and t not in {"movies", "films", "movie", "film", "show", "watch", "like", "something"}]
+    tokens = [t.strip() for t in clean_q.split() if t.strip() and t not in {"movies", "movies", "movie", "movie", "show", "watch", "like", "something"}]
     parsed["clean_query"] = " ".join(tokens)
 
     return parsed

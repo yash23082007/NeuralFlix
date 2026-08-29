@@ -91,7 +91,7 @@ export function CommandPalette() {
             {/* Glowing neon accent bar */}
             <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent-warm)] to-transparent opacity-80" />
 
-            <Command label="Search NeuralFlix" className="flex flex-col" shouldFilter={false}>
+            <Command label="Search Movie Intelligence Platform" className="flex flex-col" shouldFilter={false}>
               <div className="flex items-center border-b border-[var(--border-subtle)] px-4 relative">
                 <SearchIcon className="h-5 w-5 shrink-0 text-[var(--text-secondary)]" />
                 <Command.Input
@@ -99,7 +99,7 @@ export function CommandPalette() {
                   value={query}
                   onValueChange={setQuery}
                   className="w-full bg-transparent p-4 text-base outline-none placeholder:text-[var(--text-tertiary)] font-sans"
-                  placeholder="Search films, regions, genres..."
+                  placeholder="Search movies, regions, genres..."
                 />
                 
                 {isLoading && (
@@ -120,7 +120,7 @@ export function CommandPalette() {
               <Command.List className="max-h-[60vh] overflow-y-auto p-3" aria-live="polite">
                 {query && !isLoading && results.length === 0 && (
                   <div className="py-8 text-center text-sm text-[var(--text-tertiary)] font-sans">
-                    No films found matching your search.
+                    No movies found matching your search.
                   </div>
                 )}
 
@@ -171,7 +171,7 @@ export function CommandPalette() {
                 {query && results.length > 0 && (
                   <div className="space-y-1">
                     <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] font-sans">
-                      Films Found
+                      Movies Found
                     </div>
                     <div className="space-y-1">
                       {results.map((movie, index) => (
@@ -204,7 +204,7 @@ export function CommandPalette() {
                               <span>
                                 {movie.year ||
                                   movie.release_date?.substring(0, 4) ||
-                                  "Film"}
+                                  "Movie"}
                               </span>
                               <span>•</span>
                               <span className="uppercase">{movie.language || "EN"}</span>

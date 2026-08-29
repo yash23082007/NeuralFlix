@@ -191,7 +191,7 @@ function SearchContent() {
             </div>
           ) : searched && results.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-[var(--border-default)] p-16 text-center text-xs text-[var(--text-tertiary)] max-w-lg mx-auto">
-              No films found matching your search. Try broader terms or check the suggested filters above.
+              No movies found matching your search. Try broader terms or check the suggested filters above.
             </div>
           ) : results.length > 0 ? (
             <div>

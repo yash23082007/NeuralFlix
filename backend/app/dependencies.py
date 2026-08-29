@@ -1,5 +1,5 @@
 """
-NeuralFlix — Dependencies
+Movie Intelligence Platform — Dependencies
 
 Shared FastAPI dependencies (auth, current user, optional user, etc.).
 """

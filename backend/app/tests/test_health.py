@@ -1,5 +1,5 @@
 """
-NeuralFlix — Health Endpoint Tests
+Movie Intelligence Platform — Health Endpoint Tests
 
 Verifies:
 - /health/live always returns 200
@@ -32,7 +32,7 @@ async def test_health_ready(client: AsyncClient):
     assert "status" in data
     assert "database" in data
     assert "recommendation_mode" in data
-    assert data["recommendation_mode"] == "content-diversity-reranker-v1"
+    assert data["recommendation_mode"] == "taste-constellation-v1"
 
 
 @pytest.mark.asyncio
@@ -53,7 +53,7 @@ async def test_openapi_spec(client: AsyncClient):
     response = await client.get("/openapi.json")
     assert response.status_code == 200
     data = response.json()
-    assert data["info"]["title"] == "NeuralFlix — Explainable Global Cinema Atlas"
+    assert data["info"]["title"] == "Movie Intelligence Platform — Explainable Global Cinema Atlas"
     assert data["info"]["version"] == "4.0.0"
     assert "/health/live" in data["paths"]
     assert "/health/ready" in data["paths"]

@@ -1,5 +1,5 @@
 """
-NeuralFlix — Resumable TMDB Data Platform Ingestion Pipeline
+Movie Intelligence Platform — Resumable TMDB Data Platform Ingestion Pipeline
 
 Stages:
 1. popular: discover sort=popularity.desc

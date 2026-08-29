@@ -164,7 +164,7 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
               style={{ transformOrigin: "center" }}
             />
 
-            {/* Glowing user Taste DNA polygon */}
+            {/* Glowing user Taste Profile polygon */}
             <motion.polygon
               points={dataPolygonString}
               fill="rgba(232, 168, 73, 0.08)"
@@ -251,7 +251,7 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
           </div>
 
           <h3 className="text-2xl font-bold text-[var(--text-primary)] font-playfair leading-tight">
-            Cinematic Taste DNA
+            Cinematic Taste Profile
           </h3>
           <p className="text-xs leading-relaxed text-[var(--text-secondary)] font-sans">
             Visual representations derived from genre affinity calculations, director signatures, and release period metadata on your rated titles.

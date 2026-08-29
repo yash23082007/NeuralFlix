@@ -1,6 +1,6 @@
 """
-NeuralFlix — Movie Comparison Router
-Compares two films across 5 Taste Constellation axes, predicting personalized user preference with delta reasons.
+Movie Intelligence Platform — Movie Comparison Router
+Compares two movies across 5 Taste Profile axes, predicting personalized user preference with delta reasons.
 """
 
 from typing import Any, Dict, List, Optional

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   Compass,
-  Film,
+  Movie,
   Globe2,
   LogIn,
   LogOut,
@@ -103,7 +103,7 @@ export default function Navbar() {
               whileTap={{ scale: 0.95 }}
               className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-sm font-black text-black shadow-sm"
             >
-              <Film className="h-4 w-4" />
+              <Movie className="h-4 w-4" />
               <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] opacity-0 group-hover:opacity-40 blur-lg transition-opacity duration-500" />
             </motion.div>
             <span className="hidden text-lg font-semibold tracking-tight text-[var(--text-primary)] sm:block">
@@ -192,7 +192,7 @@ export default function Navbar() {
               className="hidden items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/80 px-3.5 py-2 text-sm text-[var(--text-secondary)] transition-all hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] backdrop-blur-md sm:flex"
             >
               <Search className="h-3.5 w-3.5" />
-              <span className="text-[var(--text-tertiary)]">Search films...</span>
+              <span className="text-[var(--text-tertiary)]">Search movies...</span>
               <kbd className="hidden rounded border border-[var(--border-default)] bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)] lg:inline">
                 ⌘K
               </kbd>

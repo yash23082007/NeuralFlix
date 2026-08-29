@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Film, ArrowLeft } from "lucide-react";
+import { Movie, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function NotFound() {
@@ -10,7 +10,7 @@ export default function NotFound() {
       {/* Decorative ambient background orb */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[var(--accent-warm)]/5 blur-3xl pointer-events-none" />
 
-      {/* Floating Film icon */}
+      {/* Floating Movie icon */}
       <motion.div
         animate={{
           y: [0, -10, 0],
@@ -23,7 +23,7 @@ export default function NotFound() {
         }}
         className="relative z-10 p-4 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--accent-warm)] shadow-lg"
       >
-        <Film className="h-10 w-10" />
+        <Movie className="h-10 w-10" />
       </motion.div>
 
       <div className="relative z-10 text-center space-y-3">

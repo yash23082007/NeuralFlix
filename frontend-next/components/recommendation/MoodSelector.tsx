@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Sparkles, Film, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
+import { Sparkles, Movie, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
 import MovieCard from "../MovieCard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -13,7 +13,7 @@ const MOODS = [
   { id: "funny", label: "Funny", icon: "😆", gradient: "from-yellow-400 via-amber-500 to-orange-500", desc: "Comedies, satires, and lighthearted fun" },
   { id: "scary", label: "Scary", icon: "💀", gradient: "from-neutral-900 via-red-950 to-neutral-900", desc: "Horror, psychological terror, and suspense" },
   { id: "romantic", label: "Romantic", icon: "💖", gradient: "from-pink-500 via-rose-500 to-red-500", desc: "Romance, dramas, and love stories" },
-  { id: "thoughtful", label: "Thoughtful", icon: "🧠", gradient: "from-emerald-500 via-teal-600 to-cyan-600", desc: "Philosophical, complex, and art-house films" },
+  { id: "thoughtful", label: "Thoughtful", icon: "🧠", gradient: "from-emerald-500 via-teal-600 to-cyan-600", desc: "Philosophical, complex, and art-house movies" },
   { id: "epic", label: "Epic", icon: "👑", gradient: "from-violet-600 via-purple-600 to-amber-500", desc: "Sci-Fi epics, fantasy, and blockbusters" },
   { id: "sad", label: "Sad", icon: "💧", gradient: "from-slate-700 via-slate-800 to-cyan-900", desc: "Melodramas, tragedies, and emotional journeys" }
 ];

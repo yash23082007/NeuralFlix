@@ -1,5 +1,5 @@
 """
-NeuralFlix — Search Router
+Movie Intelligence Platform — Search Router
 Hybrid search with natural language query parsing, structured filters, and suggestion autocomplete.
 """
 
@@ -41,15 +41,17 @@ async def search_movies_endpoint(
         movies = res.scalars().all()
         
         # Log empty search
-        db.add(SearchQuery(
+        query_obj = SearchQuery(
             user_id=current_user.id if current_user else None,
             raw_query="",
             parsed_intent=None,
             result_count=len(movies)
-        ))
+        )
+        db.add(query_obj)
         await db.commit()
+        await db.refresh(query_obj)
         
-        return {"results": [_format_movie(m) for m in movies], "total": len(movies), "page": page, "parsed_intent": None}
+        return {"results": [_format_movie(m) for m in movies], "total": len(movies), "page": page, "parsed_intent": None, "query_id": query_obj.id}
 
     parsed = parse_search_query(search_term)
     
@@ -116,14 +118,14 @@ async def search_movies_endpoint(
             if m.runtime and m.runtime <= runtime_max:
                 match_score += 20.0
             elif m.runtime and m.runtime > runtime_max:
-                match_score -= 30.0
+                match_score -= 100.0
 
         # 5. Year / Decade constraint
         if year_min and year_max:
             if m.year and year_min <= m.year <= year_max:
                 match_score += 25.0
             else:
-                match_score -= 20.0
+                match_score -= 100.0
 
         # Include if positive match or if general search term matched
         if match_score > 0 or (not clean_q and (target_genres or target_region or runtime_max)):
@@ -135,20 +137,24 @@ async def search_movies_endpoint(
             f_movie["explanation"] = f"Matches search for '{search_term}': {taste_bd['explanation']}"
             scored.append((f_movie, total_rank))
 
-    scored.sort(key=lambda x: x[1], reverse=True)
+    # Sort by match_score DESC, popularity DESC, tmdb_rating DESC
+    scored.sort(key=lambda x: (x[1], x[0].get("popularity_score") or 0.0, x[0].get("tmdb_rating") or 0.0), reverse=True)
     offset = (page - 1) * limit
     paged = [item[0] for item in scored[offset : offset + limit]]
     
     # Log search
-    db.add(SearchQuery(
+    query_obj = SearchQuery(
         user_id=current_user.id if current_user else None,
         raw_query=search_term,
         parsed_intent=parsed,
         result_count=len(scored)
-    ))
+    )
+    db.add(query_obj)
     await db.commit()
+    await db.refresh(query_obj)
 
     return {
+        "query_id": query_obj.id,
         "results": paged,
         "total": len(scored),
         "page": page,
@@ -185,3 +191,34 @@ async def search_suggestions(
     
     matches.sort(key=lambda x: x.get("rating") or 0.0, reverse=True)
     return {"suggestions": matches[:limit]}
+
+
+@router.post("/click")
+async def search_click(
+    movie_id: int = Query(...),
+    query_id: Optional[int] = Query(None),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db)
+):
+    """Log a click from a search result."""
+    from app.models.graph import SearchQuery
+    if query_id:
+        stmt = select(SearchQuery).where(SearchQuery.id == query_id)
+        res = await db.execute(stmt)
+        sq = res.scalar_one_or_none()
+        if sq:
+            sq.clicked_movie_id = movie_id
+            await db.commit()
+            return {"status": "success", "query_id": query_id, "movie_id": movie_id}
+            
+    # Fallback if no specific query_id is provided: find most recent search query for user
+    if current_user:
+        stmt = select(SearchQuery).where(SearchQuery.user_id == current_user.id).order_by(SearchQuery.created_at.desc()).limit(1)
+        res = await db.execute(stmt)
+        sq = res.scalar_one_or_none()
+        if sq:
+            sq.clicked_movie_id = movie_id
+            await db.commit()
+            return {"status": "success", "query_id": sq.id, "movie_id": movie_id}
+            
+    return {"status": "ignored", "reason": "No query_id and no logged in user"}

@@ -112,7 +112,7 @@ const REGION_MAP: Record<
   },
   nollywood: {
     title: "Nollywood",
-    subtitle: "Nigeria's high-output film industry and streaming-era expansion.",
+    subtitle: "Nigeria's high-output movie industry and streaming-era expansion.",
     code: "NG",
     accent: "#F39C12",
     accentGlow: "rgba(243, 156, 18, 0.15)",
@@ -331,12 +331,12 @@ export default function RegionPage() {
                   Anchor Masterpieces
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {regionConfig.anchors.map((film) => (
+                  {regionConfig.anchors.map((movie) => (
                     <span 
-                      key={film} 
+                      key={movie} 
                       className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--surface-muted)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--text-secondary)] transition-all font-sans"
                     >
-                      {film}
+                      {movie}
                     </span>
                   ))}
                 </div>
@@ -389,7 +389,7 @@ export default function RegionPage() {
               Top Catalog Candidates
             </h2>
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] font-sans">
-              {movies.length} {movies.length === 1 ? "Film" : "Films"} catalogued
+              {movies.length} {movies.length === 1 ? "Movie" : "Movies"} catalogued
             </span>
           </div>
 

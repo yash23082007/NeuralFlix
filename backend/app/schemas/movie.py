@@ -1,5 +1,5 @@
 """
-NeuralFlix — Movie Schemas
+Movie Intelligence Platform — Movie Schemas
 """
 
 from typing import List, Optional

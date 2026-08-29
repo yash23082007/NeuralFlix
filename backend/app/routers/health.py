@@ -1,5 +1,5 @@
 """
-NeuralFlix — Health & Diagnostics Endpoints
+Movie Intelligence Platform — Health & Diagnostics Endpoints
 Supports /health/live, /health/ready, /health, /api/health, /api/info.
 """
 
@@ -33,7 +33,7 @@ async def health_ready():
         "status": "ready" if db_ok else "degraded",
         "database": db_ok,
         "cache": redis_ok,
-        "recommendation_mode": settings.ranking_version,
+        "recommendation_mode": settings.ranker_id,
         "environment": settings.environment,
     }
 
@@ -49,21 +49,12 @@ async def health_combined():
 async def api_info():
     """API info endpoint."""
     return {
-        "name": "NeuralFlix — Explainable Global Cinema Atlas",
+        "name": "Movie Intelligence Platform — Explainable Global Cinema Atlas",
         "version": "4.0.0",
         "status": "healthy"
     }
 
 
 async def _ping_redis() -> bool:
-    """Attempt Redis ping — returns False if unavailable."""
-    if not settings.redis_url:
-        return False
-    try:
-        import redis.asyncio as aioredis
-        r = aioredis.from_url(settings.redis_url, socket_connect_timeout=1)
-        await r.ping()  # type: ignore
-        await r.aclose()
-        return True
-    except Exception:
-        return False
+    """Attempt Redis ping — currently disabled."""
+    return False

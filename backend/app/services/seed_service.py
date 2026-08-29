@@ -1,5 +1,5 @@
 """
-NeuralFlix — Seed Service
+Movie Intelligence Platform — Seed Service
 
 Populates the database with curated world cinema masterpieces.
 Supports offline standalone startup and optional live TMDB enrichment.

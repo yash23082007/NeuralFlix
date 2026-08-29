@@ -1,5 +1,5 @@
 """
-NeuralFlix — Curated Master Catalog
+Movie Intelligence Platform — Curated Master Catalog
 Pre-populated rich global cinema metadata across industries and genres.
 Guarantees immediate offline operation, instant search, mood mapping, and cinema clusters.
 """

@@ -1,5 +1,5 @@
 """
-NeuralFlix — Interactions Router
+Movie Intelligence Platform — Interactions Router
 Batch logging of user interaction events for honest telemetry and offline evaluation.
 """
 
@@ -34,6 +34,9 @@ async def record_interactions(
     db: AsyncSession = Depends(get_db)
 ):
     """Record batch interaction events into recommendation_impressions and watch_events."""
+    from app.config import get_settings
+    settings = get_settings()
+
     if not events:
         return {"accepted": 0, "rejected_invalid_movie": 0}
 
@@ -63,7 +66,7 @@ async def record_interactions(
                 position=event.position or 0,
                 context=event.context,
                 shown_at=now,
-                ranking_version="taste-constellation"
+                ranking_version=settings.ranker_id
             )
             db.add(impression)
             continue
@@ -97,7 +100,7 @@ async def record_interactions(
                 position=event.position or 0,
                 context=event.context,
                 shown_at=now,
-                ranking_version="taste-constellation"
+                ranking_version=settings.ranker_id
             )
             if event.event == "click":
                 impression.clicked_at = now

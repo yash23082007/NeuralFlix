@@ -1,5 +1,5 @@
 """
-NeuralFlix — Machine Learning & Pipeline Telemetry Router
+Movie Intelligence Platform — Machine Learning & Pipeline Telemetry Router
 Truthful, live recommendation telemetry and verified model version cards.
 """
 
@@ -41,13 +41,13 @@ async def get_ml_overview(db: AsyncSession = Depends(get_db)):
         "top_regions": [{"name": k, "count": v} for k, v in sorted(regions.items(), key=lambda x: -x[1])[:6]],
         "pipeline": [
             {"stage": "Candidate Generation", "method": "Genre/Mood/Region SQL Slices + TF-IDF Overlap"},
-            {"stage": "Ranking Tier 0", "method": "Taste Constellation Deterministic Scorer v1 (Active)"},
+            {"stage": "Ranking Tier 0", "method": "Taste Profile Deterministic Scorer v1 (Active)"},
             {"stage": "Explainability", "method": "Mathematical Component Attribution (XAI)"},
             {"stage": "Interaction Logging", "method": "Continuous Event Batch Ingest"}
         ],
         "model_cards": [
             {
-                "name": "Taste Constellation v1",
+                "name": "Taste Profile v1",
                 "type": "Deterministic multi-axis ranker",
                 "status": "Active (Default Fallback)",
                 "purpose": "User-steerable transparent recommendations with exact mathematical attribution",

@@ -1,5 +1,5 @@
 """
-NeuralFlix — Catalog Service
+Movie Intelligence Platform — Catalog Service
 
 Coordinates fetching movies from TMDB and persisting them in the database.
 Guards TMDB write-through behind settings.allow_tmdb_write_through and uses singleflight dedupe.

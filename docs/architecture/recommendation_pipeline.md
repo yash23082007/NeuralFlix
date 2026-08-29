@@ -1,6 +1,6 @@
-# NeuralFlix Recommendation Architecture
+# Movie Intelligence Platform Recommendation Architecture
 
-NeuralFlix is built to provide **transparent, user-controlled recommendations** without hidden algorithmic gamification.
+Movie Intelligence Platform is built to provide **transparent, user-controlled recommendations** without hidden algorithmic gamification.
 
 ## Philosophy
 
@@ -20,16 +20,16 @@ We query candidates from MongoDB based on user watch history and basic genre/lan
 ### 2. Candidate Generation (Base)
 A Content-Based TF-IDF engine provides a baseline similarity score for the candidates against the user's history. 
 
-### 3. Taste Constellation Reranker
+### 3. Taste Profile Reranker
 The core production pipeline is `taste_reranker.py`. It takes the base score and reranks it using explicit user constraints:
 - `discovery`: Boosts items outside the comfort zone.
 - `global_pref`: Penalizes local/familiar items if the user wants global cinema.
 - `challenge`: Boosts complex genres (drama, documentary, etc).
 - `pace`: Adjusts score based on inferred pacing (runtime + action/thriller vs drama/romance).
-- `hiddenGems`: Inverts the popularity penalty for users looking for obscure films.
+- `hiddenGems`: Inverts the popularity penalty for users looking for obscure movies.
 
 ### 4. Diversity Boost
-If enabled, the reranker injects highly-rated international/foreign language films into the top K candidates to deliberately break filter bubbles.
+If enabled, the reranker injects highly-rated international/foreign language movies into the top K candidates to deliberately break filter bubbles.
 
 ### 5. Why Recommended Engine
 Before delivery, candidates pass through `why_recommended.py`, which generates a JSON array of specific, traceable evidence for why the movie scored high.

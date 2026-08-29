@@ -1,5 +1,5 @@
 """
-NeuralFlix — TMDB API Service
+Movie Intelligence Platform — TMDB API Service
 
 Pooled, resilient client for the TMDB API.
 Fetches movie details, search, and discover feeds.

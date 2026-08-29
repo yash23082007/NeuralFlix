@@ -1,5 +1,5 @@
 """
-NeuralFlix — Auth Endpoints
+Movie Intelligence Platform — Auth Endpoints
 Secure cookie-based authentication with rotating refresh tokens and PyJWT.
 """
 

@@ -112,7 +112,7 @@ export default function WhyRecommendedSheet({ movieId, isOpen, onClose }: WhyRec
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--accent-warm)] border-r-transparent" />
-              <span className="text-xs text-[var(--text-tertiary)]">Computing Taste Constellation attributions...</span>
+              <span className="text-xs text-[var(--text-tertiary)]">Computing Taste Profile attributions...</span>
             </div>
           )}
           

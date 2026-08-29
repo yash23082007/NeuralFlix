@@ -1,1 +1,1 @@
-# NeuralFlix — Explainable Global Cinema Atlas
+# Movie Intelligence Platform — Explainable Global Cinema Atlas

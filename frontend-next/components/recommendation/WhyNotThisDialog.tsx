@@ -7,11 +7,11 @@ import { authFetch } from "../../lib/auth";
 const REASONS = [
   { id: "already_watched", label: "Already watched this", icon: EyeOff },
   { id: "not_interested", label: "Just not interested", icon: ThumbsDown },
-  { id: "too_slow", label: "I prefer faster-paced films", icon: FastForward },
+  { id: "too_slow", label: "I prefer faster-paced movies", icon: FastForward },
   { id: "too_dark", label: "Too dark or challenging", icon: Moon },
   { id: "not_my_genre", label: "Not my kind of genre", icon: ShieldOff },
   { id: "wrong_language", label: "Not in my preferred language", icon: Globe },
-  { id: "hide_similar", label: "Hide similar films", icon: EyeOff },
+  { id: "hide_similar", label: "Hide similar movies", icon: EyeOff },
 ];
 
 interface WhyNotThisDialogProps {
@@ -64,7 +64,7 @@ export default function WhyNotThisDialog({ movieId, isOpen, onClose, onDismiss }
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
           <div>
             <h2 className="text-base font-bold text-[var(--text-primary)]">Why not this title?</h2>
-            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Your input tunes your Taste Constellation recommendations.</p>
+            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Your input tunes your Taste Profile recommendations.</p>
           </div>
           <button 
             onClick={onClose}

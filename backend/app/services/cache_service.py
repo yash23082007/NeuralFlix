@@ -1,5 +1,5 @@
 """
-NeuralFlix — Cache Service
+Movie Intelligence Platform — Cache Service
 
 Optional Redis caching wrapper with in-memory fallback and TTL eviction.
 No endpoints should ever fail if Redis goes down.

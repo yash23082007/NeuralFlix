@@ -1,5 +1,5 @@
 """
-NeuralFlix — Application Configuration
+Movie Intelligence Platform — Application Configuration
 
 Uses pydantic-settings to load from environment variables and .env files.
 All configuration is centralized here — no scattered os.getenv() calls.
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     )
 
     # ── Environment ──────────────────────────────────────────
+
     environment: str = "development"  # development | production | test
 
     # ── Database ─────────────────────────────────────────────
@@ -30,8 +31,6 @@ class Settings(BaseSettings):
     # ── External APIs ────────────────────────────────────────
     tmdb_api_key: str = ""
     tmdb_read_access_token: str = ""
-    omdb_api_key: str = ""
-    watchmode_api_key: str = ""  # deferred to later phase
 
     # ── Auth / Security ──────────────────────────────────────
     jwt_secret: str = "neuralflix-v4-dev-secret-change-in-prod"
@@ -57,16 +56,10 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
-    # ── Redis (Optional) ─────────────────────────────────────
-    redis_url: Optional[str] = None
-
     # ── Recommendation Engine ────────────────────────────────
-    ranking_version: str = "content-diversity-reranker-v1"
+    ranker_id: str = "taste-constellation-v1"
 
     # ── Feature Flags ────────────────────────────────────────
-    lite_mode: bool = True
-    enable_experimental_ml: bool = False
-    demo_mode: bool = False
     allow_tmdb_write_through: bool = False
 
     # ── Server ───────────────────────────────────────────────

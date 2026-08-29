@@ -1,5 +1,5 @@
 """
-NeuralFlix — FastAPI Application
+Movie Intelligence Platform — FastAPI Application
 Clean, resilient entrypoint with high-performance async database, rate limiting, and ML routes.
 """
 
@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
 
 # ── App ───────────────────────────────────────────────────────
 app = FastAPI(
-    title="NeuralFlix — Explainable Global Cinema Atlas",
+    title="Movie Intelligence Platform — Explainable Global Cinema Atlas",
     description=(
         "Explainable recommendation engine for world cinema. "
         "Content-based ranking with taste controls, diversity reranking, and deep collaborative filtering."
@@ -165,7 +165,7 @@ app.include_router(admin_router)
 @app.get("/")
 def root():
     return {
-        "name": "NeuralFlix — Explainable Global Cinema Atlas",
+        "name": "Movie Intelligence Platform — Explainable Global Cinema Atlas",
         "version": "4.0.0",
         "description": "Explainable recommendation engine for world cinema",
         "endpoints": {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Sparkles, Star, Film, Eye, X } from "lucide-react";
+import { Play, Sparkles, Star, Movie, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Movie {
@@ -62,10 +62,10 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
   const year = featuredMovie?.year || 2024;
   const rating = featuredMovie?.rating || 9.1;
   const genres = featuredMovie?.genres || ["Sci-Fi", "Drama"];
-  const director = featuredMovie?.director || "NeuralFlix";
+  const director = featuredMovie?.director || "Movie Intelligence Platform";
   const backdrop = featuredMovie?.backdrop_url || featuredMovie?.poster_url || "";
   const trailerKey = featuredMovie?.trailer_key;
-  const overview = featuredMovie?.overview || "Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite film.";
+  const overview = featuredMovie?.overview || "Explore world cinema with ML-powered recommendations. From Indian masterpieces to Nordic noir, find your next favorite movie.";
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--surface-primary)] pt-16">
@@ -98,7 +98,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
           </div>
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-[var(--text-primary)] leading-[1.05] font-playfair">
-            Discover Films <br />
+            Discover Movies <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)]">
               Worth Watching
             </span>
@@ -132,7 +132,7 @@ export default function Hero({ featuredMovie, sideMovies, catalogSize }: { featu
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[var(--surface-elevated)]/40 border border-[var(--border-subtle)] p-4 rounded-2xl backdrop-blur-md">
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
                 <p className="text-lg font-bold text-white font-mono">930K+</p>
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Films</p>
+                <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mt-1">Movies</p>
               </div>
               <div className="text-center sm:border-r border-[var(--border-subtle)] last:border-none">
                 <p className="text-lg font-bold text-white font-mono">120+</p>

@@ -1,5 +1,5 @@
 /**
- * NeuralFlix Frontend API Client
+ * Movie Intelligence Platform Frontend API Client
  * Clean, type-safe API communication layer aligned with active FastAPI backend contracts.
  */
 

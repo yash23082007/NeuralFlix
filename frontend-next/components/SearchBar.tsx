@@ -123,7 +123,7 @@ export default function SearchBar() {
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onFocus={() => setIsOpen(true)}
-            placeholder="Search films, directors, 'dark sci-fi under 2 hours'..."
+            placeholder="Search movies, directors, 'dark sci-fi under 2 hours'..."
             className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)]/90 py-2.5 pl-10 pr-10 text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-warm)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-warm)] transition-all shadow-sm backdrop-blur-md"
           />
           {query ? (

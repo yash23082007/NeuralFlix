@@ -1,5 +1,5 @@
 /**
- * NeuralFlix Auth Utility — lib/auth.ts
+ * Movie Intelligence Platform Auth Utility — lib/auth.ts
  *
  * SECURITY: Authentication tokens are stored in HttpOnly cookies set by the backend.
  * The frontend NEVER reads, writes, or transmits JWT tokens directly.

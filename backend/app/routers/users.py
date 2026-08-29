@@ -1,6 +1,6 @@
 """
-NeuralFlix — Users Router
-Manages user profiles, Taste DNA fingerprint sequencing, onboarding, and Taste Constellation sliders.
+Movie Intelligence Platform — Users Router
+Manages user profiles, Taste Profile fingerprint sequencing, onboarding, and Taste Profile sliders.
 """
 
 from typing import Any, List, Optional
@@ -83,7 +83,7 @@ async def complete_onboarding(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Complete user onboarding: seed initial ratings, watch history, and calibrate Taste Constellation."""
+    """Complete user onboarding: seed initial ratings, watch history, and calibrate Taste Profile."""
     current_user.onboarded = True
 
     # 1. Process liked movies
@@ -106,7 +106,7 @@ async def complete_onboarding(
             db.add(Rating(user_id=current_user.id, movie_id=movie.id, rating=5.0))
             db.add(WatchEvent(user_id=current_user.id, movie_id=movie.id, completed=True))
 
-    # 2. Calibrate Taste Constellation sliders
+    # 2. Calibrate Taste Profile sliders
     t_res = await db.execute(select(TasteControl).where(TasteControl.user_id == current_user.id))
     taste = t_res.scalar_one_or_none()
     if not taste:
@@ -206,7 +206,7 @@ async def get_user_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Generate dynamic Taste DNA cinematic profile sequencing from real user interactions and catalog."""
+    """Generate dynamic Taste Profile cinematic profile sequencing from real user interactions and catalog."""
     watched_res = await db.execute(
         select(Movie).join(WatchEvent, WatchEvent.movie_id == Movie.id)
         .where(WatchEvent.user_id == current_user.id)

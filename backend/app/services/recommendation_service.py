@@ -1,7 +1,7 @@
 """
-NeuralFlix — Recommendation Service
+Movie Intelligence Platform — Recommendation Service
 
-Deterministic scoring engine based on Taste Constellation v1.
+Deterministic scoring engine based on Taste Profile v1.
 Multi-axis transparent scoring with per-component attributions.
 """
 
@@ -25,7 +25,7 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     - global_taste: global slider (0=local/domestic cinema, 100=world cinema)
     - hidden_gems: obscure high-quality gems (low popularity + strong rating)
     - challenge: light entertainment (comedy/family) vs complex (mystery/sci-fi/noir)
-    - discovery: familiar favorites vs adventurous boundary-pushing films
+    - discovery: familiar favorites vs adventurous boundary-pushing movies
     """
     score = 30.0  # Base calibration
     components: List[Dict[str, Any]] = []
@@ -162,7 +162,7 @@ def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, An
     if positive_reasons:
         explanation = f"Recommended: {', '.join(positive_reasons[:2])}."
     else:
-        explanation = f"Matched to your Taste Constellation profile with a {rating:.1f}/10 quality rating."
+        explanation = f"Matched to your Taste Profile profile with a {rating:.1f}/10 quality rating."
 
     return {
         "score": final_score,

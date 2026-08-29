@@ -1,5 +1,5 @@
 """
-NeuralFlix — Watch Event Model
+Movie Intelligence Platform — Watch Event Model
 
 Tracks when a user watches a movie. Used for recommendation history
 and future evaluation metrics.

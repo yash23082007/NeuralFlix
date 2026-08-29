@@ -1,6 +1,6 @@
-# NeuralFlix — Recommendation & ML Evaluation
+# Movie Intelligence Platform — Recommendation & ML Evaluation
 
-NeuralFlix follows an uncompromising policy of **transparent, reproducible offline evaluations**.
+Movie Intelligence Platform follows an uncompromising policy of **transparent, reproducible offline evaluations**.
 No metric or ranking claim may be reported in documentation without an accompanying reproduction command.
 
 ---
@@ -20,7 +20,7 @@ python -m pipeline.evaluation.run_eval
 | **Random Baseline** | Temporal (Leave-Last-Out) | 0.8333 | 0.5126 | 0.3611 | 42.3% | Baseline |
 | **Popularity Baseline** | Temporal (Leave-Last-Out) | 0.8333 | 0.8710 | 0.8333 | 42.3% | Baseline |
 | **Content-Based v1** | Temporal (Leave-Last-Out) | 1.0000 | 0.6817 | 0.5639 | 42.3% | Active |
-| **Taste Constellation v1** | User Controls / Additive | 0.8333 | 0.5704 | 0.4444 | 42.3% | Active Default |
+| **Taste Profile v1** | User Controls / Additive | 0.8333 | 0.5704 | 0.4444 | 42.3% | Active Default |
 | **Hybrid v3** | Content + Taste + Quality | 1.0000 | 0.5941 | 0.4250 | 42.3% | Candidate |
 
 ---

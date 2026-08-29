@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Film, Star, Brain, RefreshCw, User, Settings, Sliders, CheckCircle2, Bookmark } from "lucide-react";
+import { Movie, Star, Brain, RefreshCw, User, Settings, Sliders, CheckCircle2, Bookmark } from "lucide-react";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/MovieCard";
@@ -149,7 +149,7 @@ export default function ProfilePage() {
             }`}
           >
             <Brain className="h-4 w-4" />
-            Taste DNA Profile
+            Taste Profile Profile
           </button>
 
           <button
@@ -161,7 +161,7 @@ export default function ProfilePage() {
             }`}
           >
             <Sliders className="h-4 w-4" />
-            Taste Constellation
+            Taste Profile
           </button>
 
           <button
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             }`}
           >
-            <Film className="h-4 w-4" />
+            <Movie className="h-4 w-4" />
             Watch History ({history.length})
           </button>
 
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                 <TasteDNA profile={profile} />
               ) : (
                 <div className="py-12 text-center text-xs text-[var(--text-tertiary)]">
-                  Interact with films and adjust your taste controls to calibrate your cinematic profile fingerprint.
+                  Interact with movies and adjust your taste controls to calibrate your cinematic profile fingerprint.
                 </div>
               )}
             </div>
@@ -241,7 +241,7 @@ export default function ProfilePage() {
             <div>
               {history.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-12 text-center text-xs text-[var(--text-tertiary)]">
-                  No watched movies logged yet. Watch events are tracked when you interact with films.
+                  No watched movies logged yet. Watch events are tracked when you interact with movies.
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

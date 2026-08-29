@@ -54,7 +54,7 @@ function RecommendationsContent() {
     }
   }, [searchParams]);
 
-  // Fetch Taste DNA Profile
+  // Fetch Taste Profile Profile
   useEffect(() => {
     async function fetchTasteProfile() {
       if (!userId) return;
@@ -126,7 +126,7 @@ function RecommendationsContent() {
           <Sparkles className="w-10 h-10 text-[var(--accent-warm)] mx-auto mb-4 animate-pulse" />
           <h2 className="text-2xl font-bold font-playfair mb-2">Authentication Required</h2>
           <p className="text-xs text-[var(--text-secondary)] mb-6">
-            Sign in to access your personalized Taste Constellation feed and mathematical recommendations.
+            Sign in to access your personalized Taste Profile feed and mathematical recommendations.
           </p>
           <a
             href="/login"
@@ -163,14 +163,14 @@ function RecommendationsContent() {
           </div>
         </div>
 
-        {/* Layout Grid: Taste Constellation (Controls) + Recs Feed */}
+        {/* Layout Grid: Taste Profile (Controls) + Recs Feed */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Sidebar: Taste Constellation & DNA */}
+          {/* Left Sidebar: Taste Profile & DNA */}
           <div className="lg:col-span-4 space-y-6">
-            {/* The Signature Taste Constellation Component */}
+            {/* The Signature Taste Profile Component */}
             <TasteConstellation onControlsChange={handleControlsChange} />
 
-            {/* Inferred Taste DNA */}
+            {/* Inferred Taste Profile */}
             {tasteProfile && (
               <div className="rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-default)] p-5 shadow-lg">
                 <TasteDNA profile={tasteProfile} />

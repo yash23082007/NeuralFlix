@@ -8,20 +8,20 @@ import Providers from "../components/Providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "NeuralFlix — Cinema Discovery & ML Recommendations",
-    template: "%s — NeuralFlix",
+    default: "Movie Intelligence Platform — Cinema Discovery & ML Recommendations",
+    template: "%s — Movie Intelligence Platform",
   },
   description:
-    "Discover films from every corner of the world with ML-driven recommendations, multi-source ratings, and global cinema exploration.",
+    "Discover movies from every corner of the world with ML-driven recommendations, multi-source ratings, and global cinema exploration.",
   keywords: [
     "movie recommendations",
     "cinema discovery",
-    "film ratings",
+    "movie ratings",
     "world cinema",
     "collaborative filtering",
     "content based filtering",
     "streaming guide",
-    "NeuralFlix",
+    "Movie Intelligence Platform",
   ],
   icons: {
     icon: [
@@ -29,15 +29,15 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "NeuralFlix",
+    title: "Movie Intelligence Platform",
     description: "Global cinema discovery with ML-driven recommendations.",
     type: "website",
-    siteName: "NeuralFlix",
+    siteName: "Movie Intelligence Platform",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NeuralFlix",
+    title: "Movie Intelligence Platform",
     description: "Global cinema discovery with ML-driven recommendations.",
   },
   robots: {
@@ -69,7 +69,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "NeuralFlix",
+              name: "Movie Intelligence Platform",
               url:
                 process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
               description:

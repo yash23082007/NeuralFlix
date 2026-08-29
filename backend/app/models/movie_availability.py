@@ -1,5 +1,5 @@
 """
-NeuralFlix — Movie Availability Model
+Movie Intelligence Platform — Movie Availability Model
 
 Tracks streaming platform availability per region.
 Stores checked_at and expires_at — freshness is computed at response time.

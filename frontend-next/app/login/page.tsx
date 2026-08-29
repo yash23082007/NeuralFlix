@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, Film, Sparkles, Check } from "lucide-react";
+import { Eye, EyeOff, LogIn, Movie, Sparkles, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { setUser } from "../../lib/auth";
 
@@ -134,7 +134,7 @@ export default function LoginPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Film className="h-8 w-8 text-[var(--text-tertiary)]" />
+                      <Movie className="h-8 w-8 text-[var(--text-tertiary)]" />
                     </div>
                   )}
                 </div>
@@ -160,16 +160,16 @@ export default function LoginPage() {
               <Sparkles className="h-3.5 w-3.5" /> Neural Engine v2.5 Online
             </span>
             <h1 className="text-4xl xl:text-5xl font-extrabold font-playfair tracking-tight leading-tight text-[var(--text-primary)] mb-4">
-              Discover over <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] font-black">930K Films</span> personalized for you.
+              Discover over <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] font-black">930K Movies</span> personalized for you.
             </h1>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed">
-              Unlock a cinematic universe calibrated to your unique Taste DNA. Real-time recommendation streams, cross-region collections, and infinite movie discoveries.
+              Unlock a cinematic universe calibrated to your unique Taste Profile. Real-time recommendation streams, cross-region collections, and infinite movie discoveries.
             </p>
           </motion.div>
         </div>
 
         <div className="relative z-20 text-xs text-[var(--text-tertiary)] font-mono">
-          © 2024 NeuralFlix. All rights reserved.
+          © 2024 Movie Intelligence Platform. All rights reserved.
         </div>
       </section>
 
@@ -179,7 +179,7 @@ export default function LoginPage() {
           <div className="text-center lg:text-left space-y-2">
             <h2 className="text-3xl font-extrabold font-playfair tracking-tight text-[var(--text-primary)]">Sign In</h2>
             <p className="text-sm text-[var(--text-secondary)]">
-              Access your NeuralFlix dashboard and movie pipeline.
+              Access your Movie Intelligence Platform dashboard and movie pipeline.
             </p>
           </div>
 

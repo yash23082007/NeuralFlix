@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Compass,
-  Film,
+  Movie,
   Globe2,
   SlidersHorizontal,
   Grid,
@@ -524,7 +524,7 @@ function DiscoverContent() {
               )
             ) : (
               <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 py-24 text-center backdrop-blur-sm">
-                <Film className="mx-auto mb-4 h-12 w-12 text-[var(--text-tertiary)] opacity-60 animate-pulse" />
+                <Movie className="mx-auto mb-4 h-12 w-12 text-[var(--text-tertiary)] opacity-60 animate-pulse" />
                 <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No Movies Match Search Coordinates</h3>
                 <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-sm mx-auto font-sans">
                   No titles match your selected filters. Adjust your year ranges, rating values, or genres.

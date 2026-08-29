@@ -1,5 +1,5 @@
 """
-NeuralFlix — Home Feed Router
+Movie Intelligence Platform — Home Feed Router
 Provides pre-aggregated data for the landing page hero and dynamic cinema rows.
 """
 
