@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Movie, Play, Plus, Star, Check, Sparkles, XCircle } from "lucide-react";
+import { Movie as MovieIcon, Play, Plus, Star, Check, Sparkles, XCircle } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Movie } from "../lib/api";
@@ -116,7 +116,7 @@ export function MovieCard({
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[var(--surface-muted)] to-[var(--surface-elevated)] px-3 text-center text-[var(--text-tertiary)]">
-              <Movie className="h-8 w-8 opacity-30" />
+              <MovieIcon className="h-8 w-8 opacity-30" />
               <span className="line-clamp-2 text-xs font-medium">{movie.title || "Untitled"}</span>
             </div>
           )}

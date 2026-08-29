@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getUser, authFetch } from "../../lib/auth";
 import { 
   Users, 
-  Movie, 
+  Film, 
   Activity, 
   Settings, 
   ShieldAlert, 
@@ -109,10 +109,10 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total Users", value: (db.users || 0).toLocaleString(), icon: Users, color: "blue" },
-            { label: "Catalog Size", value: (db.movies || 0).toLocaleString(), icon: Movie, color: "purple" },
+            { label: "Catalog Size", value: (db.movies || 0).toLocaleString(), icon: Film, color: "purple" },
             { label: "Watch Events", value: (db.watch_events || 0).toLocaleString(), icon: Activity, color: "green" },
             { label: "Ratings", value: (db.ratings || 0).toLocaleString(), icon: Database, color: "orange" },
-            { label: "Watchlist Items", value: (db.watchlist_items || 0).toLocaleString(), icon: Movie, color: "red" },
+            { label: "Watchlist Items", value: (db.watchlist_items || 0).toLocaleString(), icon: Film, color: "red" },
             { label: "Search Queries", value: (db.search_queries || 0).toLocaleString(), icon: Database, color: "indigo" },
             { label: "Feedbacks", value: (db.feedback_rows || 0).toLocaleString(), icon: Users, color: "pink" },
             { label: "Impressions", value: (db.impressions || 0).toLocaleString(), icon: Activity, color: "teal" },
