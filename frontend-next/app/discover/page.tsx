@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Compass,
-  Movie as MovieIcon,
+  Film as MovieIcon,
   Globe2,
   SlidersHorizontal,
   Grid,

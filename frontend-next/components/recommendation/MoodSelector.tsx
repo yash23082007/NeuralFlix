@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Sparkles, Movie, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
+import { Sparkles, Film, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
 import MovieCard from "../MovieCard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

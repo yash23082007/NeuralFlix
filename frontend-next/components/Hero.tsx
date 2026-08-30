@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Sparkles, Star, Movie, Eye, X } from "lucide-react";
+import { Play, Sparkles, Star, Film, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Movie {

@@ -9,7 +9,7 @@ import {
   Calendar,
   ChevronLeft,
   Clock,
-  Movie,
+  Film,
   Globe,
   Heart,
   Play,
@@ -175,7 +175,7 @@ export default function MovieDetailPage() {
   if (!movie) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--surface-primary)] px-6">
-        <Movie className="h-14 w-14 text-[var(--text-tertiary)] mb-4" />
+        <Film className="h-14 w-14 text-[var(--text-tertiary)] mb-4" />
         <h2 className="text-2xl font-bold text-white font-playfair">Movie Not Mapped</h2>
         <Link href="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110">
           <ArrowLeft className="h-4 w-4" /> Back to Home
@@ -246,7 +246,7 @@ export default function MovieDetailPage() {
                 />
               ) : (
                 <div className="aspect-[2/3] bg-[var(--surface-muted)] flex items-center justify-center rounded-xl">
-                  <Movie className="h-12 w-12 text-[var(--text-tertiary)]" />
+                  <Film className="h-12 w-12 text-[var(--text-tertiary)]" />
                 </div>
               )}
             </motion.div>
@@ -367,7 +367,7 @@ export default function MovieDetailPage() {
               )}
               {movie.director && (
                 <span className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 flex items-center gap-1 truncate max-w-[200px]">
-                  <Movie className="h-3.5 w-3.5 text-[var(--accent-warm)]" />
+                  <Film className="h-3.5 w-3.5 text-[var(--accent-warm)]" />
                   {movie.director}
                 </span>
               )}
@@ -472,7 +472,7 @@ export default function MovieDetailPage() {
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 p-8 text-center backdrop-blur-sm">
-                        <Movie className="h-10 w-10 mx-auto text-white/20 mb-2" />
+                        <Film className="h-10 w-10 mx-auto text-white/20 mb-2" />
                         <p className="text-sm text-[var(--text-tertiary)] font-sans">Official video trailer not found in our indices.</p>
                       </div>
                     )}

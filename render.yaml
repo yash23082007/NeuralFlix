@@ -33,21 +33,21 @@ services:
       - key: LITE_MODE
         value: "true"
       - key: ENABLE_EXPERIMENTAL_ML
-        value: "false"
+        value: "true"
       - key: ENABLE_NCF
-        value: "false"
+        value: "true"
       - key: ENABLE_SASREC
-        value: "false"
+        value: "true"
       - key: ENABLE_GNN
-        value: "false"
+        value: "true"
       - key: ENABLE_BANDIT
-        value: "false"
+        value: "true"
       - key: ENABLE_VECTOR_SEARCH
-        value: "false"
+        value: "true"
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: NEURALFLIX_DEMO_MODE
-        value: "true"
+        value: "false"
 
 databases:
   - name: movie-recs-db

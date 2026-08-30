@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Check, ChevronRight, ChevronLeft, Loader2, Movie, Heart, Languages, RefreshCw, Compass } from "lucide-react";
+import { Sparkles, Check, ChevronRight, ChevronLeft, Loader2, Film, Heart, Languages, RefreshCw, Compass } from "lucide-react";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import TasteDNA from "../../components/TasteDNA";
@@ -306,7 +306,7 @@ export default function OnboardingPage() {
                 </div>
               ) : movies.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-zinc-800 rounded-3xl max-w-md mx-auto">
-                  <Movie className="h-10 w-10 mx-auto text-zinc-700 mb-3" />
+                  <Film className="h-12 w-12 text-[var(--text-disabled)] mb-4" />
                   <p className="text-sm font-semibold text-white">No matches found</p>
                   <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">
                     Check backend seeds or choose general categories.

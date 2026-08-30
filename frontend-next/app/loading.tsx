@@ -1,4 +1,4 @@
-import { Movie } from "lucide-react";
+import { Film } from "lucide-react";
 
 export default function Loading() {
   return (
@@ -11,7 +11,7 @@ export default function Loading() {
           {/* Animated Spinner Ring */}
           <div className="h-14 w-14 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent-warm)]" />
           {/* Central Pulsing Icon */}
-          <Movie className="absolute h-5 w-5 text-[var(--accent-warm)] animate-pulse" />
+          <Film className="absolute h-5 w-5 text-[var(--accent-warm)] animate-pulse" />
         </div>
 
         <div className="space-y-1 text-center">
