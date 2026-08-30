@@ -1,37 +1,27 @@
 import { Compass, Sparkles } from "lucide-react";
 import Link from "next/link";
 import MovieRow from "../components/MovieRow";
-import { getHome } from "../lib/api";
-
 export const dynamic = "force-dynamic";
-
-const FALLBACK_MOVIES = [
-  { tmdb_id: 155, title: "The Dark Knight", year: 2008, rating: 8.5, genres: ["Crime"], poster_url: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" },
-  { tmdb_id: 496243, title: "Parasite", year: 2019, rating: 8.5, genres: ["Thriller"], language: "ko", poster_url: "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg" },
-  { tmdb_id: 313369, title: "La La Land", year: 2016, rating: 8.0, genres: ["Music"], poster_url: "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg" },
-  { tmdb_id: 129, title: "Spirited Away", year: 2001, rating: 8.6, genres: ["Animation"], language: "ja", poster_url: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" },
-  { tmdb_id: 278, title: "The Shawshank Redemption", year: 1994, rating: 8.7, genres: ["Drama"], poster_url: "https://image.tmdb.org/t/p/w500/lyQBXzOQSuE59IsHyHRrQFZ7aPr.jpg" },
-  { tmdb_id: 496, title: "Spirited Away", year: 2001, rating: 8.6, genres: ["Animation"], language: "ja", poster_url: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" },
-];
 
 export default async function Home() {
   let homeData: any = {
-    featured: FALLBACK_MOVIES[1],
-    trending: FALLBACK_MOVIES,
-    topRated: FALLBACK_MOVIES.slice().reverse(),
+    featured: null,
+    trending: [],
+    topRated: [],
     regions: {},
     coldStartCollections: []
   };
 
   try {
-    const data = await getHome();
-    if (data) {
-      homeData = {
-        ...homeData,
-        ...data,
-        trending: data.trending?.length ? data.trending : homeData.trending,
-        topRated: data.topRated?.length ? data.topRated : homeData.topRated,
-      };
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const res = await fetch(`${API_URL}/api/v1/movies/trending`, { next: { revalidate: 3600 } });
+    if (res.ok) {
+      const trendingData = await res.json();
+      homeData.trending = trendingData.movies || [];
+      if (homeData.trending.length > 0) {
+        homeData.featured = homeData.trending[0];
+        homeData.topRated = [...homeData.trending].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
+      }
     }
   } catch (error) {
     console.error("Failed to load home data:", error);
@@ -41,20 +31,20 @@ export default async function Home() {
     <main className="min-h-screen pb-20">
       {/* Hero Section */}
       <section className="relative h-[60vh] lg:h-[80vh] flex items-center justify-center overflow-hidden border-b border-border/40">
-        <img src={homeData.featured?.backdrop_url || FALLBACK_MOVIES[1].poster_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
+        <img src={homeData.featured?.backdrop_url || homeData.featured?.poster_url || ""} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background z-10" />
         <div className="absolute inset-0 bg-secondary/10" />
         
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-sm font-medium mb-4">
             <Sparkles className="w-4 h-4" />
-            Explainable Global Cinema Atlas
+            Discover Your Next Favorite Movie
           </div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white drop-shadow-lg">
-            Discover Your <span className="text-primary">Taste</span> in World Cinema
+            Find the Best <span className="text-primary">Movies</span> to Watch
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Movie Intelligence Platform is not a black-box recommender. It is a deterministic engine where you control the weights, genres, and diversity.
+            Get personalized movie recommendations based on your preferences.
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Link

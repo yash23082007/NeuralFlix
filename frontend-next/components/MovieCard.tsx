@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Movie as MovieIcon, Play, Plus, Star, Check, Sparkles, XCircle } from "lucide-react";
+import { Film as MovieIcon, Play, Plus, Star, Check, Sparkles, XCircle } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Movie } from "../lib/api";

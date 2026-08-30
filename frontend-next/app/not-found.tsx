@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Movie, ArrowLeft } from "lucide-react";
+import { Film, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function NotFound() {
@@ -23,7 +23,7 @@ export default function NotFound() {
         }}
         className="relative z-10 p-4 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--accent-warm)] shadow-lg"
       >
-        <Movie className="h-10 w-10" />
+        <Film className="h-10 w-10" />
       </motion.div>
 
       <div className="relative z-10 text-center space-y-3">

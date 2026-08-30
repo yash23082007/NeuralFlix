@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Movie, Star, Brain, RefreshCw, User, Settings, Sliders, CheckCircle2, Bookmark } from "lucide-react";
+import { Film, Star, Brain, RefreshCw, User, Settings, Sliders, CheckCircle2, Bookmark } from "lucide-react";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import TasteDNA from "../../components/TasteDNA";
 import MovieCard from "../../components/MovieCard";
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             }`}
           >
-            <Movie className="h-4 w-4" />
+            <Film className="h-4 w-4" />
             Watch History ({history.length})
           </button>
 

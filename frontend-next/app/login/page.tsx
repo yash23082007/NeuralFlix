@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, Movie, Sparkles, Check } from "lucide-react";
+import { Eye, EyeOff, LogIn, Film, Sparkles, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { setUser } from "../../lib/auth";
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Movie className="h-8 w-8 text-[var(--text-tertiary)]" />
+                      <Film className="h-8 w-8 text-[var(--text-tertiary)]" />
                     </div>
                   )}
                 </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
             transition={{ duration: 0.8 }}
           >
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[var(--accent-warm)]/20 bg-[var(--accent-warm)]/10 text-xs font-semibold text-[var(--accent-warm)] mb-4">
-              <Sparkles className="h-3.5 w-3.5" /> Neural Engine v2.5 Online
+              <Sparkles className="h-3.5 w-3.5" /> Movie Intelligence Platform
             </span>
             <h1 className="text-4xl xl:text-5xl font-extrabold font-playfair tracking-tight leading-tight text-[var(--text-primary)] mb-4">
               Discover over <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-warm)] to-[var(--accent-rose)] font-black">930K Movies</span> personalized for you.

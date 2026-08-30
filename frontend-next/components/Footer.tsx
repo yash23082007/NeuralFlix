@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Movie, Github, Globe2, Mail, Sparkles } from "lucide-react";
+import { Film, Github, Globe2, Mail, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
 
@@ -38,20 +38,20 @@ export default function Footer() {
               <div className="col-span-2 md:col-span-1">
                 <Link href="/" className="mb-4 flex items-center gap-2.5 group">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-sm font-bold text-black shadow-sm transition-transform duration-300 group-hover:scale-105">
-                    <Movie className="h-4 w-4" />
+                    <Film className="h-4 w-4" />
                   </div>
                   <span className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-                    Neural<span className="text-[var(--accent-warm)]">Flix</span>
+                    Movie<span className="text-[var(--accent-warm)]"> Intelligence</span>
                   </span>
                 </Link>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--text-tertiary)] max-w-xs">
-                  ML-powered global cinema discovery platform. Explore movies from
+                  Global cinema discovery platform. Explore movies from
                   every corner of the world with personalized recommendations.
                 </p>
                 <div className="mt-5 flex items-center gap-3">
                   {[
                     { icon: Github, href: "https://github.com", label: "GitHub" },
-                    { icon: Mail, href: "mailto:hello@neuralflix.com", label: "Email" },
+                    { icon: Mail, href: "mailto:hello@example.com", label: "Email" },
                   ].map((social) => (
                     <motion.a
                       key={social.label}
@@ -116,7 +116,7 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} Movie Intelligence Platform. All rights reserved.
             </p>
             <p className="text-xs text-[var(--text-disabled)]">
-              Powered by TMDB & OMDb APIs • ML Recommendation Engine
+              Powered by TMDB & OMDb APIs • Recommendation Engine
             </p>
           </div>
         </div>

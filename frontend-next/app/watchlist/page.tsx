@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Movie, ListFilter, Trash2, ArrowLeft, RefreshCw, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Film, ListFilter, Trash2, ArrowLeft, RefreshCw, Sparkles, SlidersHorizontal } from "lucide-react";
 import { getUser, authFetch, isAuthenticated } from "../../lib/auth";
 import MovieCard from "../../components/MovieCard";
 
@@ -169,7 +169,7 @@ export default function WatchlistPage() {
             </div>
           ) : (
             <div className="text-center py-24 border border-dashed border-zinc-900 rounded-3xl max-w-lg mx-auto">
-              <Movie className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
+              <Film className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-white uppercase tracking-wider">Start adding movies</h3>
               <p className="text-sm text-zinc-500 mt-2 max-w-xs mx-auto leading-relaxed">
                 Add movies to build a queue of upcoming movies and sync them with collaborative vector pools.

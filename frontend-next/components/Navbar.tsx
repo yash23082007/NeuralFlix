@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   Compass,
-  Movie,
+  Film,
   Globe2,
   LogIn,
   LogOut,
@@ -103,7 +103,7 @@ export default function Navbar() {
               whileTap={{ scale: 0.95 }}
               className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-sm font-black text-black shadow-sm"
             >
-              <Movie className="h-4 w-4" />
+              <Film className="h-4 w-4" />
               <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] opacity-0 group-hover:opacity-40 blur-lg transition-opacity duration-500" />
             </motion.div>
             <span className="hidden text-lg font-semibold tracking-tight text-[var(--text-primary)] sm:block">
