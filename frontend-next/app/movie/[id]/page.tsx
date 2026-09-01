@@ -176,7 +176,7 @@ export default function MovieDetailPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--surface-primary)] px-6">
         <Film className="h-14 w-14 text-[var(--text-tertiary)] mb-4" />
-        <h2 className="text-2xl font-bold text-white font-playfair">Movie Not Mapped</h2>
+        <h2 className="text-2xl font-bold text-white font-playfair">Movie Not Found</h2>
         <Link href="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--accent-warm)] px-6 py-3 text-sm font-semibold text-black transition-all hover:brightness-110">
           <ArrowLeft className="h-4 w-4" /> Back to Home
         </Link>
@@ -254,7 +254,7 @@ export default function MovieDetailPage() {
             {/* ML Match Score Badge */}
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 text-center animate-pulse-glow">
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mb-1">
-                Neural Match Score
+                Taste Match Score
               </p>
               <p className="text-3xl font-black text-[var(--accent-warm)]">{matchScore}%</p>
             </div>
@@ -473,7 +473,7 @@ export default function MovieDetailPage() {
                     ) : (
                       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 p-8 text-center backdrop-blur-sm">
                         <Film className="h-10 w-10 mx-auto text-white/20 mb-2" />
-                        <p className="text-sm text-[var(--text-tertiary)] font-sans">Official video trailer not found in our indices.</p>
+                        <p className="text-sm text-[var(--text-tertiary)] font-sans">Official video trailer is not available for this title.</p>
                       </div>
                     )}
                   </motion.div>
@@ -576,7 +576,7 @@ export default function MovieDetailPage() {
 
                     {!movie.deep_metadata?.awards && !movie.deep_metadata?.box_office && !movie.deep_metadata?.trivia && (
                       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 p-8 text-center backdrop-blur-sm">
-                        <p className="text-sm text-[var(--text-tertiary)]">No extended trivia or box office sheets mapped.</p>
+                        <p className="text-sm text-[var(--text-tertiary)]">Additional trivia and box office details are not currently available.</p>
                       </div>
                     )}
                   </motion.div>

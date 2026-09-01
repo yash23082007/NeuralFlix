@@ -70,11 +70,11 @@ export function MoodSelector() {
       {/* Header */}
       <header className="space-y-3">
         <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-[var(--accent-warm)] uppercase font-mono bg-[var(--accent-warm)]/10 px-3 py-1 rounded-full border border-[var(--accent-warm)]/20">
-          <Sparkles className="h-3 w-3 animate-spin" /> Neural Mood Mapping
+          <Sparkles className="h-3 w-3" /> Mood Discovery
         </span>
-        <h1 className="text-4xl font-extrabold text-white font-playfair tracking-tight">Preferential Mood Alignment</h1>
+        <h1 className="text-4xl font-extrabold text-white font-playfair tracking-tight">Watch by Mood</h1>
         <p className="text-sm leading-relaxed text-zinc-400 max-w-xl">
-          Calibrate the recommendations using emotional filters. Shift genres, novelty offsets, and aesthetic pacing coordinates dynamically.
+          Find films tailored to how you want to feel right now. Select a mood to explore matching genres and storytelling styles.
         </p>
       </header>
 
@@ -180,9 +180,9 @@ export function MoodSelector() {
               className="py-16 text-center border border-dashed border-zinc-900 rounded-2xl max-w-md mx-auto"
             >
               <AlertCircle className="h-10 w-10 text-zinc-600 mx-auto mb-3" />
-              <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">No matches in language lens</h4>
+              <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">No matching movies found</h4>
               <p className="text-xs text-zinc-500 mt-1">
-                There are no cached titles matching {activeMoodInfo?.label} in the selected language. Try another filter.
+                No titles currently match {activeMoodInfo?.label} in the selected language. Try selecting another language or mood.
               </p>
             </motion.div>
           ) : null}

@@ -18,7 +18,7 @@ if settings.is_sqlite:
     _connect_args = {"check_same_thread": False}
 
 engine = create_async_engine(
-    settings.database_url,
+    settings.async_database_url,
     echo=(settings.environment == "development"),
     connect_args=_connect_args,
     pool_pre_ping=True,

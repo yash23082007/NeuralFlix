@@ -189,7 +189,7 @@ function DiscoverContent() {
                   Global Discovery
                 </h1>
                 <p className="mt-2 max-w-xl text-xs text-[var(--text-secondary)] font-sans">
-                  Query the high-dimensional movie catalog. Filter by genre coordinate vectors, language origins, release era, and rating threshold.
+                  Explore curated cinema from around the world. Filter by genre, language, release era, and critical rating.
                 </p>
               </div>
 
@@ -525,9 +525,9 @@ function DiscoverContent() {
             ) : (
               <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 py-24 text-center backdrop-blur-sm">
                 <MovieIcon className="mx-auto mb-4 h-12 w-12 text-[var(--text-tertiary)] opacity-60 animate-pulse" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No Movies Match Search Coordinates</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No Movies Match Your Filters</h3>
                 <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-sm mx-auto font-sans">
-                  No titles match your selected filters. Adjust your year ranges, rating values, or genres.
+                  No titles match your selected criteria. Try adjusting your year range, rating threshold, or selected genres.
                 </p>
               </div>
             )}
@@ -538,7 +538,7 @@ function DiscoverContent() {
                 <div className="flex items-center gap-2">
                   <RefreshCw className="h-5 w-5 animate-spin text-[var(--accent-warm)]" />
                   <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider font-mono">
-                    Querying next catalog offset...
+                    Loading more movies...
                   </span>
                 </div>
               )}
@@ -557,7 +557,7 @@ export default function DiscoverPage() {
         <main className="min-h-screen bg-[var(--surface-primary)] pt-28 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <RefreshCw className="h-8 w-8 animate-spin text-[var(--accent-warm)]" />
-            <p className="text-sm text-[var(--text-secondary)] font-sans uppercase tracking-wider">Loading discovery database...</p>
+            <p className="text-sm text-[var(--text-secondary)] font-sans uppercase tracking-wider">Loading movies...</p>
           </div>
         </main>
       }

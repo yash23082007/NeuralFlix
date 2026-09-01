@@ -31,10 +31,10 @@ export default function NotFound() {
           404
         </h1>
         <h2 className="text-xl font-bold text-[var(--text-primary)] font-playfair">
-          Scene Not Found
+          Page Not Found
         </h2>
         <p className="max-w-md text-sm text-[var(--text-secondary)] leading-relaxed font-sans">
-          The requested coordinate or reels could not be loaded. It may have been archived or removed from the catalog.
+          The page or movie you are looking for could not be found. It may have been moved or is temporarily unavailable.
         </p>
       </div>
 

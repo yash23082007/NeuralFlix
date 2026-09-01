@@ -147,19 +147,19 @@ function RecommendationsContent() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[var(--accent-warm)] uppercase">
               <Sparkles className="h-3 w-3" />
-              Taste Intelligence Engine
+              Recommendations
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-playfair text-[var(--text-primary)]">
-              Personalized Recommendations
+              Curated For You
             </h1>
             <p className="text-xs text-[var(--text-tertiary)] max-w-xl">
-              Transparent, user-steerable scoring with per-feature mathematical attributions.
+              Personalized movie recommendations powered by your taste controls and rating preferences.
             </p>
           </div>
 
           <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-tertiary)]">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-[11px]">Active Tier: {servedBy}</span>
+            <span className="font-mono text-[11px]">Ranker: {servedBy}</span>
           </div>
         </div>
 
@@ -232,7 +232,7 @@ function RecommendationsContent() {
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="h-7 w-7 animate-spin text-[var(--accent-warm)]" />
-                <span className="text-xs text-[var(--text-tertiary)]">Calibrating candidate vectors...</span>
+                <span className="text-xs text-[var(--text-tertiary)]">Generating your recommendations...</span>
               </div>
             ) : recommendations.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-12 text-center text-xs text-[var(--text-tertiary)]">

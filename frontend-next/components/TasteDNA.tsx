@@ -64,10 +64,10 @@ export default function TasteDNA({ profile, loading }: TasteDNAProps) {
       <div className="flex flex-col items-center justify-center h-72 text-center border border-[var(--border-subtle)] rounded-3xl p-8 bg-[var(--surface-elevated)]/20 backdrop-blur-sm">
         <Compass className="h-12 w-12 text-[var(--text-tertiary)] mb-4 opacity-50 animate-bounce" />
         <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider font-sans">
-          Taste Profile Offline
+          Taste Profile Initializing
         </h3>
         <p className="text-xs text-[var(--text-secondary)] mt-2 max-w-xs leading-relaxed font-sans">
-          Watch history logs are currently insufficient to map your Cinematic Fingerprint. Rate more movies in the catalog to sequence taste coordinates.
+          Rate more movies or adjust your taste sliders to see your personalized Taste DNA breakdown.
         </p>
       </div>
     );

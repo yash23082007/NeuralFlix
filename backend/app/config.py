@@ -67,12 +67,23 @@ class Settings(BaseSettings):
     port: int = 8000
 
     @property
+    def async_database_url(self) -> str:
+        url = self.database_url.strip()
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("sqlite://") and not url.startswith("sqlite+aiosqlite://"):
+            url = url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+        return url
+
+    @property
     def is_production(self) -> bool:
         return self.environment == "production"
 
     @property
     def is_sqlite(self) -> bool:
-        return "sqlite" in self.database_url
+        return "sqlite" in self.database_url.lower()
 
 
 @lru_cache

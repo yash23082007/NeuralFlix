@@ -102,10 +102,10 @@ function SearchContent() {
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-3 py-1 text-xs text-[var(--accent-warm)] font-semibold uppercase tracking-wider">
             <Sparkles className="h-3.5 w-3.5" />
-            Hybrid Natural Language Search
+            Smart Movie Search
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-playfair">
-            Search Global Cinema
+            Search Movies & World Cinema
           </h1>
 
           {/* Search Box */}
@@ -152,7 +152,7 @@ function SearchContent() {
           >
             <span className="font-semibold text-[var(--text-tertiary)] flex items-center gap-1.5 pr-2">
               <Filter className="h-3.5 w-3.5 text-[var(--accent-warm)]" />
-              Parsed Constraints:
+              Detected Filters:
             </span>
             {parsedIntent.genres?.length > 0 && (
               <span className="rounded bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] text-[var(--accent-warm)] font-medium">
@@ -187,7 +187,7 @@ function SearchContent() {
           {loading ? (
             <div className="py-24 text-center">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-warm)] border-r-transparent mx-auto mb-3" />
-              <p className="text-xs text-[var(--text-tertiary)]">Searching multi-axis movie catalog...</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Searching movie catalog...</p>
             </div>
           ) : searched && results.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-[var(--border-default)] p-16 text-center text-xs text-[var(--text-tertiary)] max-w-lg mx-auto">
@@ -197,7 +197,7 @@ function SearchContent() {
             <div>
               <div className="mb-4 flex items-center justify-between text-xs text-[var(--text-tertiary)]">
                 <span>Found {results.length} relevant titles</span>
-                <span className="font-mono text-[10px]">Ranked via Hybrid RRF Scorer</span>
+                <span className="font-mono text-[10px]">Ranked by relevance & rating</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
                 {results.map((movie) => (

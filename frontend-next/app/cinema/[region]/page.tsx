@@ -416,9 +416,9 @@ export default function RegionPage() {
             ) : (
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/20 py-20 text-center backdrop-blur-sm">
                 <Clapperboard className="mx-auto mb-4 h-12 w-12 text-[var(--text-tertiary)] animate-pulse" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No candidates found</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] font-sans">No movies found</h3>
                 <p className="mt-1 text-sm text-[var(--text-secondary)] max-w-md mx-auto font-sans">
-                  The local database cluster for {regionConfig.title} is empty or currently synchronization with the backend is disconnected.
+                  No movies found for {regionConfig.title}. Please check back soon or explore other cinema regions.
                 </p>
               </div>
             )}
