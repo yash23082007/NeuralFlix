@@ -34,7 +34,7 @@ export default function WatchlistPage() {
       const res = await authFetch(`${API}/api/v1/users/me/watchlist`);
       if (res.ok) {
         const data = await res.json();
-        setWatchlist(data.results || []);
+        setWatchlist(data.watchlist || data.results || []);
       }
     } catch (err) {
       console.error("Watchlist fetch failed:", err);

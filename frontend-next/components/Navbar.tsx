@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
+  Bookmark,
   ChevronDown,
   Compass,
   Film,
@@ -13,7 +14,9 @@ import {
   Menu,
   Search,
   ShieldAlert,
+  Smile,
   Sparkles,
+  User,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -176,6 +179,11 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
+            <Link className={`nav-link ${pathname === "/mood" ? "active" : ""}`} href="/mood">
+              <Smile className="h-3.5 w-3.5" />
+              Mood
+            </Link>
+
             <Link className={`nav-link ${pathname === "/recommendations" ? "active" : ""}`} href="/recommendations">
               <Sparkles className="h-3.5 w-3.5" />
               For You
@@ -208,11 +216,25 @@ export default function Navbar() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-sm font-bold text-black shadow-sm"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-rose)] text-sm font-bold text-black shadow-sm cursor-pointer"
                   >
                     {userName.charAt(0) || "U"}
                   </motion.button>
-                  <div className="invisible absolute right-0 top-full mt-2 w-48 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] py-1.5 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100 backdrop-blur-xl">
+                  <div className="invisible absolute right-0 top-full mt-2 w-52 rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] py-1.5 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100 backdrop-blur-xl z-50">
+                    <Link
+                      href="/profile"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--accent-warm)]"
+                    >
+                      <User className="h-4 w-4" />
+                      Taste Profile & Profile
+                    </Link>
+                    <Link
+                      href="/watchlist"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--accent-warm)]"
+                    >
+                      <Bookmark className="h-4 w-4" />
+                      My Watchlist
+                    </Link>
                     {isAdmin && (
                       <Link
                         href="/admin"
@@ -222,12 +244,13 @@ export default function Navbar() {
                         Admin Panel
                       </Link>
                     )}
+                    <div className="my-1 border-t border-[var(--border-subtle)]" />
                     <button
                       onClick={() => {
                         logout();
                         setLoggedIn(false);
                       }}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-red-400 cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out
@@ -273,8 +296,15 @@ export default function Navbar() {
                 {[
                   { href: "/", label: "Home" },
                   { href: "/discover", label: "Explore" },
+                  { href: "/mood", label: "Mood Alignment" },
                   { href: "/recommendations", label: "For You" },
                   { href: "/search", label: "Search" },
+                  ...(loggedIn
+                    ? [
+                        { href: "/profile", label: "Taste Profile & Profile" },
+                        { href: "/watchlist", label: "My Watchlist" },
+                      ]
+                    : []),
                 ].map((item, i) => (
                   <motion.div
                     key={item.href}

@@ -1,16 +1,94 @@
 [
   {
     "id": "trail_directors_cut",
-    "name": "The Director's Cut",
-    "description": "A journey through visionary directors and their masterpieces.",
+    "name": "The Director's Cut: Master Visionaries",
+    "title": "The Director's Cut: Master Visionaries",
+    "description": "A curated journey tracing bold cinematic voices across neo-noir, operatic crime, and visual poetry.",
     "theme": "Auteur Cinema",
-    "movie_ids": [238, 680, 11216]
+    "region": "Global Auteurs",
+    "themeTags": ["Auteur", "Directorial Style", "Masterpieces", "Narrative Architecture"],
+    "isEditorial": true,
+    "movie_ids": [238, 680, 11216],
+    "movies": [
+      {
+        "tmdb_id": 238,
+        "title": "The Godfather",
+        "year": 1972,
+        "language": "en",
+        "poster_path": "/3bhkrj58Vtu7enYsRolD1fZdja1.jpg"
+      },
+      {
+        "tmdb_id": 680,
+        "title": "Pulp Fiction",
+        "year": 1994,
+        "language": "en",
+        "poster_path": "/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg"
+      },
+      {
+        "tmdb_id": 11216,
+        "title": "Cinema Paradiso",
+        "year": 1988,
+        "language": "it",
+        "poster_path": "/gCI2AeMV4IHSewRKnF1w1C9251e.jpg"
+      }
+    ],
+    "transitionReasons": [
+      {
+        "from": "The Godfather",
+        "to": "Pulp Fiction",
+        "reason": "Shifts classical operatic crime tragedy into non-linear postmodern dialogue rhythm."
+      },
+      {
+        "from": "Pulp Fiction",
+        "to": "Cinema Paradiso",
+        "reason": "Transitions from raw pop-culture energy into heartfelt romantic love letter to filmmaking."
+      }
+    ]
   },
   {
     "id": "trail_world_tour",
-    "name": "Global Cinema Tour",
-    "description": "Experience storytelling from different cultures.",
+    "name": "Global Cinema Tour: East to West",
+    "title": "Global Cinema Tour: East to West",
+    "description": "Experience boundary-breaking storytelling from Korean social realism to Japanese magical realism.",
     "theme": "World Cinema",
-    "movie_ids": [496243, 129, 375022]
+    "region": "International Cinema",
+    "themeTags": ["World Cinema", "Festival Winners", "Cultural Perspective", "Visual Elegance"],
+    "isEditorial": true,
+    "movie_ids": [496243, 129, 375022],
+    "movies": [
+      {
+        "tmdb_id": 496243,
+        "title": "Parasite",
+        "year": 2019,
+        "language": "ko",
+        "poster_path": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg"
+      },
+      {
+        "tmdb_id": 129,
+        "title": "Spirited Away",
+        "year": 2001,
+        "language": "ja",
+        "poster_path": "/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg"
+      },
+      {
+        "tmdb_id": 375022,
+        "title": "The Handmaiden",
+        "year": 2016,
+        "language": "ko",
+        "poster_path": "/8mncOCeq1v1Nm69N5WpQeIomP50.jpg"
+      }
+    ],
+    "transitionReasons": [
+      {
+        "from": "Parasite",
+        "to": "Spirited Away",
+        "reason": "Transitions from sharp Korean social architecture into boundless Japanese mythical allegory."
+      },
+      {
+        "from": "Spirited Away",
+        "to": "The Handmaiden",
+        "reason": "Moves from folkloric visual grandeur into intricate, sensual period thriller craft."
+      }
+    ]
   }
 ]

@@ -4,7 +4,7 @@ import MovieRow from "../components/MovieRow";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const homeData: any = {
+  let homeData: any = {
     featured: null,
     trending: [],
     topRated: [],
@@ -14,13 +14,24 @@ export default async function Home() {
 
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const res = await fetch(`${API_URL}/api/v1/movies/trending`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_URL}/api/v1/home`, { next: { revalidate: 300 } });
     if (res.ok) {
-      const trendingData = await res.json();
-      homeData.trending = trendingData.movies || [];
-      if (homeData.trending.length > 0) {
-        homeData.featured = homeData.trending[0];
-        homeData.topRated = [...homeData.trending].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
+      const data = await res.json();
+      homeData = {
+        featured: data.featured || null,
+        trending: data.trending || [],
+        topRated: data.topRated || [],
+        regions: data.regions || {},
+        coldStartCollections: data.coldStartCollections || []
+      };
+    } else {
+      const trendRes = await fetch(`${API_URL}/api/v1/movies/trending`);
+      if (trendRes.ok) {
+        const trendData = await trendRes.json();
+        const results = trendData.results || trendData.movies || [];
+        homeData.trending = results;
+        homeData.featured = results[0] || null;
+        homeData.topRated = [...results].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
       }
     }
   } catch (error) {

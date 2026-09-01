@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, X, Sparkles, RefreshCw } from "lucide-react";
 import { getTrending, Movie } from "../../lib/api";
+import { authFetch, isAuthenticated } from "../../lib/auth";
 
 export default function SwipePage() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -26,14 +27,23 @@ export default function SwipePage() {
     loadMovies();
   }, []);
 
-  const handleSwipe = (direction: "left" | "right") => {
+  const handleSwipe = async (direction: "left" | "right") => {
     if (currentIndex >= movies.length) return;
     
     const movie = movies[currentIndex];
+    const movieId = movie.tmdb_id || movie.id;
+    const action = direction === "right" ? "like" : "not_interested";
     
-    // In a real app, we would send this interaction to the backend via WebSocket
-    // to instantly update the user's recommendation profile.
-    console.log(`Swiped ${direction} on: ${movie.title}`);
+    if (movieId && isAuthenticated()) {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        authFetch(`${API}/api/v1/recommendations/feedback?movie_id=${movieId}&action=${action}`, {
+          method: "POST",
+        }).catch((err) => console.error("Swipe feedback error:", err));
+      } catch (e) {
+        // silent catch
+      }
+    }
     
     setCurrentIndex((prev) => prev + 1);
   };

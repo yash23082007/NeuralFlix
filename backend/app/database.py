@@ -55,6 +55,7 @@ async def init_db():
     import app.models.recommendation_feedback  # noqa: F401
     import app.models.taste_control  # noqa: F401
     import app.models.movie_availability  # noqa: F401
+    import app.models.graph  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
