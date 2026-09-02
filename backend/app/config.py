@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     # ── Feature Flags ────────────────────────────────────────
     allow_tmdb_write_through: bool = False
 
+    # ── Cache ────────────────────────────────────────────────
+    redis_url: str = ""  # Optional — cache_service falls back to in-memory if empty
+
     # ── Server ───────────────────────────────────────────────
     host: str = "0.0.0.0"
     port: int = 8000

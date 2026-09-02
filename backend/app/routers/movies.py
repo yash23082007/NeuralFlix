@@ -7,6 +7,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
+from sqlalchemy.sql.expression import true as sa_true
 
 from app.database import get_db
 from app.models.movie import Movie
@@ -183,7 +184,7 @@ async def get_by_region(region: str, page: int = Query(1, ge=1), limit: int = Qu
     else:
         conditions.append(cast(Movie.cinema_region, String).ilike(f"%{region_key}%"))
         
-    where_clause = or_(*conditions) if conditions else True
+    where_clause = or_(*conditions) if conditions else sa_true()
     
     offset = (page - 1) * limit
     result = await db.execute(
@@ -223,7 +224,7 @@ async def get_region_stats(region: str, db: AsyncSession = Depends(get_db)):
     else:
         conditions.append(cast(Movie.cinema_region, String).ilike(f"%{region_key}%"))
         
-    where_clause = or_(*conditions) if conditions else True
+    where_clause = or_(*conditions) if conditions else sa_true()
     
     result = await db.execute(select(Movie).where(where_clause))  # type: ignore
     matched = result.scalars().all()
@@ -296,7 +297,7 @@ async def filter_movies(
     if min_rating:
         conditions.append(Movie.tmdb_rating >= min_rating)
         
-    where_clause = and_(*conditions) if conditions else True
+    where_clause = and_(*conditions) if conditions else sa_true()
     
     order_by_clause = desc(Movie.popularity_score)
     if sort == "rating":

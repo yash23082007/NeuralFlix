@@ -30,6 +30,14 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false
+      - key: ENVIRONMENT
+        value: "production"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "none"
+      - key: COOKIE_DOMAIN
+        sync: false
       - key: LITE_MODE
         value: "true"
       - key: ENABLE_EXPERIMENTAL_ML

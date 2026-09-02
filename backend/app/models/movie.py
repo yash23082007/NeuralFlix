@@ -5,7 +5,7 @@ Source of truth for movie metadata. Populated from TMDB, enriched by OMDb.
 JSON for genres/keywords/cast/platforms — works identically on SQLite and PostgreSQL.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import DateTime, Float, Index, Integer, JSON, String, Text
@@ -71,9 +71,9 @@ class Movie(Base):
     editorial_collections: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships

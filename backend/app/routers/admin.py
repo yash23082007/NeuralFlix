@@ -74,7 +74,6 @@ async def trigger_sync(
     db: AsyncSession = Depends(get_db)
 ):
     """Trigger background catalog sync task (admin only)."""
-    from app.ingestion.tmdb_sync import discover_and_ingest_page
     from app.ingestion.tmdb_sync import sync_stage
     
     background_tasks.add_task(sync_stage, stage=stage, max_pages=1)

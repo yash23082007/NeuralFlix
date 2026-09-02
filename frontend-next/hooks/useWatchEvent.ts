@@ -50,7 +50,7 @@ export function useWatchEvent(): UseWatchEventResult {
     setError(null)
     try {
       const res = await authFetch(`/api/v1/users/me/ratings/${payload.movie_id}?rating=${payload.rating}`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       })
       return res.ok

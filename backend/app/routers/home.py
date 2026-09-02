@@ -6,6 +6,7 @@ Provides pre-aggregated data for the landing page hero and dynamic cinema rows.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from sqlalchemy.sql.expression import true as sa_true
 
 from app.database import get_db
 from app.models.movie import Movie
@@ -41,7 +42,7 @@ async def get_home(db: AsyncSession = Depends(get_db)):
         else:
             conditions.append(cast(Movie.cinema_region, String).ilike(f"%{r_key}%"))
             
-        where_clause = or_(*conditions) if conditions else True
+        where_clause = or_(*conditions) if conditions else sa_true()
         r_res = await db.execute(select(Movie).where(where_clause).order_by(desc(Movie.popularity_score)).limit(10))  # type: ignore
         r_movies = [_format_movie(m) for m in r_res.scalars().all()]
         if r_movies:

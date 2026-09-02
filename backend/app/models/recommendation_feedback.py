@@ -8,7 +8,7 @@ Four models that capture user interaction with the recommendation system:
 - RecommendationImpression: what was shown, when, and what happened
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
@@ -32,7 +32,7 @@ class RecommendationFeedback(Base):
     # already_watched, not_available, hide_similar
     feedback_type: Mapped[str] = mapped_column(String(50))
     ranking_version: Mapped[str] = mapped_column(String(100), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self) -> str:
         return f"<Feedback user={self.user_id} movie={self.movie_id} type={self.feedback_type}>"
@@ -52,7 +52,7 @@ class WatchlistItem(Base):
     movie_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("movies.id"), index=True
     )
-    added_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", back_populates="watchlist_items")
@@ -76,7 +76,7 @@ class Rating(Base):
         Integer, ForeignKey("movies.id"), index=True
     )
     rating: Mapped[float] = mapped_column(Float)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", back_populates="ratings")
@@ -108,7 +108,7 @@ class RecommendationImpression(Base):
     )  # home_feed, taste_refresh, similar, search
 
     # Interaction timestamps — populated as events occur
-    shown_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    shown_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     clicked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     dismissed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

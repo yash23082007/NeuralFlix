@@ -54,7 +54,7 @@ def set_auth_cookies(response: Response, user_id: str) -> tuple[str, str, str]:
     """Generate and set access and refresh cookies with proper expiry and paths."""
     access_token = create_token(
         data={"sub": user_id},
-        expires_delta=timedelta(minutes=15),
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         token_type="access",
     )
     refresh_jti = str(uuid.uuid4())

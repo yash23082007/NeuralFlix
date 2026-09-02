@@ -5,7 +5,7 @@ Tracks streaming platform availability per region.
 Stores checked_at and expires_at — freshness is computed at response time.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
@@ -35,7 +35,7 @@ class MovieAvailability(Base):
     )  # stream, rent, buy
 
     # Freshness — computed at response time, not stored as stale hours
-    checked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationship
@@ -44,14 +44,14 @@ class MovieAvailability(Base):
     @property
     def age_hours(self) -> int:
         """How many hours since last check."""
-        return int((datetime.utcnow() - self.checked_at).total_seconds() / 3600)
+        return int((datetime.now(timezone.utc) - self.checked_at.replace(tzinfo=timezone.utc)).total_seconds() / 3600)
 
     @property
     def is_fresh(self) -> bool:
         """Is this data still within its freshness window?"""
         if self.expires_at is None:
             return self.age_hours < 24  # default 24h freshness
-        return datetime.utcnow() < self.expires_at
+        return datetime.now(timezone.utc) < self.expires_at.replace(tzinfo=timezone.utc)
 
     def __repr__(self) -> str:
         return f"<Availability movie={self.movie_id} {self.platform} ({self.region})>"

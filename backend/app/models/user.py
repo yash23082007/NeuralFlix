@@ -4,7 +4,7 @@ Movie Intelligence Platform — User Model
 SQLAlchemy 2.0 typed model. JSON for array/dict columns.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import JSON, Boolean, DateTime, String
@@ -31,7 +31,7 @@ class User(Base):
     preferences_json: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
+        DateTime, default=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships

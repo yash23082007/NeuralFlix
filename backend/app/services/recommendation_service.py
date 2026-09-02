@@ -239,7 +239,7 @@ async def get_recommendations_for_user(
             else:
                 score -= 15.0
         elif mode == "outside_bubble":
-            if movie.cinema_region not in ["US", "UK", "hollywood", None]:
+            if (movie.cinema_region or "").lower() not in ["us", "uk", "hollywood", ""]:
                 score += 20.0
 
         breakdown["score"] = score
