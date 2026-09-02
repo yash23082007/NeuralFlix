@@ -35,10 +35,10 @@ class User(Base):
     )
 
     # Relationships
-    watch_events = relationship("WatchEvent", back_populates="user", lazy="selectin")
-    ratings = relationship("Rating", back_populates="user", lazy="selectin")
-    watchlist_items = relationship("WatchlistItem", back_populates="user", lazy="selectin")
-    taste_control = relationship("TasteControl", back_populates="user", uselist=False, lazy="selectin")
+    watch_events = relationship("WatchEvent", back_populates="user", lazy="select")
+    ratings = relationship("Rating", back_populates="user", lazy="select")
+    watchlist_items = relationship("WatchlistItem", back_populates="user", lazy="select")
+    taste_control = relationship("TasteControl", back_populates="user", uselist=False, lazy="select")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} username={self.username}>"

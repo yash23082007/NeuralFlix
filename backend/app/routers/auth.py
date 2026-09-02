@@ -13,7 +13,7 @@ import jwt
 from jwt.exceptions import PyJWTError
 import bcrypt
 
-from app.main import limiter
+from app.rate_limit import limiter
 
 from app.config import get_settings
 from app.database import get_db
