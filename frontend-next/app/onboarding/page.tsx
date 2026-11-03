@@ -71,7 +71,7 @@ export default function OnboardingPage() {
   const fetchMoviesFilteredByGenres = async () => {
     setLoadingMovies(true);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       // Fetch trending popular movies filtered by selected genres
       let url = `${API}/api/v1/movies/trending-all`;
       if (selectedGenres.length > 0) {
@@ -111,7 +111,7 @@ export default function OnboardingPage() {
   const handleFinish = async () => {
     setSaving(true);
     const user = getUser();
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const API = "";
     try {
       await authFetch(`${API}/api/v1/users/onboard`, {
         method: "POST",

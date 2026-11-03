@@ -77,7 +77,7 @@ async def test_rate_limit_login(client: AsyncClient):
     assert response.status_code == 429
 
 @pytest.mark.asyncio
-async def test_tmdb_write_through_guard(client: AsyncClient):
+async def test_tmdb_write_through_guard(client: AsyncClient, db_session):
     settings = get_settings()
     # Ensure the guard is off
     settings.allow_tmdb_write_through = False
@@ -87,15 +87,12 @@ async def test_tmdb_write_through_guard(client: AsyncClient):
     assert response.status_code == 404
     
     # Verify it was not persisted
-    from sqlalchemy.ext.asyncio import AsyncSession
-    from app.database import async_session
     from app.models.movie import Movie
     from sqlalchemy import select
 
-    async with async_session() as db:
-        result = await db.execute(select(Movie).where(Movie.tmdb_id == unknown_tmdb_id))
-        movie = result.scalar_one_or_none()
-        assert movie is None
+    result = await db_session.execute(select(Movie).where(Movie.tmdb_id == unknown_tmdb_id))
+    movie = result.scalar_one_or_none()
+    assert movie is None
 
 @pytest.mark.asyncio
 async def test_security_headers(client: AsyncClient):

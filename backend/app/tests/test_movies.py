@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 from unittest.mock import patch
+from app.models.movie import Movie
 
 @pytest.mark.asyncio
 @patch("app.routers.movies.search_movies")
@@ -50,3 +51,21 @@ async def test_get_movie(mock_get_movie, client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["tmdb_id"] == 123
     assert response.json()["title"] == "Test Movie"
+
+
+@pytest.mark.asyncio
+async def test_series_endpoint_excludes_film_records(client: AsyncClient, db_session):
+    db_session.add_all([
+        Movie(tmdb_id=901, title="A Film", media_type="movie", runtime=180),
+        Movie(tmdb_id=902, title="A Series", media_type="tv", runtime=42),
+    ])
+    await db_session.commit()
+
+    series = await client.get("/api/v1/movies/series")
+    assert series.status_code == 200
+    assert [item["title"] for item in series.json()["results"]] == ["A Series"]
+
+    films = await client.get("/api/v1/movies/filter?media_type=movie")
+    assert films.status_code == 200
+    assert "A Film" in [item["title"] for item in films.json()["results"]]
+    assert "A Series" not in [item["title"] for item in films.json()["results"]]

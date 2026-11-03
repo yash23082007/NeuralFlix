@@ -27,14 +27,10 @@ const nextConfig = {
   },
   
   
-  // Allow the backend API URL at build time
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
-  },
-  
-  // Rewrites so /api/* doesn't conflict with Next.js API routes
+  // API_INTERNAL_URL is supplied as a Docker build argument so rewrites resolve
+  // from the Next.js server container. Browser requests stay same-origin.
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = process.env.API_INTERNAL_URL || "http://localhost:8000";
     return [
       {
         source: "/api/v1/:path*",

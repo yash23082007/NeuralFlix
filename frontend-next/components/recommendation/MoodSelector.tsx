@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, Film, Heart, Brain, Coffee, AlertCircle, Award, Compass, Music, Flame } from "lucide-react";
 import MovieCard from "../MovieCard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = "";
 
 const MOODS = [
   { id: "intense", label: "Intense", icon: "⚡", gradient: "from-red-600 via-orange-600 to-yellow-500", desc: "Thrillers, crime, and high-stakes drama" },

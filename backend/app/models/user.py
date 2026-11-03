@@ -24,6 +24,8 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     auth_type: Mapped[str] = mapped_column(String(50), default="local")
     onboarded: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_training_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    recommendation_training_consent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     refresh_jti: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
 
     # Preferences stored as JSON — no custom ARRAY type

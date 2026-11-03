@@ -10,7 +10,7 @@ import RowSkeleton from "../../../components/RowSkeleton";
 import ScrollReveal from "../../../components/ScrollReveal";
 import { Movie } from "../../../lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = "";
 
 const REGION_MAP: Record<
   string,

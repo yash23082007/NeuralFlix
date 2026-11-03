@@ -26,6 +26,7 @@ class Movie(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tmdb_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    media_type: Mapped[str] = mapped_column(String(20), default="movie", nullable=False)
     imdb_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True, nullable=True)
     year: Mapped[Optional[int]] = mapped_column(Integer, index=True, nullable=True)
 

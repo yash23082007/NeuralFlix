@@ -20,7 +20,7 @@ export default function ServerStatusToast() {
       }, 2000);
 
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const API = "";
         const res = await fetch(`${API}/health`);
         if (res.ok && isMounted) {
           clearTimeout(wakeTimeout);

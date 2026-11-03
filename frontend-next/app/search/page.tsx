@@ -66,7 +66,7 @@ function SearchContent() {
       setLoading(true);
       setSearched(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const apiBase = "";
         const res = await fetch(`${apiBase}/api/v1/search?q=${encodeURIComponent(debouncedQuery)}`);
         if (res.ok) {
           const data = await res.json();

@@ -1,91 +1,87 @@
-# ?? Movie Intelligence Platform: Movie Intelligence Platform
+# NeuralFlix
 
-<div align="center">
+NeuralFlix is a movie discovery and recommendation web app built with Next.js, React, FastAPI, and SQLAlchemy. It focuses on user-controlled preferences and explanations that can be traced to deterministic ranking features.
 
-![Movie Intelligence Platform Banner](https://raw.githubusercontent.com/yash6/movie-recommendation-system/main/docs/assets/banner.png)
+> **Project status:** Local development app with a 26-film curated seed catalog. The active ranker is deterministic. A million-title catalog, TV/episode ingestion, learned recommender, and production load validation are not implemented yet. See [Recommendation and ML status](docs/ML.md).
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+## Features
 
-**An honest, deterministic, and fully explainable movie recommendation platform.**
+- Home, discovery, genre, mood, region, and catalog search experiences.
+- Authenticated recommendation feed with Taste Controls and feature-based explanations.
+- Watch history, watchlist, ratings, feedback, and cinema trails.
+- Optional, revocable consent for recommendation improvement. Only post-opt-in app interactions are counted toward the one-million interaction target; the target is not seeded.
+- FastAPI health checks and API documentation.
 
-</div>
+## Architecture
 
----
+- **Frontend:** Next.js 15, React 19, TypeScript.
+- **Backend:** FastAPI, Pydantic, SQLAlchemy 2 async.
+- **Database:** PostgreSQL in Compose/deployment; SQLite for local development and tests.
+- **Migrations:** Alembic, run automatically by the backend container before Uvicorn.
+- **Ranking:** Explainable CPU-safe hybrid scorer with optional PyTorch/scikit-learn/Transformers training adapters. No trained neural artifact is active by default.
+- **API path:** Browser requests use same-origin `/api/v1/*` and Next.js rewrites to FastAPI.
 
-## ?? The Philosophy
+## Run locally
 
-Movie Intelligence Platform is built on a foundation of transparency and user agency. Instead of opaque, uncalibrated black-box models that optimize for engagement, Movie Intelligence Platform relies on a **Deterministic Explainable Scorer** (our V0 Ranker).
+### Docker Compose
 
-Our constitution is explicitly defined in [docs/non-goals.md](docs/non-goals.md). We do not use shadow profiles, we do not make fake availability claims, and we do not gamify user culture.
-
----
-
-## ?? Core Architecture
-
-- **Backend**: FastAPI v4 running on async SQLAlchemy 2.0 with PostgreSQL/SQLite.
-- **Frontend**: Next.js 15, React 19, and Tailwind CSS.
-- **Engine**: The "Taste Profile" deterministic scorer provides transparent, user-steerable, and per-feature attributable movie recommendations.
-- **Data Model**: A robust interaction schema (`RecommendationFeedback`, `WatchlistItem`, `Rating`, `RecommendationImpression`) that tracks real user events (views, clicks, saves, dismissals).
-
-### Taste Profile Deterministic Scorer
-A transparent, multi-axis deterministic scorer that adjusts recommendations in real-time based on your explicit preferences. It provides detailed, exact mathematical breakdowns of why a movie was recommended.
-
----
-
-## ?? Getting Started
-
-### 1. Quick Start with Docker Compose
+Install Docker Desktop, copy `.env.example` to `.env`, set a unique `JWT_SECRET`, then:
 
 ```bash
-git clone https://github.com/yash6/movie-recommendation-system.git
-cd movie-recommendation-system
-
-# Build and start the minimal stack (Backend, Frontend, PostgreSQL, Redis)
-docker-compose up --build
+docker compose up --build
 ```
-The application will be accessible at:
-- **Frontend**: [http://localhost:3000](http://localhost:3000)
-- **FastAPI Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 2. Manual Local Setup
+- App: <http://localhost:3000>
+- API docs: <http://localhost:8000/docs>
+- API liveness: <http://localhost:8000/health/live>
+- API readiness: <http://localhost:8000/health/ready>
 
-#### A. Backend Setup
+See [the deployment runbook](docs/deployment-runbook.md) for local manual setup, environment configuration, and release checks.
+
+## Verify changes
+
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-alembic upgrade head      # Run migrations
-uvicorn app.main:app --reload --port 8000
+python -m pytest app/tests -q
 ```
 
-#### B. Frontend Setup
 ```bash
 cd frontend-next
-npm install
-npm run dev
+npm ci
+npm run lint
+npm run build
 ```
 
----
+The frontend currently emits existing lint warnings. Review and address them before treating lint as a clean release gate. The Docker Compose stack should also be started and verified on a host with Docker before deployment.
 
-## ?? REST API Documentation
+## API highlights
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET`  | `/api/v1/recommendations/feed` | Returns personalized Top-K recommendations computed via the deterministic engine. |
-| `GET`  | `/api/v1/recommendations/{id}/why` | Returns explainable AI attributions and exact matching factors. |
-| `GET`  | `/api/v1/users/me/profile` | Returns the sequenced Taste Profile profile based on real interactions. |
-| `PUT`  | `/api/v1/users/me/taste-controls` | Updates the Taste Profile preferences in real-time. |
-| `POST` | `/api/v1/recommendations/feedback` | Ingests explicit user feedback ("like", "dislike", "watchlist"). |
+| Capability | Endpoint |
+|---|---|
+| Home catalog rows | `GET /api/v1/home` |
+| Search | `GET /api/v1/search?q=...` |
+| Personalized feed | `GET /api/v1/recommendations/feed` |
+| Recommendation explanation | `GET /api/v1/recommendations/{tmdb_id}/why` |
+| Watch history and list | `GET /api/v1/users/me/history`, `GET /api/v1/users/me/watchlist` |
+| Interaction batch | `POST /api/v1/interactions` |
+| Training consent | `GET/PUT /api/v1/users/me/training-consent` |
+| Data/model telemetry | `GET /api/v1/ml/overview` |
 
----
+## Data and model integrity
 
-## ?? License & Attribution
+Catalog metadata in the existing importer comes from TMDB. Verify provider terms and attribution requirements before SaaS use. The currently seeded catalog contains films only; a media type field now prevents films from being mislabeled as TV, but TV and episode ingestion still needs to be built. Public research ratings must remain isolated from first-party app data unless their license explicitly allows the planned use.
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Evaluation documentation intentionally reports no model-quality score because the existing evaluation runner is synthetic and is not a valid benchmark. See [evaluation status](docs/recommendation-evaluation.md) and [pipeline architecture](docs/architecture/recommendation_pipeline.md).
 
-Developed with ?? as a transparent and user-first movie intelligence platform.
+Optional ML components can be installed for offline experiments:
+
+```bash
+cd backend
+pip install -r requirements-ml.txt
+```
+
+Do not report benchmark or user-study numbers until they are generated from authorized data and recorded with the evaluation report.
+
+## License
+
+See [LICENSE](LICENSE) for the project license. Third-party metadata and artwork retain their provider terms and are not relicensed by this repository.

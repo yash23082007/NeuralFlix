@@ -52,7 +52,7 @@ export default function WhyRecommendedSheet({ movieId, isOpen, onClose }: WhyRec
     setLoading(true);
     setError("");
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = "";
       const res = await authFetch(`${apiBase}/api/v1/recommendations/${movieId}/why`);
       if (!res.ok) throw new Error("Failed to load explanation");
       const json = await res.json();

@@ -16,6 +16,8 @@ export default function ProfilePage() {
   const [watchlist, setWatchlist] = useState<any[]>([]);
   const [editName, setEditName] = useState("");
   const [settingsMessage, setSettingsMessage] = useState("");
+  const [trainingConsent, setTrainingConsent] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"dna" | "taste_controls" | "watchlist" | "history" | "settings">("dna");
@@ -42,13 +44,14 @@ export default function ProfilePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       
-      const [profileRes, historyRes, statsRes, watchlistRes] = await Promise.all([
+      const [profileRes, historyRes, statsRes, watchlistRes, consentRes] = await Promise.all([
         authFetch(`${API}/api/v1/users/me/profile`),
         authFetch(`${API}/api/v1/users/me/history`),
         authFetch(`${API}/api/v1/users/me/stats`),
         authFetch(`${API}/api/v1/users/me/watchlist`),
+        authFetch(`${API}/api/v1/users/me/training-consent`),
       ]);
 
       if (profileRes.ok) {
@@ -67,6 +70,10 @@ export default function ProfilePage() {
         const data = await watchlistRes.json();
         setWatchlist(data.watchlist || []);
       }
+      if (consentRes.ok) {
+        const data = await consentRes.json();
+        setTrainingConsent(Boolean(data.recommendation_training_consent));
+      }
     } catch (err) {
       console.error("Profile fetch error:", err);
     } finally {
@@ -74,11 +81,31 @@ export default function ProfilePage() {
     }
   };
 
+  const handleTrainingConsent = async (consent: boolean) => {
+    setConsentBusy(true);
+    setSettingsMessage("");
+    try {
+      const res = await authFetch("/api/v1/users/me/training-consent", {
+        method: "PUT",
+        body: JSON.stringify({ consent }),
+      });
+      if (!res.ok) throw new Error("Could not update training preference");
+      setTrainingConsent(consent);
+      setSettingsMessage(consent
+        ? "Recommendation improvement enabled. Only future activity is eligible."
+        : "Recommendation improvement disabled. Your activity is no longer eligible for training.");
+    } catch {
+      setSettingsMessage("Could not update your recommendation improvement preference.");
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSettingsMessage("");
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       const res = await authFetch(`${API}/api/v1/users/me`, {
         method: "PUT",
         body: JSON.stringify({ name: editName })
@@ -254,7 +281,7 @@ export default function ProfilePage() {
           )}
 
           {activeTab === "settings" && (
-            <div className="max-w-md rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-default)] p-6 shadow-xl space-y-4">
+            <div className="max-w-xl rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-default)] p-6 shadow-xl space-y-5">
               <h2 className="text-base font-bold text-[var(--text-primary)]">Profile Settings</h2>
               
               {settingsMessage && (
@@ -281,6 +308,25 @@ export default function ProfilePage() {
                   Save Changes
                 </button>
               </form>
+
+              <section className="border-t border-[var(--border-subtle)] pt-5 space-y-3" aria-labelledby="training-consent-title">
+                <div>
+                  <h3 id="training-consent-title" className="text-sm font-semibold text-[var(--text-primary)]">Help improve recommendations</h3>
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
+                    If enabled, activity you record from now on may be used to evaluate and improve recommendations. This is optional, starts only after you opt in, and you can turn it off at any time.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={trainingConsent}
+                  disabled={consentBusy}
+                  onClick={() => handleTrainingConsent(!trainingConsent)}
+                  className={`rounded-xl px-4 py-2.5 text-xs font-bold transition-colors disabled:opacity-60 ${trainingConsent ? "bg-emerald-400 text-black" : "border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-primary)]"}`}
+                >
+                  {consentBusy ? "Saving…" : trainingConsent ? "On · turn off" : "Off · opt in"}
+                </button>
+              </section>
             </div>
           )}
         </div>

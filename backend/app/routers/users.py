@@ -3,6 +3,7 @@ Movie Intelligence Platform — Users Router
 Manages user profiles, Taste Profile fingerprint sequencing, onboarding, and Taste Profile sliders.
 """
 
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,10 +54,32 @@ class OnboardRequest(BaseModel):
     pref_languages: List[str] = Field(default_factory=list)
 
 
+class TrainingConsentUpdate(BaseModel):
+    consent: bool
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current user."""
     return current_user
+
+
+@router.put("/me/training-consent")
+async def set_training_consent(
+    payload: TrainingConsentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Let a user opt in or out of using their activity to improve recommendations."""
+    current_user.recommendation_training_consent = payload.consent
+    current_user.recommendation_training_consent_at = datetime.now(timezone.utc) if payload.consent else None
+    await db.commit()
+    return {"recommendation_training_consent": current_user.recommendation_training_consent}
+
+
+@router.get("/me/training-consent")
+async def get_training_consent(current_user: User = Depends(get_current_user)):
+    return {"recommendation_training_consent": current_user.recommendation_training_consent}
 
 
 @router.put("/me", response_model=UserResponse)
@@ -102,9 +125,13 @@ async def complete_onboarding(
             movie = None
 
         if movie:
-            # Add 5-star rating and watch event
-            db.add(Rating(user_id=current_user.id, movie_id=movie.id, rating=5.0))
-            db.add(WatchEvent(user_id=current_user.id, movie_id=movie.id, completed=True))
+            # Check for existing rating to avoid unique constraint violation on re-onboard
+            existing_rating = await db.execute(
+                select(Rating).where(Rating.user_id == current_user.id, Rating.movie_id == movie.id)
+            )
+            if not existing_rating.scalar_one_or_none():
+                db.add(Rating(user_id=current_user.id, movie_id=movie.id, rating=5.0))
+            db.add(WatchEvent(user_id=current_user.id, movie_id=movie.id, completed=True, source="onboarding"))
 
     # 2. Calibrate Taste Profile sliders
     t_res = await db.execute(select(TasteControl).where(TasteControl.user_id == current_user.id))

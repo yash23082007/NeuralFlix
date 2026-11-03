@@ -36,7 +36,7 @@ export default function SwipePage() {
     
     if (movieId && isAuthenticated()) {
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const API = "";
         authFetch(`${API}/api/v1/recommendations/feedback?movie_id=${movieId}&action=${action}`, {
           method: "POST",
         }).catch((err) => console.error("Swipe feedback error:", err));

@@ -69,7 +69,7 @@ export function useWatchEvent(): UseWatchEventResult {
       const res = await authFetch('/api/v1/interactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([]),
+        body: JSON.stringify([{ event: 'search', context: query }]),
       })
       return res.ok
     } catch (err) {

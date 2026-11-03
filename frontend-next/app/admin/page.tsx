@@ -34,7 +34,7 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/admin/stats`);
+      const res = await authFetch("/api/v1/admin/stats");
       
       if (res.ok) {
         const data = await res.json();
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
   const handleSyncTrigger = async (stage: string) => {
     setSyncingStage(stage);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       const res = await authFetch(`${API}/api/v1/admin/sync/trigger?stage=${stage}`, {
         method: "POST"
       });

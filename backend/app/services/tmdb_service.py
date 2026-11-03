@@ -171,6 +171,7 @@ def parse_tmdb_movie(data: dict) -> dict:
 
     return {
         "tmdb_id": data["id"],
+        "media_type": "movie",
         "imdb_id": data.get("imdb_id"),
         "title": data.get("title") or data.get("original_title", ""),
         "overview": data.get("overview"),

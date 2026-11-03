@@ -38,7 +38,7 @@ export default function TasteConstellation({ onControlsChange, compact = false }
 
   const fetchControls = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = "";
       const res = await authFetch(`${apiBase}/api/v1/users/me/taste-controls`);
       if (res.ok) {
         const data = await res.json();
@@ -58,7 +58,7 @@ export default function TasteConstellation({ onControlsChange, compact = false }
     setSaving(true);
     setError("");
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = "";
       const res = await authFetch(`${apiBase}/api/v1/users/me/taste-controls`, {
         method: "PUT",
         body: JSON.stringify(newControls),

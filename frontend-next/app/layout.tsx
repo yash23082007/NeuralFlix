@@ -8,18 +8,18 @@ import Providers from "../components/Providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "Movie Intelligence Platform — Cinema Discovery & ML Recommendations",
+    default: "Movie Intelligence Platform — Cinema Discovery & Explainable Recommendations",
     template: "%s — Movie Intelligence Platform",
   },
   description:
-    "Discover movies from every corner of the world with ML-driven recommendations, multi-source ratings, and global cinema exploration.",
+    "Discover movies from every corner of the world with explainable recommendations, multi-source ratings, and global cinema exploration.",
   keywords: [
     "movie recommendations",
     "cinema discovery",
     "movie ratings",
     "world cinema",
-    "collaborative filtering",
-    "content based filtering",
+    "explainable recommendations",
+    "content-based ranking",
     "streaming guide",
     "Movie Intelligence Platform",
   ],
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Movie Intelligence Platform",
-    description: "Global cinema discovery with ML-driven recommendations.",
+    description: "Global cinema discovery with explainable recommendations.",
     type: "website",
     siteName: "Movie Intelligence Platform",
     locale: "en_US",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Movie Intelligence Platform",
-    description: "Global cinema discovery with ML-driven recommendations.",
+    description: "Global cinema discovery with explainable recommendations.",
   },
   robots: {
     index: true,
@@ -73,7 +73,7 @@ export default function RootLayout({
               url:
                 process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
               description:
-                "Intelligent cinema discovery powered by machine learning",
+                "Cinema discovery with explainable metadata-based recommendations",
               potentialAction: {
                 "@type": "SearchAction",
                 target: {

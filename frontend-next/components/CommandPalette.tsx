@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Compass, FilmIcon, Globe2, SearchIcon, TrendingUp, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = "";
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false);

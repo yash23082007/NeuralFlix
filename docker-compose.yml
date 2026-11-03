@@ -13,23 +13,29 @@ services:
       - COOKIE_SECURE=true
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     depends_on:
-      - redis
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
       interval: 30s
       retries: 3
+      start_period: 30s
 
   frontend:
-    build: ./frontend-next
+    build:
+      context: ./frontend-next
+      args:
+        API_INTERNAL_URL: http://api:8000
     ports:
       - "3000:3000"
     environment:
       - API_INTERNAL_URL=http://api:8000
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:

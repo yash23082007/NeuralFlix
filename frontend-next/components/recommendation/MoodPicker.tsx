@@ -66,7 +66,7 @@ export function MoodPicker() {
           </h2>
         </div>
         <p className="max-w-xl text-sm leading-relaxed text-[#b9caca] font-sans">
-          Select a semantic signal below to inject bias into catalog recall algorithms and rerank outcomes with custom emotional properties.
+          Select a mood signal to filter the catalog and tune the explainable ranking toward a specific emotional tone.
         </p>
       </div>
 

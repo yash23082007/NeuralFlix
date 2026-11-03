@@ -7,6 +7,10 @@ Uses SQLAlchemy 2.0 async engine with aiosqlite or asyncpg.
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import event, text
+from alembic import command
+from alembic.config import Config
+import asyncio
+from pathlib import Path
 
 from app.config import get_settings
 
@@ -44,21 +48,9 @@ if settings.is_sqlite:
 
 # ── Database Lifecycle ────────────────────────────────────────
 async def init_db():
-    """Create all tables. Used for local dev bootstrap only.
-    Production uses Alembic migrations.
-    """
-    from app.models.base import Base
-    # Import all models so Base.metadata knows about them
-    import app.models.user  # noqa: F401
-    import app.models.movie  # noqa: F401
-    import app.models.watch_event  # noqa: F401
-    import app.models.recommendation_feedback  # noqa: F401
-    import app.models.taste_control  # noqa: F401
-    import app.models.movie_availability  # noqa: F401
-    import app.models.graph  # noqa: F401
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Apply local database migrations before the development server starts."""
+    alembic_config = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    await asyncio.to_thread(command.upgrade, alembic_config, "head")
 
 
 async def get_db():

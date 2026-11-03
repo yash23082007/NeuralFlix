@@ -1,32 +1,35 @@
-# Movie Intelligence Platform — Recommendation & ML Evaluation
+# Recommendation and ML status
 
-Movie Intelligence Platform follows an uncompromising policy of **transparent, reproducible offline evaluations**.
-No metric or ranking claim may be reported in documentation without an accompanying reproduction command.
+## What runs in the app
 
----
+The active recommendation path is a CPU-safe hybrid scorer. It combines metadata/content, interaction affinity, recent-sequence fit, genre-neighbor similarity, keyword/quality signals, deterministic exploration, and diversity reranking, then returns per-item component explanations. Optional PyTorch, scikit-learn, and Transformers adapters are available in `backend/requirements-ml.txt` for offline NCF, SASRec, LightGCN, clustering, and sentiment training; no trained neural artifact is shipped by default.
 
-## 1. Offline Baseline Benchmark
+The current candidate and search paths still load broad catalog slices into Python. They are suitable for the small curated development catalog, but have not been proven at million-item scale. Do not claim million-item latency or production throughput until retrieval is indexed, bounded, load-tested, and measured on the production database.
 
-The benchmark below is reproducible in a clean environment by running:
+## First-party interaction target
 
-```bash
-python -m pipeline.evaluation.run_eval
+`GET /api/v1/ml/overview` reports `consented_interactions` against a target of 1,000,000. The count includes app-recorded watch events and recommendation click/save/dismiss/watch responses from users who opted into recommendation improvement. It excludes impression-only exposure and onboarding watch-history seeds. Eligibility starts at the current consent timestamp and stops when consent is withdrawn. The value is a real count; it is not prefilled with synthetic data.
+
+The opt-in can be changed in **Profile → Account Settings → Help improve recommendations** or through:
+
+```http
+GET /api/v1/users/me/training-consent
+PUT /api/v1/users/me/training-consent
+Content-Type: application/json
+
+{"consent": true}
 ```
 
-### Reproducible Results Table
+These events are currently collected and counted; this repository does not yet contain a production training/export job that consumes them. Consent is therefore not evidence that a model has been trained.
 
-| Model Architecture | Split Strategy | Recall@5 | NDCG@5 | MAP@5 | Catalog Coverage | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Random Baseline** | Temporal (Leave-Last-Out) | 0.8333 | 0.5126 | 0.3611 | 42.3% | Baseline |
-| **Popularity Baseline** | Temporal (Leave-Last-Out) | 0.8333 | 0.8710 | 0.8333 | 42.3% | Baseline |
-| **Content-Based v1** | Temporal (Leave-Last-Out) | 1.0000 | 0.6817 | 0.5639 | 42.3% | Active |
-| **Taste Profile v1** | User Controls / Additive | 0.8333 | 0.5704 | 0.4444 | 42.3% | Active Default |
-| **Hybrid v3** | Content + Taste + Quality | 1.0000 | 0.5941 | 0.4250 | 42.3% | Candidate |
+## Catalog and data limits
 
----
+The development startup seeds a small curated catalog. The database now has a `media_type` field and the series route filters to TV records, but the curated seed is films only; the series list is empty until a licensed TV metadata importer populates it. There is no million-title catalog in the repository.
 
-## 2. Methodology & Rules
+The current ingestion code still uses TMDB. Open-data ingestion, provenance, license attribution, duplicate resolution across sources, episode/series relationships, and a million-record import have not yet been implemented. MovieLens-style public ratings must remain isolated from live SaaS events and must not be deployed without confirming the dataset license permits the intended use.
 
-1. **Strict Temporal Splitting**: Train < Val < Test. No random split data leakage across time.
-2. **Attribution Grounding**: Every recommendation reason displayed in the UI is a direct mathematical derivative of non-zero score components.
-3. **No Fabricated Personas**: Offline benchmarks are run against verified fixtures or MovieLens research splits. They are explicitly marked as offline research benchmarks, never disguised as active app users.
+## Evaluation policy
+
+No offline recommendation metric is currently accepted as a model result. `pipeline/evaluation/run_eval.py` contains a tiny hard-coded synthetic example and hand-written ordering functions; it is a demo scaffold, not a valid benchmark. Use `pipeline.evaluation.report` with JSONL predictions from an authorized dataset for Recall@10, NDCG@10, coverage, and diversity. It must not be used to support quality claims until the data sample, split, and generated predictions are recorded.
+
+See [recommendation-evaluation.md](recommendation-evaluation.md) for the status of evaluation work and [architecture/recommendation_pipeline.md](architecture/recommendation_pipeline.md) for the implemented serving path.

@@ -2,6 +2,8 @@ import { Compass, Sparkles } from "lucide-react";
 import Link from "next/link";
 import MovieRow from "../components/MovieRow";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   let homeData: any = {
     featured: null,
@@ -12,7 +14,7 @@ export default async function Home() {
   };
 
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_URL = process.env.API_INTERNAL_URL || "http://localhost:8000";
     const res = await fetch(`${API_URL}/api/v1/home`, { next: { revalidate: 300 } });
     if (res.ok) {
       const data = await res.json();

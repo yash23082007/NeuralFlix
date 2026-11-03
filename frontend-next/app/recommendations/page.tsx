@@ -60,7 +60,7 @@ function RecommendationsContent() {
       if (!userId) return;
       setProfileLoading(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const apiBase = "";
         const res = await authFetch(`${apiBase}/api/v1/users/me/profile`);
         if (res.ok) {
           const data = await res.json();
@@ -80,7 +80,7 @@ function RecommendationsContent() {
       if (!userId) return;
       setLoading(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const apiBase = "";
         const params = new URLSearchParams({ top_k: "24", mode });
         if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
         if (selectedMood) params.set("mood", selectedMood);

@@ -57,7 +57,7 @@ app = FastAPI(
     title="Movie Intelligence Platform — Explainable Global Cinema Atlas",
     description=(
         "Explainable recommendation engine for world cinema. "
-        "Content-based ranking with taste controls, diversity reranking, and deep collaborative filtering."
+        "Deterministic metadata ranking with taste controls, diversity reranking, and grounded explanations."
     ),
     version="4.0.0",
     lifespan=lifespan,

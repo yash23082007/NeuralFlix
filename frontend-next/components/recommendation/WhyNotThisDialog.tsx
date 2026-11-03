@@ -30,7 +30,7 @@ export default function WhyNotThisDialog({ movieId, isOpen, onClose, onDismiss }
 
     setSubmitting(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = "";
       await authFetch(`${apiBase}/api/v1/recommendations/feedback?movie_id=${movieId}&action=${encodeURIComponent(reasonId)}`, {
         method: "POST",
       });

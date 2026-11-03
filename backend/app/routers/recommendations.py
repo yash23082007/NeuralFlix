@@ -141,6 +141,10 @@ async def submit_feedback(
     db: AsyncSession = Depends(get_db)
 ):
     """Submit user feedback for recommendation calibration."""
+    movie = await db.get(Movie, movie_id)
+    if movie is None:
+        raise HTTPException(status_code=404, detail="Movie not found")
+
     uid = current_user.id
 
     result = await db.execute(

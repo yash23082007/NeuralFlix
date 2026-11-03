@@ -30,7 +30,7 @@ export default function WatchlistPage() {
     try {
       const currentUser = getUser();
       if (!currentUser) return;
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       const res = await authFetch(`${API}/api/v1/users/me/watchlist`);
       if (res.ok) {
         const data = await res.json();
@@ -46,7 +46,7 @@ export default function WatchlistPage() {
   const handleRemove = async (movieId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = "";
       const res = await authFetch(`${API}/api/v1/users/me/watchlist/${movieId}`, {
         method: "DELETE"
       });

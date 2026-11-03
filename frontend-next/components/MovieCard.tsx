@@ -56,7 +56,7 @@ export function MovieCard({
     if (!movieId || saving || saved) return;
     setSaving(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = "";
       const response = await authFetch(`${apiBase}/api/v1/users/me/watchlist?movie_id=${movieId}`, { method: "POST" });
       if (response.ok) setSaved(true);
     } finally {

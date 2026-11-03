@@ -26,7 +26,7 @@ export default function LoginPage() {
     // Fetch popular movies for the collage
     async function fetchCollage() {
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const API = "";
         const res = await fetch(`${API}/api/v1/movies/trending`);
         if (res.ok) {
           const data = await res.json();
@@ -53,7 +53,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/auth/login`,
+        "/api/v1/auth/login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

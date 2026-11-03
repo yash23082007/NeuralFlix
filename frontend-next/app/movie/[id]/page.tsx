@@ -26,7 +26,7 @@ import Loading from "./loading";
 import { getUser, authFetch, isAuthenticated } from "../../../lib/auth";
 
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = "";
 
 interface CastMember {
   name: string;

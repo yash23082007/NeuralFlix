@@ -5,8 +5,8 @@
 
 const API_BASE =
   typeof window === "undefined"
-    ? process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    ? process.env.API_INTERNAL_URL || "http://localhost:8000"
+    : "";
 
 export interface Movie {
   _id?: string;
@@ -50,9 +50,14 @@ export interface MovieDetail extends Movie {
 
 export interface MlOverview {
   catalog_size: number;
-  average_rating: number;
+  average_rating: number | null;
   impressions_logged?: number;
   feedback_logged?: number;
+  training_consent_users?: number;
+  consented_interactions?: number;
+  interaction_target?: number;
+  interaction_target_progress?: number;
+  interaction_target_reached?: boolean;
   top_genres: { name: string; count: number }[];
   top_regions: { name: string; count: number }[];
   pipeline: { stage: string; method: string }[];

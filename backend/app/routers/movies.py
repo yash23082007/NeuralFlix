@@ -6,7 +6,7 @@ Full support for trending, top-rated, cinema regions, mood mapping, anime, and s
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, desc, or_, and_, cast, String
 from sqlalchemy.sql.expression import true as sa_true
 
 from app.database import get_db
@@ -47,6 +47,11 @@ REGION_LANGUAGE_MAP = {
 }
 
 
+def _escape_like(value: str) -> str:
+    """Escape SQL LIKE wildcard characters in user input."""
+    return value.replace("%", r"\%").replace("_", r"\_")
+
+
 def _format_movie(m: Any) -> dict:
     """Format movie object into standardized dictionary."""
     movie_id = getattr(m, "id", None) or getattr(m, "tmdb_id", 0)
@@ -56,6 +61,7 @@ def _format_movie(m: Any) -> dict:
         "_id": str(movie_id),
         "id": movie_id,
         "tmdb_id": tmdb_id,
+        "media_type": getattr(m, "media_type", "movie") or "movie",
         "imdb_id": getattr(m, "imdb_id", None),
         "title": getattr(m, "title", ""),
         "overview": getattr(m, "overview", None),
@@ -74,7 +80,7 @@ def _format_movie(m: Any) -> dict:
         "director": getattr(m, "director", None),
         "cast_members": getattr(m, "cast_members", []) or [],
         "popularity_score": getattr(m, "popularity_score", 0.0) or 0.0,
-        "rec_score": round((rating or 7.5) / 10.0, 2)
+        "rec_score": round(rating / 10.0, 2) if rating else None
     }
 
 
@@ -119,19 +125,33 @@ async def get_now_playing(page: int = Query(1, ge=1), limit: int = Query(20, ge=
 @router.get("/anime")
 async def get_anime(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=50), db: AsyncSession = Depends(get_db)):
     """Return anime and animation titles."""
+    offset = (page - 1) * limit
+    anime_filter = or_(
+        Movie.language == "ja",
+        Movie.cinema_region == "japanese",
+        cast(Movie.genres, String).ilike("%Animation%"),
+    )
     result = await db.execute(
-        select(Movie).where(or_(Movie.language == "ja", Movie.cinema_region == "japanese"))
+        select(Movie)
+        .where(anime_filter)
+        .order_by(desc(Movie.tmdb_rating), desc(Movie.popularity_score))
+        .offset(offset)
+        .limit(limit)
     )
     movies = result.scalars().all()
-    filtered = [m for m in movies if "Animation" in (m.genres or []) or m.language == "ja"]
-    return {"results": [_format_movie(m) for m in filtered], "page": page}
+    return {"results": [_format_movie(m) for m in movies], "page": page}
 
 
 @router.get("/series")
 async def get_series(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=50), db: AsyncSession = Depends(get_db)):
-    """Return epic saga and franchise collections."""
+    """Return TV series only; film records must not leak into the series catalog."""
+    offset = (page - 1) * limit
     result = await db.execute(
-        select(Movie).order_by(desc(Movie.runtime), desc(Movie.tmdb_rating)).limit(limit)
+        select(Movie)
+        .where(Movie.media_type == "tv")
+        .order_by(desc(Movie.popularity_score), desc(Movie.tmdb_rating))
+        .offset(offset)
+        .limit(limit)
     )
     movies = result.scalars().all()
     return {"results": [_format_movie(m) for m in movies], "page": page}
@@ -145,8 +165,8 @@ async def get_by_mood(mood: str, page: int = Query(1, ge=1), limit: int = Query(
     
     # SQL pushdown for SQLite/Postgres: check if any target genre is in the genres JSON
     # Simple cross-db approach for now: OR conditions on cast(genres, String).ilike
-    from sqlalchemy import cast, String
-    conditions = [cast(Movie.genres, String).ilike(f"%{g}%") for g in target_genres]
+    # cast and String already imported at module level
+    conditions = [cast(Movie.genres, String).ilike(f"%{_escape_like(g)}%") for g in target_genres]
     
     offset = (page - 1) * limit
     result = await db.execute(
@@ -160,7 +180,7 @@ async def get_by_mood(mood: str, page: int = Query(1, ge=1), limit: int = Query(
     
     # Note: total count requires a separate query or we can just return a large total
     # For now, returning a static total or doing a count query
-    from sqlalchemy import select, func
+    # select, func already imported at module level
     count_res = await db.execute(select(func.count(Movie.id)).where(or_(*conditions)))
     total = count_res.scalar()
     
@@ -249,8 +269,7 @@ async def get_by_genre(genre: str, page: int = Query(1, ge=1), limit: int = Quer
     """Return movies by genre."""
     genre_lower = genre.lower()
     
-    from sqlalchemy import select, func, desc, String, cast
-    where_clause = cast(Movie.genres, String).ilike(f"%{genre_lower}%")
+    where_clause = cast(Movie.genres, String).ilike(f"%{_escape_like(genre_lower)}%")
     
     offset = (page - 1) * limit
     result = await db.execute(
@@ -282,12 +301,12 @@ async def filter_movies(
     db: AsyncSession = Depends(get_db)
 ):
     """Filter movies by structured criteria."""
-    from sqlalchemy import select, and_, func, cast, String, desc
+    # All sqlalchemy symbols already imported at module level
     
     conditions = []
     if genres:
         for g in genres.split(","):
-            conditions.append(cast(Movie.genres, String).ilike(f"%{g.strip()}%"))
+            conditions.append(cast(Movie.genres, String).ilike(f"%{_escape_like(g.strip())}%"))
     if language:
         conditions.append(cast(Movie.language, String).ilike(f"{language}"))
     if year_from:
@@ -296,6 +315,8 @@ async def filter_movies(
         conditions.append(Movie.year <= year_to)
     if min_rating:
         conditions.append(Movie.tmdb_rating >= min_rating)
+    if media_type in {"movie", "tv"}:
+        conditions.append(Movie.media_type == media_type)
         
     where_clause = and_(*conditions) if conditions else sa_true()
     
@@ -331,13 +352,12 @@ async def search(
     """Search movies across local database with fallback to TMDB."""
     query_lower = query.lower()
     
-    from sqlalchemy import select, func, desc, String, cast, or_
-    
+    escaped_q = _escape_like(query_lower)
     where_clause = or_(
-        cast(Movie.title, String).ilike(f"%{query_lower}%"),
-        cast(Movie.director, String).ilike(f"%{query_lower}%"),
-        cast(Movie.cast_members, String).ilike(f"%{query_lower}%"),
-        cast(Movie.genres, String).ilike(f"%{query_lower}%")
+        cast(Movie.title, String).ilike(f"%{escaped_q}%"),
+        cast(Movie.director, String).ilike(f"%{escaped_q}%"),
+        cast(Movie.cast_members, String).ilike(f"%{escaped_q}%"),
+        cast(Movie.genres, String).ilike(f"%{escaped_q}%")
     )
     
     result = await db.execute(

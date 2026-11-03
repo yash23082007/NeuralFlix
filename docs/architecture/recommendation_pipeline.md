@@ -1,48 +1,30 @@
-# Movie Intelligence Platform Recommendation Architecture
+# Recommendation serving path
 
-Movie Intelligence Platform is built to provide **transparent, user-controlled recommendations** without hidden algorithmic gamification.
+## Current request path
 
-## Philosophy
+1. Next.js sends browser API calls to same-origin `/api/v1/*`; Next rewrites them to FastAPI.
+2. FastAPI reads catalog records from SQLAlchemy using the configured PostgreSQL or SQLite database.
+3. Authenticated feed requests load the user's Taste Controls and call `get_recommendations_for_user`.
+4. The deterministic scorer ranks candidates and creates explanations from the same score components.
+5. User feedback and interaction endpoints persist actions. Recommendation improvement is opt-in and timestamped.
 
-A 10/10 movie recommendation system should not be a "black box" of PyTorch models that maximize engagement at the cost of the user's explicit intent.
+The serving path is not a trained ML pipeline. There is no production feature store, model registry lifecycle, offline-to-online artifact promotion, or collaborative filtering model active in requests.
 
-Instead, we believe in:
-- **Explicit User Control**: Users define what they want via Taste Controls.
-- **Traceable Reasoning**: Every recommendation includes a structured reason.
-- **Deterministic Outcomes**: The production ML pipeline is a deterministic reranker.
-- **Explainable Metrics**: Evaluation focuses on diversity, coverage, and recall over engagement.
+## Current limits
 
-## Architecture
+- Recommendation, similar-title, search, and autocomplete paths contain full or broad catalog reads. This must change before a million-record latency target can be claimed.
+- Ranking is deterministic, not learned. Explanations describe scorer components; they are not a causal explanation of a trained model.
+- The app seeds 26 curated films for development. `media_type` supports `movie` and `tv`, and the series endpoint now selects only `tv`, but no TV/episode loader is wired in.
+- The existing TMDB ingestion path is not the open-data ingestion route selected for the future catalog. Verify applicable data/API terms before commercial use.
+- User interactions are counted only for opted-in users. No event export or training job consumes them yet.
 
-### 1. Data Retrieval
-We query candidates from MongoDB based on user watch history and basic genre/language filters.
+## Scaling path before production ML
 
-### 2. Candidate Generation (Base)
-A Content-Based TF-IDF engine provides a baseline similarity score for the candidates against the user's history. 
+1. Select and document a catalog source and allowed SaaS use; keep stable source IDs, attribution, and license metadata.
+2. Model titles, series, seasons, and episodes with stable relationships and source-specific identifiers.
+3. Replace unbounded catalog scans with database-side filtering and indexed candidate retrieval; benchmark at target catalog size.
+4. Define event schemas, retention/deletion behavior, consent boundaries, and idempotency before exporting events.
+5. Build a reproducible offline training/evaluation pipeline, compare against the current deterministic baseline, and publish dataset/split/metric details.
+6. Register immutable model artifacts and promote only after offline and online checks, with a rollback path.
 
-### 3. Taste Profile Reranker
-The core production pipeline is `taste_reranker.py`. It takes the base score and reranks it using explicit user constraints:
-- `discovery`: Boosts items outside the comfort zone.
-- `global_pref`: Penalizes local/familiar items if the user wants global cinema.
-- `challenge`: Boosts complex genres (drama, documentary, etc).
-- `pace`: Adjusts score based on inferred pacing (runtime + action/thriller vs drama/romance).
-- `hiddenGems`: Inverts the popularity penalty for users looking for obscure movies.
-
-### 4. Diversity Boost
-If enabled, the reranker injects highly-rated international/foreign language movies into the top K candidates to deliberately break filter bubbles.
-
-### 5. Why Recommended Engine
-Before delivery, candidates pass through `why_recommended.py`, which generates a JSON array of specific, traceable evidence for why the movie scored high.
-
-### Experimental (PyTorch)
-Deep Learning models (NCF, SASRec) exist in the codebase but are isolated behind feature flags (`ENABLE_EXPERIMENTAL_ML=true`). They are strictly used for offline evaluation and experimentation, not for default production traffic.
-
-## Evaluation
-We evaluate the pipeline strictly against:
-- Recall@K
-- NDCG@K
-- Mean Reciprocal Rank (MRR)
-- Catalog Coverage
-- Intra-List Diversity (ILD)
-
-We do not use gamified click-through-rate (CTR) or watch-time optimization metrics to judge core recommendation quality.
+Until those steps are complete, the deterministic scorer is the supported fallback and no model quality or million-item performance claim should be made.

@@ -40,18 +40,6 @@ services:
         sync: false
       - key: LITE_MODE
         value: "true"
-      - key: ENABLE_EXPERIMENTAL_ML
-        value: "true"
-      - key: ENABLE_NCF
-        value: "true"
-      - key: ENABLE_SASREC
-        value: "true"
-      - key: ENABLE_GNN
-        value: "true"
-      - key: ENABLE_BANDIT
-        value: "true"
-      - key: ENABLE_VECTOR_SEARCH
-        value: "true"
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: NEURALFLIX_DEMO_MODE

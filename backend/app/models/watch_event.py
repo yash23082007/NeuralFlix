@@ -25,6 +25,7 @@ class WatchEvent(Base):
     )
     watch_time: Mapped[int] = mapped_column(Integer, default=0)  # seconds
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    source: Mapped[str] = mapped_column(String(30), default="app_event", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships

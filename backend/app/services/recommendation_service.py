@@ -13,6 +13,8 @@ from app.models.movie import Movie
 from app.models.taste_control import TasteControl
 from app.models.recommendation_feedback import RecommendationFeedback
 from app.routers.movies import _format_movie
+from app.models.watch_event import WatchEvent
+from app.recommender.hybrid import HybridRecommendationEngine
 
 
 def calculate_score_breakdown(movie: Movie, taste: TasteControl) -> Dict[str, Any]:
@@ -195,7 +197,22 @@ async def get_recommendations_for_user(
     feedback_res = await db.execute(
         select(RecommendationFeedback).where(RecommendationFeedback.user_id == user_id)
     )
-    excluded_ids = {f.movie_id for f in feedback_res.scalars().all()}
+    feedback_rows = feedback_res.scalars().all()
+    excluded_ids = {
+        f.movie_id for f in feedback_rows if f.feedback_type in {"dislike", "not_interested", "hide_similar"}
+    }
+    feedback_scores = {
+        f.movie_id: 1.0 if f.feedback_type in {"like", "watchlist"} else -1.0
+        for f in feedback_rows
+    }
+    history_res = await db.execute(
+        select(Movie)
+        .join(WatchEvent, WatchEvent.movie_id == Movie.id)
+        .where(WatchEvent.user_id == user_id)
+        .order_by(WatchEvent.created_at.desc())
+        .limit(20)
+    )
+    history_movies = history_res.scalars().all()
 
     scored_movies: List[Tuple[Movie, Dict[str, Any]]] = []
 
@@ -246,8 +263,26 @@ async def get_recommendations_for_user(
         breakdown["rec_score"] = round(score / 100.0, 4)
         scored_movies.append((movie, breakdown))
 
-    scored_movies.sort(key=lambda x: x[1]["score"], reverse=True)
-    top_items = scored_movies[:limit]
+    hybrid_engine = HybridRecommendationEngine()
+    hybrid_ranked = hybrid_engine.rank(
+        user_id=user_id,
+        candidates=[movie for movie, _ in scored_movies],
+        history=history_movies,
+        feedback=feedback_scores,
+        limit=limit,
+    )
+    movie_by_id = {movie.id: (movie, breakdown) for movie, breakdown in scored_movies}
+    top_items = []
+    for candidate in hybrid_ranked:
+        movie, breakdown = movie_by_id[candidate.item_id]
+        breakdown["score"] = round(candidate.score * 100.0, 2)
+        breakdown["rec_score"] = round(candidate.score, 4)
+        breakdown["explanation"] = candidate.explanation
+        breakdown["components"].extend(
+            {"feature": name, "delta": round(value * 10.0, 2), "because": f"{name} signal"}
+            for name, value in candidate.components.items()
+        )
+        top_items.append((movie, breakdown))
 
     formatted = []
     for movie, breakdown in top_items:

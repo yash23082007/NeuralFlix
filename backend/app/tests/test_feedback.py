@@ -1,8 +1,11 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.movie import Movie
 
 @pytest.mark.asyncio
-async def test_submit_feedback(client: AsyncClient):
+async def test_submit_feedback(client: AsyncClient, db_session: AsyncSession):
     # Register and login
     register_data = {
         "username": "feedbacktest",
@@ -10,6 +13,13 @@ async def test_submit_feedback(client: AsyncClient):
         "password": "testpassword123"
     }
     await client.post("/api/v1/auth/register", json=register_data)
+
+    # Feedback uses catalog primary keys, so create valid catalog records first.
+    db_session.add_all([
+        Movie(id=123, tmdb_id=123, title="Liked movie"),
+        Movie(id=456, tmdb_id=456, title="Disliked movie"),
+    ])
+    await db_session.commit()
     
     # Submit feedback (using recommendations router)
     response = await client.post("/api/v1/recommendations/feedback?movie_id=123&action=like")

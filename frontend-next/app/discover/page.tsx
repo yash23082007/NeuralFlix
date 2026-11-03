@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MovieCard, { Movie } from "../../components/MovieCard";
 import ScrollReveal from "../../components/ScrollReveal";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = "";
 
 const GENRES = [
   "Action", "Comedy", "Drama", "Horror", "Romance", "Science Fiction",

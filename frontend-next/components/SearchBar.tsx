@@ -59,7 +59,7 @@ export default function SearchBar() {
 
     setLoading(true)
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const apiBase = ""
       const res = await fetch(
         `${apiBase}/api/v1/search/suggest?q=${encodeURIComponent(q)}`,
         { signal: abortControllerRef.current.signal }
