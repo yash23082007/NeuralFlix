@@ -29,7 +29,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        sync: false
+        value: "https://neural-flix.vercel.app,https://neuralflix.vercel.app"
       - key: ENVIRONMENT
         value: "production"
       - key: COOKIE_SECURE
