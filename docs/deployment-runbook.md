@@ -6,7 +6,7 @@
 - API: FastAPI, async SQLAlchemy, Alembic.
 - Database: PostgreSQL for deployment; SQLite is supported for local development and tests.
 - Redis: Compose starts Redis, but application cache integration currently degrades to a non-Redis path when Redis is unavailable.
-- Recommendation serving: deterministic Taste Profile scorer. No trained ML model is deployed.
+- Recommendation serving: CPU-safe hybrid scorer with optional offline ML adapters. No trained neural artifact is deployed by default.
 
 ## Local setup
 
@@ -53,6 +53,28 @@ npm run dev
 See `.env.example` for the Compose variables. At minimum, deployment requires a strong `JWT_SECRET`, a PostgreSQL `DATABASE_URL`, and secure cookies over HTTPS. External metadata credentials are required only for the integrations that use them. Keep secrets in the deployment secret manager; never commit `.env` files.
 
 `API_INTERNAL_URL` is used by Next.js server rewrites. In Compose it must resolve to the API service name (`http://api:8000`); in a manual local run, use `http://localhost:8000`. Browser calls use same-origin `/api/v1/*` paths.
+
+### Render database linkage
+
+The Render API service must use the connection string for the Render PostgreSQL
+database linked to that service. In the Render dashboard, open the API service's
+Environment settings and set `DATABASE_URL` from the database's **Internal
+Database URL** (or sync the Blueprint `fromDatabase` value); do not use the
+Compose hostname `db`, a deleted database hostname, or a stale external URL.
+The API and database must be in the same Render region. After saving the
+variable, deploy the latest commit and confirm the logs show Alembic completing
+before Uvicorn starts.
+
+Verify the configured connection before testing application routes:
+
+```text
+GET https://<render-service>.onrender.com/health/live
+GET https://<render-service>.onrender.com/health/ready
+GET https://<render-service>.onrender.com/api/v1/home
+```
+
+`health/live` can succeed while the database is unavailable; `health/ready`
+must report `"database": true` before frontend catalog and search flows can work.
 
 ## Migrations and release checks
 
